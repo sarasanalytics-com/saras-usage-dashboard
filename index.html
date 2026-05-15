@@ -433,6 +433,7 @@
         <div class="filter-bar">
           <button class="filter-btn active" onclick="setAdoptView('cursor',this)">Cursor</button>
           <button class="filter-btn" onclick="setAdoptView('windsurf',this)">Windsurf</button>
+          <button class="filter-btn" onclick="setAdoptView('cc',this)">Claude Code</button>
         </div>
         <select class="dept-select" id="adoptDeptSelect" onchange="filterAdoptDept(this.value)">
           <option value="all">All Depts</option>
@@ -1032,16 +1033,25 @@ function renderDeptMetrics() {
     </tr>`;
   }).join('');
 }
+function ccCellClr(lines){
+  if(lines>=5000) return'background:#00d4aa';
+  if(lines>=500)  return'background:rgba(108,99,255,0.8)';
+  if(lines>0)     return'background:rgba(255,167,38,0.65)';
+  return'background:#1a1d27';
+}
 function renderAdoptHeatmap(){
   const days=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01').sort((a,b)=>a.date.localeCompare(b.date));
   const dates=days.map(d=>d.date);
   const usersSet=new Set();
   if(adoptView==='windsurf'){
     Object.keys(WINDSURF_USERS).forEach(e=>usersSet.add(e));
+  } else if(adoptView==='cc'){
+    Object.keys(ADOPTION_CC_MTD).forEach(e=>usersSet.add(e));
   } else {
     days.forEach(day=>Object.keys(day.c).forEach(e=>usersSet.add(e)));
   }
   const users=[...usersSet].filter(e=>adoptDept==='all'||getDept(e)===adoptDept).sort((a,b)=>{
+    if(adoptView==='cc') return (ADOPTION_CC_MTD[b]||0)-(ADOPTION_CC_MTD[a]||0);
     const sa=days.reduce((s,d)=>s+(d.c[a]||0),0);
     const sb=days.reduce((s,d)=>s+(d.c[b]||0),0);
     return sb-sa;
@@ -1049,15 +1059,21 @@ function renderAdoptHeatmap(){
   let h=`<table style="border-collapse:separate;border-spacing:2px;font-size:0.72rem;min-width:max-content">`;
   h+=`<tr><th style="padding:3px 10px 3px 4px;color:var(--muted);text-align:left;font-weight:400;min-width:130px">User</th>`;
   dates.forEach(d=>{const day=d.slice(8);h+=`<th style="padding:2px 0;color:var(--muted);font-weight:400;text-align:center;width:18px">${day}</th>`;});
-  h+=`<th style="padding:3px 4px 3px 8px;color:var(--muted);font-weight:400;text-align:right">Total</th></tr>`;
+  h+=`<th style="padding:3px 4px 3px 8px;color:var(--muted);font-weight:400;text-align:right">${adoptView==='cc'?'Lines MTD':'Total'}</th></tr>`;
   users.forEach(email=>{
     const label=nameFromEmail(email);
-    const total=days.reduce((s,d)=>s+(d.c[email]||0),0);
+    const cursorTotal=days.reduce((s,d)=>s+(d.c[email]||0),0);
+    const ccLines=ADOPTION_CC_MTD[email]||0;
     const wsLast=WINDSURF_USERS[email]||null;
+    const totalVal=adoptView==='cc'
+      ? `<span style="color:${ccLines>0?'#fff':'var(--muted)'}; font-weight:${ccLines>0?'700':'400'}">${ccLines>0?fmt(ccLines):'0'}</span>`
+      : `<span style="color:${cursorTotal>0?'#fff':'var(--muted)'};font-weight:${cursorTotal>0?'700':'400'}">${cursorTotal||'–'}</span>`;
     h+=`<tr><td style="padding:2px 10px 2px 4px;color:var(--text);white-space:nowrap">${label}</td>`;
     dates.forEach(d=>{
       const day=days.find(x=>x.date===d);
-      if(adoptView==='windsurf'){
+      if(adoptView==='cc'){
+        h+=`<td style="${ccCellClr(ccLines)};width:18px;height:18px;border-radius:3px;" title="${email} · ${fmt(ccLines)} lines MTD"></td>`;
+      } else if(adoptView==='windsurf'){
         const active=wsLast===d?1:0;
         h+=`<td style="${cellClr(0,active)};width:18px;height:18px;border-radius:3px;" title="${email}·${d}·${active?'active':'–'}"></td>`;
       } else {
@@ -1065,25 +1081,52 @@ function renderAdoptHeatmap(){
         h+=`<td style="${cellClr(cnt,false)};width:18px;height:18px;border-radius:3px;" title="${email}·${d}·${cnt} events"></td>`;
       }
     });
-    h+=`<td style="padding:2px 4px 2px 8px;text-align:right;color:${total>0?'#fff':'var(--muted)'};font-weight:${total>0?'700':'400'}">${total||'–'}</td></tr>`;
+    h+=`<td style="padding:2px 4px 2px 8px;text-align:right">${totalVal}</td></tr>`;
   });
   h+=`</table>`;
   document.getElementById('adopt-heatmap').innerHTML=h;
   const leg=document.getElementById('adopt-legend');
-  if(adoptView==='windsurf'){
+  if(adoptView==='cc'){
+    leg.innerHTML=`<div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#1a1d27"></div>0 lines</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(255,167,38,0.65)"></div>Light (&lt;500)</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.8)"></div>Regular (500–5k)</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#00d4aa"></div>Power (5k+)</div><span style="color:var(--muted)">Claude Code CLI lines — MTD total per member</span>`;
+  } else if(adoptView==='windsurf'){
     leg.innerHTML=`<div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#1a1d27"></div>No data</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#00d4aa;opacity:0.75"></div>Active (last-known date)</div><span style="color:var(--accent3)">⚠ Windsurf shows last-active date per feature only</span>`;
   } else {
     leg.innerHTML=`<div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#1a1d27"></div>0</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.2)"></div>1–4</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.4)"></div>5–9</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.6)"></div>10–19</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.85)"></div>20–49</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#6c63ff"></div>50+</div><span style="color:var(--muted)">Cursor AI requests/day</span>`;
   }
 }
 function renderAdoptTable(uTotals,uDays){
-  const rows=Object.entries(uTotals).filter(([email])=>adoptDept==='all'||getDept(email)===adoptDept).sort((a,b)=>b[1]-a[1]);
-  document.getElementById('adopt-user-table').innerHTML=rows.map(([email,total],i)=>{
-    const days=uDays[email]||0;
-    const avg=days>0?(total/days).toFixed(0):0;
+  // Full roster: union of cursor users, CC members, and windsurf users
+  const allEmails=new Set([
+    ...Object.keys(uTotals),
+    ...Object.keys(ADOPTION_CC_MTD),
+    ...Object.keys(WINDSURF_USERS)
+  ]);
+  const dash='<span style="color:var(--muted)">—</span>';
+  const rows=[...allEmails]
+    .filter(e=>adoptDept==='all'||getDept(e)===adoptDept)
+    .sort((a,b)=>{
+      // Primary: cursor events desc; secondary: CC lines desc
+      const ca=uTotals[a]||0, cb=uTotals[b]||0;
+      if(cb!==ca) return cb-ca;
+      return (ADOPTION_CC_MTD[b]||0)-(ADOPTION_CC_MTD[a]||0);
+    });
+  document.getElementById('adopt-user-table').innerHTML=rows.map((email,i)=>{
+    const total  =uTotals[email]||0;
+    const days   =uDays[email]||0;
+    const avg    =days>0?Math.round(total/days):0;
     const ccLines=ADOPTION_CC_MTD[email]||0;
-    const wsLast=WINDSURF_USERS[email]||'–';
-    return `<tr><td class="rank">${i+1}</td><td><div class="name-cell">${nameFromEmail(email)}</div><div class="email-muted">${email}</div></td><td>${deptBadge(getDept(email))}</td><td class="num-cell">${fmt(total)}</td><td class="num-cell">${days}</td><td class="num-cell">${avg}</td><td class="num-cell">${fmt(ccLines)}</td><td style="font-size:0.75rem;color:var(--muted)">${wsLast||'–'}</td></tr>`;
+    const wsLast =WINDSURF_USERS[email]||null;
+    const tier   =ccLines>=5000?'<span class="tier tier-high">Power</span>':ccLines>=500?'<span class="tier tier-mid">Regular</span>':ccLines>0?'<span class="tier tier-low">Light</span>':'';
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td><div class="name-cell">${nameFromEmail(email)}</div><div class="email-muted">${email}</div></td>
+      <td>${deptBadge(getDept(email))}</td>
+      <td class="num-cell">${total?fmt(total):dash}</td>
+      <td class="num-cell">${days||dash}</td>
+      <td class="num-cell">${avg||dash}</td>
+      <td class="num-cell">${ccLines?fmt(ccLines)+' '+tier:dash}</td>
+      <td style="font-size:0.75rem;color:${wsLast?'var(--accent2)':'var(--muted)'}">${wsLast||dash}</td>
+    </tr>`;
   }).join('');
 }
 
