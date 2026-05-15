@@ -400,6 +400,32 @@
     <div class="kpi c4"><div class="kpi-label">Avg Active Days</div><div class="kpi-value" id="adopt-avg-days">–</div><div class="kpi-sub">avg per active Cursor user</div></div>
     <div class="kpi c5"><div class="kpi-label">Claude.ai Active (MTD)</div><div class="kpi-value" id="adopt-claudeai-users">–</div><div class="kpi-sub" id="adopt-claudeai-sub">users with 1+ chat this month</div></div>
   </div>
+  <!-- DEPT METRICS -->
+  <div class="two-col">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:14px">Cursor Events by Department — MTD</div>
+      <div style="height:280px"><canvas id="deptCursorChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title" style="margin-bottom:14px">Claude Code Lines by Department — MTD</div>
+      <div style="height:280px"><canvas id="deptCCChart"></canvas></div>
+    </div>
+  </div>
+  <div class="card-full">
+    <div class="section-title" style="margin-bottom:14px">Department Breakdown — MTD Summary</div>
+    <table class="data-table">
+      <thead><tr>
+        <th>Department</th>
+        <th style="text-align:right">Cursor Active Users</th>
+        <th style="text-align:right">Cursor Events MTD</th>
+        <th style="text-align:right">Avg Events / User</th>
+        <th style="text-align:right">Claude Code Lines</th>
+        <th style="text-align:right">CC Active Users</th>
+      </tr></thead>
+      <tbody id="dept-breakdown-table"></tbody>
+    </table>
+  </div>
+
   <div class="card-full">
     <div class="section-header">
       <div><div class="section-title">Daily Usage Heatmap — May 2026</div><div class="section-sub">Per user per day · hover cells for details</div></div>
@@ -908,8 +934,103 @@ function initAdoption(){
   set('adopt-avg-days',avgD);
   set('adopt-claudeai-users',claudeAiUsers);
   set('adopt-claudeai-sub',DATA.chatUserPct+'% of org · '+DATA.chatsPerDay+' chats/day');
+  renderDeptMetrics();
   renderAdoptHeatmap();
   renderAdoptTable(adoptUTotals,adoptUDays);
+}
+
+function renderDeptMetrics() {
+  const mayDays = ADOPTION_DAYS.filter(d => d.date >= '2026-05-01');
+  const deptCursorEv = {}, deptCursorUserSet = {}, deptCCLines = {}, deptCCActive = {};
+
+  // Aggregate Cursor events by dept
+  mayDays.forEach(day => {
+    Object.entries(day.c).forEach(([email, cnt]) => {
+      const dept = getDept(email);
+      deptCursorEv[dept] = (deptCursorEv[dept] || 0) + cnt;
+      if (!deptCursorUserSet[dept]) deptCursorUserSet[dept] = new Set();
+      deptCursorUserSet[dept].add(email);
+    });
+  });
+
+  // Aggregate Claude Code lines by dept
+  Object.entries(ADOPTION_CC_MTD).forEach(([email, lines]) => {
+    const dept = getDept(email);
+    deptCCLines[dept] = (deptCCLines[dept] || 0) + lines;
+    if (lines > 0) deptCCActive[dept] = (deptCCActive[dept] || 0) + 1;
+  });
+
+  const DCOL = {
+    'Engineering':'#a89cff','Data Engineering':'#00d4aa','Consulting':'#ffa726',
+    'Growth':'#81c784','Marketing':'#ff6b6b','Customer Success':'#26c6da',
+    'IT':'#ce93d8','HR':'#ffd740','Finance':'#00bcd4','Product':'#f48fb1',
+    'CEO Office':'#ffd700','Other':'#8b92b8'
+  };
+
+  // Sort depts for each chart
+  const cursorDepts = Object.keys(deptCursorEv).sort((a,b) => deptCursorEv[b]-deptCursorEv[a]);
+  const ccDepts     = Object.keys(deptCCLines).filter(d=>deptCCLines[d]>0).sort((a,b)=>deptCCLines[b]-deptCCLines[a]);
+
+  new Chart(document.getElementById('deptCursorChart'), {
+    type:'bar',
+    data:{
+      labels: cursorDepts,
+      datasets:[{
+        data: cursorDepts.map(d=>deptCursorEv[d]||0),
+        backgroundColor: cursorDepts.map(d=>(DCOL[d]||'#8b92b8')+'bb'),
+        borderRadius:5
+      }]
+    },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmt(c.raw)+' events'}}},
+      scales:{
+        x:{ticks:{color:'#8b92b8',callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v},grid:{color:'rgba(46,50,80,0.5)'}},
+        y:{ticks:{color:'#e8eaf6',font:{size:11}},grid:{display:false}}
+      }
+    }
+  });
+
+  new Chart(document.getElementById('deptCCChart'), {
+    type:'bar',
+    data:{
+      labels: ccDepts,
+      datasets:[{
+        data: ccDepts.map(d=>deptCCLines[d]||0),
+        backgroundColor: ccDepts.map(d=>(DCOL[d]||'#8b92b8')+'bb'),
+        borderRadius:5
+      }]
+    },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmt(c.raw)+' lines'}}},
+      scales:{
+        x:{ticks:{color:'#8b92b8',callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v},grid:{color:'rgba(46,50,80,0.5)'}},
+        y:{ticks:{color:'#e8eaf6',font:{size:11}},grid:{display:false}}
+      }
+    }
+  });
+
+  // Summary table — all depts with any data, sorted by cursor events desc
+  const allDepts = [...new Set([...cursorDepts,...ccDepts])].sort((a,b)=>(deptCursorEv[b]||0)-(deptCursorEv[a]||0));
+  document.getElementById('dept-breakdown-table').innerHTML = allDepts.map(dept => {
+    const activeU  = deptCursorUserSet[dept] ? deptCursorUserSet[dept].size : 0;
+    const events   = deptCursorEv[dept] || 0;
+    const avg      = activeU > 0 ? Math.round(events / activeU) : 0;
+    const ccLines  = deptCCLines[dept] || 0;
+    const ccActiveU= deptCCActive[dept] || 0;
+    const bar = ccLines > 0
+      ? `<div style="display:inline-flex;align-items:center;gap:6px"><span style="font-weight:700">${fmt(ccLines)}</span><div style="width:60px;height:5px;border-radius:3px;background:var(--border);overflow:hidden"><div style="height:100%;border-radius:3px;background:${DCOL[dept]||'#8b92b8'};width:${Math.round(ccLines/Math.max(...ccDepts.map(d=>deptCCLines[d]))*100)}%"></div></div></div>`
+      : `<span style="color:var(--muted)">0</span>`;
+    return `<tr>
+      <td>${deptBadge(dept)}</td>
+      <td class="num-cell">${activeU||'<span style="color:var(--muted)">—</span>'}</td>
+      <td class="num-cell">${events ? fmt(events) : '<span style="color:var(--muted)">—</span>'}</td>
+      <td class="num-cell">${avg||'<span style="color:var(--muted)">—</span>'}</td>
+      <td class="num-cell">${bar}</td>
+      <td class="num-cell">${ccActiveU||'<span style="color:var(--muted)">—</span>'}</td>
+    </tr>`;
+  }).join('');
 }
 function renderAdoptHeatmap(){
   const days=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01').sort((a,b)=>a.date.localeCompare(b.date));
