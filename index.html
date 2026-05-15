@@ -361,10 +361,11 @@
     <input class="search-input" id="peopleSearch" placeholder="Search name or email..." oninput="filterPeopleSearch(this.value)">
     <div class="filter-bar" id="people-tier-filter">
       <button class="filter-btn active" onclick="filterPeopleTier('all',this)">All</button>
-      <button class="filter-btn" onclick="filterPeopleTier('high',this)">Power Users</button>
-      <button class="filter-btn" onclick="filterPeopleTier('mid',this)">Regular</button>
-      <button class="filter-btn" onclick="filterPeopleTier('low',this)">Light</button>
-      <button class="filter-btn" onclick="filterPeopleTier('none',this)">Inactive</button>
+      <button class="filter-btn" onclick="filterPeopleTier('multi',this)">Multi-tool</button>
+      <button class="filter-btn" onclick="filterPeopleTier('cc',this)">Claude Code</button>
+      <button class="filter-btn" onclick="filterPeopleTier('cursor',this)">Cursor</button>
+      <button class="filter-btn" onclick="filterPeopleTier('ws',this)">Windsurf</button>
+      <button class="filter-btn" onclick="filterPeopleTier('none',this)">No Activity</button>
     </div>
     <select class="dept-select" id="peopleDeptSelect" onchange="filterPeopleDept(this.value)">
       <option value="all">All Depts</option>
@@ -373,12 +374,12 @@
   <div class="card-full">
     <div class="section-header">
       <div>
-        <div class="section-title">Every Person · Claude Code Activity</div>
+        <div class="section-title">Every Person · All AI Tools</div>
         <div class="section-sub" id="people-subtitle"></div>
       </div>
     </div>
     <table class="data-table">
-      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Lines MTD</th><th>Contribution</th><th>Tier</th><th>Status</th></tr></thead>
+      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">CC Lines MTD</th><th style="text-align:right">Cursor Events</th><th>Windsurf Last Active</th><th>Active Tools</th></tr></thead>
       <tbody id="peopleTableBody"></tbody>
     </table>
   </div>
@@ -701,26 +702,71 @@ function filterCodeDept(val) { codeDept = val; renderCodeTable(); }
 
 let peopleTier = 'all', peopleQ = '', peopleDept = 'all';
 function renderPeopleTable() {
-  let rows = [...members];
-  if (peopleTier === 'high') rows = rows.filter(m => m.lines >= 5000);
-  else if (peopleTier === 'mid') rows = rows.filter(m => m.lines >= 500 && m.lines < 5000);
-  else if (peopleTier === 'low') rows = rows.filter(m => m.lines > 0 && m.lines < 500);
-  else if (peopleTier === 'none') rows = rows.filter(m => m.lines === 0);
-  if (peopleDept !== 'all') rows = rows.filter(m => m.dept === peopleDept);
-  if (peopleQ) rows = rows.filter(m => m.name.toLowerCase().includes(peopleQ) || m.email.toLowerCase().includes(peopleQ) || (m.dept||'').toLowerCase().includes(peopleQ));
-  set('people-subtitle', `${DATA.monthLabel} MTD · ${rows.length} members shown`);
-  document.getElementById('peopleTableBody').innerHTML = rows.map((m,i) => {
-    const bw = maxLines > 0 ? (m.lines/maxLines*100) : 0;
-    const t  = getTier(m.lines);
-    const status = m.lines >= 5000 ? '🟢 Power user (Code)' : m.lines >= 500 ? '🟡 Regular (Code)' : m.lines > 0 ? '🟠 Light (Code)' : '🔴 No Code activity';
+  // Build unified roster: Claude Code members + Cursor users + Windsurf users
+  const emailSet = new Set([
+    ...members.map(m => m.email),
+    ...Object.keys(adoptUTotals),
+    ...Object.keys(WINDSURF_USERS)
+  ]);
+  let rows = [...emailSet].map(email => {
+    const member       = members.find(m => m.email === email);
+    const ccLines      = member ? member.lines : 0;
+    const cursorEvents = adoptUTotals[email] || 0;
+    const wsLast       = WINDSURF_USERS[email] || null;
+    const name         = member ? member.name : nameFromEmail(email);
+    const dept         = member ? member.dept : getDept(email);
+    const toolCount    = (ccLines > 0 ? 1 : 0) + (cursorEvents > 0 ? 1 : 0) + (wsLast ? 1 : 0);
+    return { email, name, ccLines, cursorEvents, wsLast, dept, toolCount };
+  });
+
+  // Apply tool filter
+  if (peopleTier === 'multi')  rows = rows.filter(r => r.toolCount >= 2);
+  else if (peopleTier === 'cc')     rows = rows.filter(r => r.ccLines > 0);
+  else if (peopleTier === 'cursor') rows = rows.filter(r => r.cursorEvents > 0);
+  else if (peopleTier === 'ws')     rows = rows.filter(r => r.wsLast);
+  else if (peopleTier === 'none')   rows = rows.filter(r => r.toolCount === 0);
+
+  if (peopleDept !== 'all') rows = rows.filter(r => r.dept === peopleDept);
+  if (peopleQ) rows = rows.filter(r =>
+    r.name.toLowerCase().includes(peopleQ) ||
+    r.email.toLowerCase().includes(peopleQ) ||
+    (r.dept||'').toLowerCase().includes(peopleQ)
+  );
+
+  // Sort: multi-tool first, then CC lines desc, then cursor events desc
+  rows.sort((a, b) => {
+    if (b.toolCount !== a.toolCount) return b.toolCount - a.toolCount;
+    if (b.ccLines !== a.ccLines) return b.ccLines - a.ccLines;
+    return b.cursorEvents - a.cursorEvents;
+  });
+
+  set('people-subtitle', `${DATA.monthLabel} MTD · ${rows.length} people shown`);
+  const dash = '<span style="color:var(--muted)">—</span>';
+
+  document.getElementById('peopleTableBody').innerHTML = rows.map((r, i) => {
+    // Tool pills
+    const pills = [];
+    if (r.ccLines > 0)      pills.push(`<span style="background:#6c63ff;color:#fff;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">CC</span>`);
+    if (r.cursorEvents > 0) pills.push(`<span style="background:#00bcd4;color:#111;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">Cursor</span>`);
+    if (r.wsLast)           pills.push(`<span style="background:#00d4aa;color:#111;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">WS</span>`);
+    const toolPills = pills.length
+      ? pills.join('&thinsp;')
+      : `<span style="color:var(--muted);font-size:0.75rem">no activity</span>`;
+
+    // CC Lines cell with mini bar
+    const bw = maxLines > 0 && r.ccLines > 0 ? (r.ccLines / maxLines * 100) : 0;
+    const ccCell = r.ccLines > 0
+      ? `<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px"><span>${fmt(r.ccLines)}</span><div class="mini-bar" style="width:70px"><div class="mini-bar-fill" style="width:${bw}%;background:${barColor(r.ccLines)}"></div></div></div>`
+      : dash;
+
     return `<tr>
       <td class="rank">${i+1}</td>
-      <td><div class="name-cell">${m.name}</div><div class="email-muted">${m.email}</div></td>
-      <td>${deptBadge(m.dept)}</td>
-      <td class="num-cell">${fmt(m.lines)}</td>
-      <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar" style="width:120px"><div class="mini-bar-fill" style="width:${bw}%;background:${barColor(m.lines)}"></div></div></div></td>
-      <td><span class="tier ${t.cls}">${t.label}</span></td>
-      <td style="font-size:0.78rem;color:var(--muted)">${status}</td>
+      <td><div class="name-cell">${r.name}</div><div class="email-muted">${r.email}</div></td>
+      <td>${deptBadge(r.dept)}</td>
+      <td class="num-cell">${ccCell}</td>
+      <td class="num-cell">${r.cursorEvents ? fmt(r.cursorEvents) : dash}</td>
+      <td style="font-size:0.75rem;color:${r.wsLast ? 'var(--accent2)' : 'var(--muted)'}">${r.wsLast || dash}</td>
+      <td style="white-space:nowrap">${toolPills}</td>
     </tr>`;
   }).join('');
 }
