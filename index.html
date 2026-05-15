@@ -70,6 +70,11 @@
   .search-input:focus { border-color: var(--accent); }
   .dept-select { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 5px 12px; color: var(--text); font-size: 0.78rem; cursor: pointer; outline: none; }
   .dept-select:focus, .dept-select:hover { border-color: var(--accent); }
+  .tab-sep { padding: 0 10px; font-size: 0.62rem; color: rgba(139,146,184,0.5); text-transform: uppercase; letter-spacing: 0.12em; cursor: default; display: flex; align-items: center; gap: 6px; border-bottom: 2px solid transparent; user-select: none; white-space: nowrap; }
+  .tab-sep::before { content: ''; width: 1px; height: 14px; background: var(--border); display: inline-block; }
+  .section-divider { display: flex; align-items: center; gap: 12px; margin: 28px 0 18px; }
+  .section-divider span { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; white-space: nowrap; }
+  .section-divider::before, .section-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
   .legend { display: flex; gap: 16px; flex-wrap: wrap; }
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted); }
   .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
@@ -95,17 +100,20 @@
 </header>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchTab('adoption',this)">Daily Adoption</div>
-  <div class="tab" onclick="switchTab('overview',this)">Overview</div>
+  <div class="tab active" onclick="switchTab('overview',this)">📊 Executive Summary</div>
+  <span class="tab-sep">Claude</span>
   <div class="tab" onclick="switchTab('claude-code',this)">Claude Code</div>
   <div class="tab" onclick="switchTab('claudeai',this)">Claude.ai</div>
   <div class="tab" onclick="switchTab('cowork',this)">Cowork</div>
+  <span class="tab-sep">Coding Tools</span>
+  <div class="tab" onclick="switchTab('adoption',this)">Cursor & Windsurf</div>
   <div class="tab" onclick="switchTab('people',this)">People</div>
-  <div class="tab" onclick="switchTab('attention',this)">⚠ Needs Attention</div>
+  <div class="tab" onclick="switchTab('attention',this)">⚠ Gaps</div>
 </div>
 
-<!-- OVERVIEW -->
-<div class="page" id="tab-overview">
+<!-- OVERVIEW / EXECUTIVE SUMMARY -->
+<div class="page active" id="tab-overview">
+  <div class="section-divider"><span>🤖 Claude Tools</span></div>
   <div class="kpi-grid">
     <div class="kpi c1">
       <div class="kpi-label">Weekly Active Users</div>
@@ -167,6 +175,46 @@
       <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Cowork Adoption</div>
       <div style="height:150px;display:flex;align-items:center;justify-content:center"><canvas id="coworkDonut" width="150" height="150" style="max-width:150px"></canvas></div>
       <div class="legend" style="justify-content:center" id="cowork-donut-legend"></div>
+    </div>
+  </div>
+
+  <!-- CODING TOOLS SECTION -->
+  <div class="section-divider"><span>🖥️ Coding Tools — Cursor &amp; Windsurf</span></div>
+  <div class="kpi-grid">
+    <div class="kpi c1">
+      <div class="kpi-label">Cursor Events (MTD)</div>
+      <div class="kpi-value" id="kpi-cursor-mtd-ov">–</div>
+      <div class="kpi-sub" id="kpi-cursor-users-ov">loading…</div>
+    </div>
+    <div class="kpi c2">
+      <div class="kpi-label">Cursor Active (Latest Day)</div>
+      <div class="kpi-value" id="kpi-cursor-latest-ov">–</div>
+      <div class="kpi-sub" id="kpi-cursor-latest-sub-ov">most recent day with data</div>
+    </div>
+    <div class="kpi c3">
+      <div class="kpi-label">Avg Active Days / User</div>
+      <div class="kpi-value" id="kpi-cursor-avgdays-ov">–</div>
+      <div class="kpi-sub">Cursor · May MTD</div>
+    </div>
+    <div class="kpi c4">
+      <div class="kpi-label">Windsurf Users Tracked</div>
+      <div class="kpi-value" id="kpi-ws-ov">–</div>
+      <div class="kpi-sub">with recorded last-active date</div>
+    </div>
+    <div class="kpi c5">
+      <div class="kpi-label">Windsurf Active Today</div>
+      <div class="kpi-value" id="kpi-ws-today-ov">–</div>
+      <div class="kpi-sub">from last-active timestamp</div>
+    </div>
+  </div>
+  <div class="two-col" style="margin-top:4px">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:14px">Cursor Events by Department — MTD</div>
+      <div style="height:220px"><canvas id="ovCursorDeptChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title" style="margin-bottom:12px">All-Tool Adoption at a Glance</div>
+      <div style="height:220px"><canvas id="ovAllToolChart"></canvas></div>
     </div>
   </div>
 </div>
@@ -392,7 +440,7 @@
 </div>
 
 <!-- DAILY ADOPTION -->
-<div class="page active" id="tab-adoption">
+<div class="page" id="tab-adoption">
   <div class="kpi-grid">
     <div class="kpi c1"><div class="kpi-label">Cursor Active (Latest)</div><div class="kpi-value" id="adopt-cursor-latest">–</div><div class="kpi-sub" id="adopt-cursor-latest-sub">most recent day with data</div></div>
     <div class="kpi c2"><div class="kpi-label">Windsurf Active Today</div><div class="kpi-value" id="adopt-ws-today">–</div><div class="kpi-sub">from last-active timestamp</div></div>
@@ -861,6 +909,36 @@ function initCharts() {
         y1:{position:'right',ticks:{color:'#8b92b8',callback:v=>v+'%'},grid:{display:false},title:{display:true,text:'% Users Active',color:'#8b92b8'}}}}
   });
 
+  // Exec summary — Cursor events by dept (mini version)
+  (function(){
+    const mayDays=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01');
+    const deptEv={};
+    mayDays.forEach(day=>Object.entries(day.c).forEach(([e,cnt])=>{
+      const dep=getDept(e); deptEv[dep]=(deptEv[dep]||0)+cnt;
+    }));
+    const DCOL={'Engineering':'#a89cff','Data Engineering':'#00d4aa','Consulting':'#ffa726','Growth':'#81c784','Marketing':'#ff6b6b','Customer Success':'#26c6da','IT':'#ce93d8','HR':'#ffd740','Finance':'#00bcd4','Product':'#f48fb1','CEO Office':'#ffd700'};
+    const depts=Object.keys(deptEv).sort((a,b)=>deptEv[b]-deptEv[a]);
+    new Chart(document.getElementById('ovCursorDeptChart'),{type:'bar',data:{labels:depts,datasets:[{data:depts.map(d=>deptEv[d]),backgroundColor:depts.map(d=>(DCOL[d]||'#8b92b8')+'bb'),borderRadius:5}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>fmt(c.raw)+' events'}}},scales:{x:{ticks:{color:'#8b92b8',callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v},grid:{color:'rgba(46,50,80,0.5)'}},y:{ticks:{color:'#e8eaf6',font:{size:11}},grid:{display:false}}}}});
+  })();
+
+  // Exec summary — All-tool adoption comparison
+  (function(){
+    const ccActivePct=Math.round(members.filter(m=>m.lines>0).length/members.length*100);
+    const wsTracked=Object.values(WINDSURF_USERS).filter(v=>v!==null).length;
+    const mayDays=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01');
+    const cursorUsers=new Set(); mayDays.forEach(day=>Object.keys(day.c).forEach(e=>cursorUsers.add(e)));
+    const totalSeatsEst=members.length;
+    const cursorPct=Math.round(cursorUsers.size/totalSeatsEst*100);
+    const wsPct=Math.round(wsTracked/totalSeatsEst*100);
+    new Chart(document.getElementById('ovAllToolChart'),{type:'bar',data:{
+      labels:['Claude Code','Claude.ai Chat','Cowork','Cursor','Windsurf'],
+      datasets:[
+        {label:'Active %',data:[ccActivePct,d.chatUserPct,d.coworkUserPct,cursorPct,wsPct],backgroundColor:['rgba(0,212,170,0.75)','rgba(108,99,255,0.75)','rgba(255,167,38,0.75)','rgba(108,99,255,0.5)','rgba(0,212,170,0.45)'],borderRadius:6},
+        {label:'Target %',data:[90,80,40,80,60],backgroundColor:'rgba(255,255,255,0.06)',borderRadius:6,borderWidth:1,borderColor:'rgba(255,255,255,0.2)'}
+      ]
+    },options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b92b8',font:{size:11}}},tooltip:{callbacks:{label:c=>c.raw+'%'}}},scales:{x:{max:100,ticks:{color:'#8b92b8',callback:v=>v+'%'},grid:{color:'rgba(46,50,80,0.5)'}},y:{ticks:{color:'#e8eaf6',font:{size:12}},grid:{display:false}}}}});
+  })();
+
   new Chart(document.getElementById('gapChart'), {
     type:'bar', data:{
       labels:['Chat','Projects','Artifacts','Cowork'],
@@ -936,6 +1014,15 @@ function initAdoption(){
   set('adopt-avg-days',avgD);
   set('adopt-claudeai-users',claudeAiUsers);
   set('adopt-claudeai-sub',DATA.chatUserPct+'% of org · '+DATA.chatsPerDay+' chats/day');
+  // Populate exec summary Coding Tools KPIs
+  set('kpi-cursor-mtd-ov', fmt(totalEv));
+  set('kpi-cursor-users-ov', activeU+' unique Cursor users');
+  set('kpi-cursor-latest-ov', cursorLatest||'–');
+  set('kpi-cursor-latest-sub-ov', cursorLatestDate);
+  set('kpi-cursor-avgdays-ov', avgD);
+  const wsTracked=Object.values(WINDSURF_USERS).filter(v=>v!==null).length;
+  set('kpi-ws-ov', wsTracked||'–');
+  set('kpi-ws-today-ov', wsToday||'–');
   renderDeptMetrics();
   renderAdoptHeatmap();
   renderAdoptTable(adoptUTotals,adoptUDays);
