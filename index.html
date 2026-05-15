@@ -1,0 +1,872 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saras Analytics — AI Usage Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a; --border: #2e3250;
+    --accent: #6c63ff; --accent2: #00d4aa; --accent3: #ff6b6b; --accent4: #ffa726;
+    --text: #e8eaf6; --muted: #8b92b8; --green: #4caf50; --yellow: #ffc107; --red: #f44336;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; }
+  header { background: linear-gradient(135deg, #1a1d27 0%, #22263a 100%); border-bottom: 1px solid var(--border); padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+  header h1 { font-size: 1.4rem; font-weight: 700; color: #fff; }
+  header h1 span { color: var(--accent); }
+  .header-meta { font-size: 0.8rem; color: var(--muted); text-align: right; }
+  .header-meta strong { color: var(--accent2); }
+  .tabs { display: flex; gap: 4px; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; }
+  .tab { padding: 12px 22px; font-size: 0.85rem; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  .page { display: none; padding: 28px 32px; max-width: 1400px; margin: 0 auto; }
+  .page.active { display: block; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; position: relative; overflow: hidden; }
+  .kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .kpi.c1::before { background: linear-gradient(90deg, var(--accent), #9c58f5); }
+  .kpi.c2::before { background: linear-gradient(90deg, var(--accent2), #00b894); }
+  .kpi.c3::before { background: linear-gradient(90deg, var(--accent4), #ff9800); }
+  .kpi.c4::before { background: linear-gradient(90deg, var(--accent3), #ff4757); }
+  .kpi.c5::before { background: linear-gradient(90deg, #26c6da, #00acc1); }
+  .kpi-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .kpi-value { font-size: 2rem; font-weight: 800; color: #fff; line-height: 1; }
+  .kpi-sub { font-size: 0.75rem; color: var(--muted); margin-top: 6px; }
+  .kpi-badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 0.7rem; font-weight: 600; margin-top: 6px; }
+  .badge-green { background: rgba(76,175,80,0.15); color: var(--green); }
+  .badge-yellow { background: rgba(255,193,7,0.15); color: var(--yellow); }
+  .badge-red { background: rgba(244,67,54,0.15); color: var(--red); }
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+  .section-title { font-size: 1rem; font-weight: 700; color: #fff; }
+  .section-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+  @media (max-width: 900px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+  .card-full { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  .data-table th { text-align: left; padding: 8px 12px; color: var(--muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); }
+  .data-table td { padding: 9px 12px; border-bottom: 1px solid rgba(46,50,80,0.5); vertical-align: middle; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(108,99,255,0.05); }
+  .rank { color: var(--muted); font-size: 0.75rem; }
+  .name-cell { font-weight: 500; }
+  .email-muted { font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
+  .mini-bar { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; width: 100px; }
+  .mini-bar-fill { height: 100%; border-radius: 3px; }
+  .num-cell { text-align: right; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+  .tier { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 0.7rem; font-weight: 600; }
+  .tier-high { background: rgba(76,175,80,0.15); color: var(--green); }
+  .tier-mid { background: rgba(255,193,7,0.15); color: var(--yellow); }
+  .tier-low { background: rgba(244,67,54,0.15); color: var(--red); }
+  .tier-none { background: rgba(139,146,184,0.12); color: var(--muted); }
+  .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-btn { padding: 5px 14px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); font-size: 0.78rem; cursor: pointer; transition: all 0.2s; }
+  .filter-btn.active, .filter-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .search-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 14px; color: var(--text); font-size: 0.83rem; width: 260px; outline: none; }
+  .search-input:focus { border-color: var(--accent); }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+  .insight-box { border-radius: 10px; padding: 18px; margin-bottom: 20px; font-size: 0.85rem; line-height: 1.7; }
+  .insight-box.purple { background: rgba(108,99,255,0.07); border: 1px solid rgba(108,99,255,0.2); }
+  .insight-box.green { background: rgba(0,212,170,0.07); border: 1px solid rgba(0,212,170,0.2); }
+  .insight-box.red { background: rgba(244,67,54,0.07); border: 1px solid rgba(244,67,54,0.2); }
+  .insight-box.yellow { background: rgba(255,193,7,0.07); border: 1px solid rgba(255,193,7,0.2); }
+  .insight-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Saras Analytics — <span>AI Usage Dashboard</span></h1>
+    <div id="header-month" style="font-size:0.75rem;color:var(--muted);margin-top:4px;"></div>
+  </div>
+  <div class="header-meta">
+    <div>As of <strong id="header-date"></strong></div>
+    <div style="margin-top:2px;">Source: claude.ai/analytics · UTC · Updated daily</div>
+  </div>
+</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('adoption',this)">Daily Adoption</div>
+  <div class="tab" onclick="switchTab('overview',this)">Overview</div>
+  <div class="tab" onclick="switchTab('claude-code',this)">Claude Code</div>
+  <div class="tab" onclick="switchTab('claudeai',this)">Claude.ai</div>
+  <div class="tab" onclick="switchTab('cowork',this)">Cowork</div>
+  <div class="tab" onclick="switchTab('people',this)">People</div>
+  <div class="tab" onclick="switchTab('attention',this)">⚠ Needs Attention</div>
+</div>
+
+<!-- OVERVIEW -->
+<div class="page" id="tab-overview">
+  <div class="kpi-grid">
+    <div class="kpi c1">
+      <div class="kpi-label">Weekly Active Users</div>
+      <div class="kpi-value" id="kpi-wau"></div>
+      <div class="kpi-sub">Across all Claude products</div>
+      <span class="kpi-badge badge-green" id="kpi-utilization-badge"></span>
+    </div>
+    <div class="kpi c2">
+      <div class="kpi-label">Code Lines Accepted (MTD)</div>
+      <div class="kpi-value" id="kpi-overview-total-lines"></div>
+      <div class="kpi-sub" id="kpi-overview-lines-month"></div>
+      <span class="kpi-badge badge-green" id="kpi-accept-rate-badge"></span>
+    </div>
+    <div class="kpi c3">
+      <div class="kpi-label">Cowork Sessions/Day</div>
+      <div class="kpi-value" id="kpi-overview-cowork-sessions"></div>
+      <div class="kpi-sub" id="kpi-overview-cowork-user-sub"></div>
+      <span class="kpi-badge badge-yellow" id="kpi-overview-cowork-growth"></span>
+    </div>
+    <div class="kpi c4">
+      <div class="kpi-label">Claude.ai Chats/Day</div>
+      <div class="kpi-value" id="kpi-overview-chats"></div>
+      <div class="kpi-sub" id="kpi-overview-chat-user-sub"></div>
+      <span class="kpi-badge badge-green">Active daily use</span>
+    </div>
+    <div class="kpi c5">
+      <div class="kpi-label">Projects Created (MTD)</div>
+      <div class="kpi-value" id="kpi-overview-projects"></div>
+      <div class="kpi-sub" id="kpi-overview-projects-sub"></div>
+      <span class="kpi-badge badge-yellow">Opportunity to grow</span>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="section-header">
+        <div><div class="section-title">Claude Feature Adoption</div><div class="section-sub">% of org using each Claude capability</div></div>
+      </div>
+      <div style="height:250px"><canvas id="adoptionChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-header">
+        <div><div class="section-title">Claude Code — Top 10 Contributors</div><div class="section-sub">Lines accepted · <span id="overview-month-label"></span> MTD</div></div>
+      </div>
+      <div style="height:250px"><canvas id="codeTopChart"></canvas></div>
+    </div>
+  </div>
+  <div class="three-col">
+    <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px">
+      <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Claude Code</div>
+      <div style="height:150px;display:flex;align-items:center;justify-content:center"><canvas id="codeDonut" width="150" height="150" style="max-width:150px"></canvas></div>
+      <div class="legend" style="justify-content:center" id="code-donut-legend"></div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px">
+      <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Claude.ai Engagement</div>
+      <div style="height:150px;display:flex;align-items:center;justify-content:center"><canvas id="aiDonut" width="150" height="150" style="max-width:150px"></canvas></div>
+      <div class="legend" style="justify-content:center" id="ai-donut-legend"></div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:28px">
+      <div style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">Cowork Adoption</div>
+      <div style="height:150px;display:flex;align-items:center;justify-content:center"><canvas id="coworkDonut" width="150" height="150" style="max-width:150px"></canvas></div>
+      <div class="legend" style="justify-content:center" id="cowork-donut-legend"></div>
+    </div>
+  </div>
+</div>
+
+<!-- CLAUDE CODE -->
+<div class="page" id="tab-claude-code">
+  <div class="kpi-grid">
+    <div class="kpi c2">
+      <div class="kpi-label">Lines Accepted (MTD)</div>
+      <div class="kpi-value" id="kpi-code-total-lines"></div>
+      <div class="kpi-sub" id="kpi-code-month"></div>
+    </div>
+    <div class="kpi c1">
+      <div class="kpi-label">Accept Rate</div>
+      <div class="kpi-value" id="kpi-code-accept-rate"></div>
+      <div class="kpi-sub">Suggestions accepted vs shown</div>
+    </div>
+    <div class="kpi c3">
+      <div class="kpi-label">Active Members</div>
+      <div class="kpi-value" id="kpi-code-active-members"></div>
+      <div class="kpi-sub" id="kpi-code-active-pct"></div>
+    </div>
+    <div class="kpi c4">
+      <div class="kpi-label">Avg Lines / Active Member</div>
+      <div class="kpi-value" id="kpi-code-avg-lines"></div>
+      <div class="kpi-sub">Among those with any usage</div>
+    </div>
+  </div>
+  <div style="background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:10px;padding:12px 18px;margin-bottom:16px;font-size:0.8rem;color:var(--muted)">
+    <strong style="color:#a89cff">ℹ️ Claude Code only tracks the CLI tool.</strong> A member with 0 lines may still be active on Claude.ai or Cowork daily — check the People tab for the full picture.
+  </div>
+  <div class="card-full">
+    <div class="section-header">
+      <div><div class="section-title" id="code-table-title"></div><div class="section-sub">Full roster · sorted by contribution · Claude Code CLI only</div></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterCode('all',this)">All</button>
+        <button class="filter-btn" onclick="filterCode('high',this)">Power (5k+)</button>
+        <button class="filter-btn" onclick="filterCode('mid',this)">Regular (500–5k)</button>
+        <button class="filter-btn" onclick="filterCode('low',this)">Light (&lt;500)</button>
+        <button class="filter-btn" onclick="filterCode('zero',this)">Inactive</button>
+      </div>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>#</th><th>Member</th><th style="text-align:right">Lines MTD</th><th>Share of Total</th><th>Contribution</th><th>Tier</th></tr></thead>
+      <tbody id="codeTableBody"></tbody>
+    </table>
+  </div>
+  <div class="card-full">
+    <div class="section-title" style="margin-bottom:16px">Lines Distribution — Full Team</div>
+    <div style="height:300px"><canvas id="allCodeChart"></canvas></div>
+  </div>
+</div>
+
+<!-- CLAUDE.AI -->
+<div class="page" id="tab-claudeai">
+  <div class="kpi-grid">
+    <div class="kpi c1">
+      <div class="kpi-label">Chats per Day</div>
+      <div class="kpi-value" id="kpi-ai-chats"></div>
+      <div class="kpi-sub">Avg daily conversations</div>
+    </div>
+    <div class="kpi c2">
+      <div class="kpi-label">Users with 1+ Chat</div>
+      <div class="kpi-value" id="kpi-ai-chat-user-pct"></div>
+      <div class="kpi-sub">of licensed org members</div>
+    </div>
+    <div class="kpi c3">
+      <div class="kpi-label">Projects Created</div>
+      <div class="kpi-value" id="kpi-ai-projects"></div>
+      <div class="kpi-sub" id="kpi-ai-projects-month"></div>
+    </div>
+    <div class="kpi c4">
+      <div class="kpi-label">Users with 1+ Project</div>
+      <div class="kpi-value" id="kpi-ai-project-user-pct"></div>
+      <div class="kpi-sub">Project feature adoption</div>
+    </div>
+    <div class="kpi c5">
+      <div class="kpi-label">Artifacts Created</div>
+      <div class="kpi-value" id="kpi-ai-artifacts"></div>
+      <div class="kpi-sub" id="kpi-ai-artifact-sub"></div>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:16px">Engagement Funnel</div>
+      <div style="height:280px"><canvas id="funnelChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title" style="margin-bottom:12px">What People Are Doing</div>
+      <div style="height:280px"><canvas id="featureRadar"></canvas></div>
+    </div>
+  </div>
+  <div class="insight-box purple">
+    <div class="insight-title" style="color:#a89cff">How people are using Claude.ai</div>
+    <ul style="color:var(--muted);padding-left:18px;display:flex;flex-direction:column;gap:6px">
+      <li><strong style="color:#fff">Chats (<span id="insight-chat-pct"></span>% active)</strong> — Primary use case. Daily Q&A, research, drafting, problem-solving across the org.</li>
+      <li><strong style="color:#fff">Projects (<span id="insight-project-pct"></span>% active)</strong> — Persistent context for ongoing client work. Getting to 40%+ would significantly compound value.</li>
+      <li><strong style="color:#fff">Artifacts (<span id="insight-artifact-pct"></span>% active)</strong> — Structured outputs: dashboards, code files, documents. Almost entirely untapped — training opportunity.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- COWORK -->
+<div class="page" id="tab-cowork">
+  <div class="kpi-grid">
+    <div class="kpi c3">
+      <div class="kpi-label">Sessions per Day</div>
+      <div class="kpi-value" id="kpi-cowork-sessions"></div>
+      <div class="kpi-sub">Avg daily Cowork sessions</div>
+      <span class="kpi-badge badge-green" id="kpi-cowork-session-growth"></span>
+    </div>
+    <div class="kpi c1">
+      <div class="kpi-label">Users with 1+ Session</div>
+      <div class="kpi-value" id="kpi-cowork-user-pct"></div>
+      <div class="kpi-sub">of org members</div>
+      <span class="kpi-badge badge-green" id="kpi-cowork-user-growth"></span>
+    </div>
+    <div class="kpi c2">
+      <div class="kpi-label">Not Yet Using Cowork</div>
+      <div class="kpi-value" id="kpi-cowork-not-using"></div>
+      <div class="kpi-sub">Largest adoption opportunity</div>
+    </div>
+  </div>
+  <div class="card-full">
+    <div class="section-title" style="margin-bottom:16px">Session Volume Trend (Estimated)</div>
+    <div style="height:280px"><canvas id="coworkTrendChart"></canvas></div>
+  </div>
+  <div class="insight-box yellow">
+    <div class="insight-title" style="color:#ffd740">Cowork context</div>
+    <div style="color:var(--muted)">
+      Cowork was separated from Claude Code metrics after <strong style="color:#fff">March 27, 2026</strong> — previously its usage was counted under Claude Code. The <span id="insight-cowork-user-pct"></span>% adoption and strong growth rate (+<span id="insight-cowork-user-growth"></span>% users) for a newly-tracked product is promising. The <span id="insight-cowork-not-using"></span>% who haven't tried it yet represents the biggest single adoption opportunity across all Claude products.
+    </div>
+  </div>
+</div>
+
+<!-- PEOPLE -->
+<div class="page" id="tab-people">
+  <div style="display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap">
+    <input class="search-input" id="peopleSearch" placeholder="Search name or email..." oninput="filterPeopleSearch(this.value)">
+    <div class="filter-bar">
+      <button class="filter-btn active" onclick="filterPeopleTier('all',this)">All</button>
+      <button class="filter-btn" onclick="filterPeopleTier('high',this)">Power Users</button>
+      <button class="filter-btn" onclick="filterPeopleTier('mid',this)">Regular</button>
+      <button class="filter-btn" onclick="filterPeopleTier('low',this)">Light</button>
+      <button class="filter-btn" onclick="filterPeopleTier('none',this)">Inactive</button>
+    </div>
+  </div>
+  <div class="card-full">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Every Person · Claude Code Activity</div>
+        <div class="section-sub" id="people-subtitle"></div>
+      </div>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>#</th><th>Member</th><th style="text-align:right">Lines MTD</th><th>Contribution</th><th>Tier</th><th>Status</th></tr></thead>
+      <tbody id="peopleTableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ATTENTION -->
+<div class="page" id="tab-attention">
+  <div style="background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.25);border-radius:10px;padding:14px 18px;margin-bottom:18px;font-size:0.8rem;color:var(--muted)">
+    <strong style="color:#a89cff">ℹ️ Note:</strong> "Claude Code lines = 0" only means the person isn't using the <strong style="color:#fff">Claude Code CLI</strong>. They may be active on <strong style="color:#fff">Claude.ai</strong> or <strong style="color:#fff">Cowork</strong> daily.
+  </div>
+  <div class="insight-box red" style="margin-bottom:24px">
+    <div class="insight-title" style="color:#ff7070">Summary of gaps as of <span id="attention-date"></span></div>
+    <ul id="attention-gap-list" style="color:var(--muted);padding-left:18px;display:flex;flex-direction:column;gap:5px;margin-top:6px"></ul>
+  </div>
+  <div class="two-col">
+    <div>
+      <div class="card-full">
+        <div class="section-title" style="margin-bottom:4px;color:var(--red)">Zero Claude Code Activity</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:14px">0 lines accepted this month — needs onboarding</div>
+        <table class="data-table">
+          <thead><tr><th>Member</th><th>Email</th><th>Action</th></tr></thead>
+          <tbody id="zero-liners-table"></tbody>
+        </table>
+      </div>
+      <div class="card-full">
+        <div class="section-title" style="margin-bottom:4px;color:var(--yellow)">Very Low Usage (&lt;100 lines)</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:14px">Licensed but barely active — pair-programming session recommended</div>
+        <table class="data-table">
+          <thead><tr><th>Member</th><th style="text-align:right">Lines</th><th>Tier</th></tr></thead>
+          <tbody id="very-low-table"></tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <div class="card-full">
+        <div class="section-title" style="margin-bottom:4px;color:var(--accent)">Claude.ai — Feature Gaps</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:14px">Adoption % vs target</div>
+        <div style="height:240px"><canvas id="gapChart"></canvas></div>
+      </div>
+      <div class="card-full">
+        <div class="section-title" style="margin-bottom:12px">Recommended Actions</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="background:var(--surface2);border-radius:8px;padding:14px;border-left:3px solid var(--accent2)">
+            <div style="font-size:0.8rem;font-weight:700;color:var(--accent2);margin-bottom:4px">Host a Projects workshop</div>
+            <div style="font-size:0.78rem;color:var(--muted)">Show the team how to set up a Project for a real client workflow. Target: 10% → 40% in 30 days.</div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:14px;border-left:3px solid var(--accent4)">
+            <div style="font-size:0.8rem;font-weight:700;color:var(--accent4);margin-bottom:4px">Run a Cowork demo session</div>
+            <div style="font-size:0.78rem;color:var(--muted)" id="action-cowork-body"></div>
+          </div>
+          <div style="background:var(--surface2);border-radius:8px;padding:14px;border-left:3px solid var(--accent3)">
+            <div style="font-size:0.8rem;font-weight:700;color:var(--accent3);margin-bottom:4px" id="action-inactive-title"></div>
+            <div style="font-size:0.78rem;color:var(--muted)" id="action-inactive-body"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DAILY ADOPTION -->
+<div class="page active" id="tab-adoption">
+  <div class="kpi-grid">
+    <div class="kpi c1"><div class="kpi-label">Cursor Active (Latest)</div><div class="kpi-value" id="adopt-cursor-latest">–</div><div class="kpi-sub" id="adopt-cursor-latest-sub">most recent day with data</div></div>
+    <div class="kpi c2"><div class="kpi-label">Windsurf Active Today</div><div class="kpi-value" id="adopt-ws-today">–</div><div class="kpi-sub">from last-active timestamp</div></div>
+    <div class="kpi c3"><div class="kpi-label">Cursor Events (May MTD)</div><div class="kpi-value" id="adopt-cursor-mtd">–</div><div class="kpi-sub" id="adopt-cursor-users">across all users</div></div>
+    <div class="kpi c4"><div class="kpi-label">Avg Active Days</div><div class="kpi-value" id="adopt-avg-days">–</div><div class="kpi-sub">avg per active Cursor user</div></div>
+    <div class="kpi c5"><div class="kpi-label">Claude.ai Active (MTD)</div><div class="kpi-value" id="adopt-claudeai-users">–</div><div class="kpi-sub" id="adopt-claudeai-sub">users with 1+ chat this month</div></div>
+  </div>
+  <div class="card-full">
+    <div class="section-header">
+      <div><div class="section-title">Daily Usage Heatmap — May 2026</div><div class="section-sub">Per user per day · hover cells for details</div></div>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="setAdoptView('cursor',this)">Cursor</button>
+        <button class="filter-btn" onclick="setAdoptView('windsurf',this)">Windsurf</button>
+      </div>
+    </div>
+    <div id="adopt-heatmap" style="overflow-x:auto;margin-bottom:12px;"></div>
+    <div id="adopt-legend" style="display:flex;gap:14px;flex-wrap:wrap;font-size:0.73rem;color:var(--muted);align-items:center;"></div>
+  </div>
+  <div class="card-full">
+    <div class="section-header">
+      <div class="section-title">User Summary — May 2026</div>
+      <div class="section-sub">Cursor requests · active days · Claude Code lines · Windsurf last active</div>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>#</th><th>User</th><th style="text-align:right">Cursor Events MTD</th><th style="text-align:right">Active Days</th><th style="text-align:right">Avg/Day</th><th style="text-align:right">Claude Code Lines</th><th>Windsurf Last Active</th></tr></thead>
+      <tbody id="adopt-user-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ==================== UPDATE THESE TWO BLOCKS DAILY ====================
+
+const DATA = {
+  asOf: 'May 15, 2026',
+  monthLabel: 'May 2026',
+  wau: 141,
+  utilization: 94,
+  totalLines: 188304,
+  acceptRate: 98.4,
+  activeMembers: 27,
+  totalMembers: 38,
+  avgLinesActive: 6974,
+  coworkSessionsPerDay: 45,
+  coworkSessionGrowthPct: -2.2,
+  coworkUserPct: 14,
+  coworkUserGrowthPct: 10.5,
+  chatsPerDay: 145,
+  chatUserPct: 44,
+  projectsCreated: 10,
+  projectUserPct: 9,
+  artifactsCreated: 5,
+  artifactUserPct: 3,
+};
+
+const members = [
+  {name:'Sparsh Gupta',          email:'sparsh.gupta@sarasanalytics.com',          lines:40182},
+  {name:'Bheem',                 email:'bheem@sarasanalytics.com',                 lines:36796},
+  {name:'Rakesh Varma',          email:'rakesh.varma@sarasanalytics.com',          lines:13402},
+  {name:'Sai Varun Pathi',       email:'saivarun.pathi@sarasanalytics.com',        lines:12841},
+  {name:'Rajavardhan',           email:'rajavardhan@sarasanalytics.com',           lines:10826},
+  {name:'Venkateshwaran S',      email:'venkateshwaran.s@sarasanalytics.com',      lines:9575},
+  {name:'Bhawna Kumari',         email:'bhawna.kumari@sarasanalytics.com',         lines:9548},
+  {name:'Sai Teja Katrapati',    email:'saiteja.katrapati@sarasanalytics.com',     lines:9473},
+  {name:'Harsh Sharma',          email:'harsh.sharma@sarasanalytics.com',          lines:7093},
+  {name:'Moiz Essaji',           email:'moiz.essaji@sarasanalytics.com',           lines:6097},
+  {name:'Anusha Danda',          email:'anusha@sarasanalytics.com',                lines:5563},
+  {name:'Rohit Pandey',          email:'rohit.pandey@sarasanalytics.com',          lines:4554},
+  {name:'Katharin Benson',       email:'katharin.benson@sarasanalytics.com',       lines:3178},
+  {name:'Naveena Kolli',         email:'naveena.kolli@sarasanalytics.com',         lines:3099},
+  {name:'Yashveer Gaur',         email:'yashveer.gaur@sarasanalytics.com',         lines:2437},
+  {name:'Satyam Deshwal',        email:'satyam.deshwal@sarasanalytics.com',        lines:2253},
+  {name:'Vignesh Bodiga',        email:'vignesh.bodiga@sarasanalytics.com',        lines:2218},
+  {name:'Waheedul Akbar',        email:'waheedul.akbar@sarasanalytics.com',        lines:2183},
+  {name:'Abhignya Pinnoju',      email:'abhignya.pinnoju@sarasanalytics.com',      lines:1505},
+  {name:'Kritik Kumar',          email:'kritik.kumar@sarasanalytics.com',          lines:1174},
+  {name:'Ritvik Vemula',         email:'ritvik.vemula@sarasanalytics.com',         lines:1063},
+  {name:'Sreeram Ravuri',        email:'sreeram.ravuri@sarasanalytics.com',        lines:893},
+  {name:'Mohammed Muneeb',       email:'mohammed.muneeb@sarasanalytics.com',       lines:866},
+  {name:'Joseph Ubbarapu',       email:'joseph.ubbarapu@sarasanalytics.com',       lines:837},
+  {name:'Nithin Dornala',        email:'nithin.dornala@sarasanalytics.com',        lines:372},
+  {name:'Jigar Trivedi',         email:'jigar.trivedi@sarasanalytics.com',         lines:138},
+  {name:'Anudeep Kolla',         email:'anudeep.kolla@sarasanalytics.com',         lines:138},
+  {name:'Reeshab Nayak',         email:'reeshab.nayak@sarasanalytics.com',         lines:0},
+  {name:'Ajay Kottapally',       email:'ajay@sarasanalytics.com',                  lines:0},
+  {name:'Sarath Buchi',          email:'sarath.buchi@sarasanalytics.com',          lines:0},
+  {name:'Kranthi Kumar',         email:'kranthi.kumar@sarasanalytics.com',         lines:0},
+  {name:'Mahadas Srianshu',      email:'mahadas.srianshu@sarasanalytics.com',      lines:0},
+  {name:'Ram Gupta',             email:'ram.gupta@sarasanalytics.com',             lines:0},
+  {name:'Arijit Bhattacharyya',  email:'arijit.bhattacharyya@sarasanalytics.com',  lines:0},
+  {name:'Ripujit',               email:'ripujit@sarasanalytics.com',               lines:0},
+  {name:'Kaivalya Sathe',        email:'kaivalya@sarasanalytics.com',              lines:0},
+  {name:'Rudrasen Gouda',        email:'rudrasen.gouda@sarasanalytics.com',        lines:0},
+];
+
+// =======================================================================
+
+const maxLines = members[0].lines;
+
+function getTier(l) {
+  if (l >= 5000) return {label:'Power',   cls:'tier-high'};
+  if (l >= 500)  return {label:'Regular', cls:'tier-mid'};
+  if (l > 0)     return {label:'Light',   cls:'tier-low'};
+  return               {label:'Inactive',cls:'tier-none'};
+}
+function barColor(l) {
+  if (l >= 5000) return '#00d4aa';
+  if (l >= 500)  return '#6c63ff';
+  if (l > 0)     return '#ffa726';
+  return '#2e3250';
+}
+function set(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+function fmt(n) { return Number(n).toLocaleString(); }
+
+function switchTab(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  el.classList.add('active');
+}
+
+let codeFilter = 'all';
+function renderCodeTable() {
+  let rows = members;
+  if (codeFilter === 'high') rows = rows.filter(m => m.lines >= 5000);
+  else if (codeFilter === 'mid') rows = rows.filter(m => m.lines >= 500 && m.lines < 5000);
+  else if (codeFilter === 'low') rows = rows.filter(m => m.lines > 0 && m.lines < 500);
+  else if (codeFilter === 'zero') rows = rows.filter(m => m.lines === 0);
+  document.getElementById('codeTableBody').innerHTML = rows.map((m,i) => {
+    const pct = DATA.totalLines > 0 ? (m.lines/DATA.totalLines*100).toFixed(1) : '0.0';
+    const bw  = maxLines > 0 ? (m.lines/maxLines*100) : 0;
+    const t   = getTier(m.lines);
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td><div class="name-cell">${m.name}</div><div class="email-muted">${m.email}</div></td>
+      <td class="num-cell">${fmt(m.lines)}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar"><div class="mini-bar-fill" style="width:${bw}%;background:${barColor(m.lines)}"></div></div><span style="font-size:0.75rem;color:var(--muted)">${pct}%</span></div></td>
+      <td><span class="tier ${t.cls}">${t.label}</span></td>
+    </tr>`;
+  }).join('');
+}
+function filterCode(f, btn) {
+  codeFilter = f;
+  document.querySelectorAll('#tab-claude-code .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCodeTable();
+}
+
+let peopleTier = 'all', peopleQ = '';
+function renderPeopleTable() {
+  let rows = [...members];
+  if (peopleTier === 'high') rows = rows.filter(m => m.lines >= 5000);
+  else if (peopleTier === 'mid') rows = rows.filter(m => m.lines >= 500 && m.lines < 5000);
+  else if (peopleTier === 'low') rows = rows.filter(m => m.lines > 0 && m.lines < 500);
+  else if (peopleTier === 'none') rows = rows.filter(m => m.lines === 0);
+  if (peopleQ) rows = rows.filter(m => m.name.toLowerCase().includes(peopleQ) || m.email.toLowerCase().includes(peopleQ));
+  set('people-subtitle', `${DATA.monthLabel} MTD · ${rows.length} members shown`);
+  document.getElementById('peopleTableBody').innerHTML = rows.map((m,i) => {
+    const bw = maxLines > 0 ? (m.lines/maxLines*100) : 0;
+    const t  = getTier(m.lines);
+    const status = m.lines >= 5000 ? '🟢 Power user (Code)' : m.lines >= 500 ? '🟡 Regular (Code)' : m.lines > 0 ? '🟠 Light (Code)' : '🔴 No Code activity';
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td><div class="name-cell">${m.name}</div><div class="email-muted">${m.email}</div></td>
+      <td class="num-cell">${fmt(m.lines)}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar" style="width:120px"><div class="mini-bar-fill" style="width:${bw}%;background:${barColor(m.lines)}"></div></div></div></td>
+      <td><span class="tier ${t.cls}">${t.label}</span></td>
+      <td style="font-size:0.78rem;color:var(--muted)">${status}</td>
+    </tr>`;
+  }).join('');
+}
+function filterPeopleTier(f, btn) {
+  peopleTier = f;
+  document.querySelectorAll('#tab-people .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPeopleTable();
+}
+function filterPeopleSearch(v) { peopleQ = v.toLowerCase(); renderPeopleTable(); }
+
+function initFromData() {
+  const d = DATA;
+  const activeCnt   = members.filter(m => m.lines > 0).length;
+  const inactiveCnt = members.filter(m => m.lines === 0).length;
+  const zeroLiners  = members.filter(m => m.lines === 0);
+  const veryLow     = members.filter(m => m.lines > 0 && m.lines < 100);
+  const activePct   = Math.round(activeCnt / members.length * 100);
+
+  // Header
+  set('header-date', d.asOf);
+  set('header-month', `Claude Code · Claude.ai · Cowork · ${d.monthLabel}`);
+  set('overview-month-label', d.monthLabel);
+
+  // Overview KPIs
+  set('kpi-wau', d.wau);
+  set('kpi-utilization-badge', `${d.utilization}% seat utilization`);
+  set('kpi-overview-total-lines', fmt(d.totalLines));
+  set('kpi-overview-lines-month', d.monthLabel + ' · Claude Code');
+  set('kpi-accept-rate-badge', `${d.acceptRate}% accept rate`);
+  set('kpi-overview-cowork-sessions', d.coworkSessionsPerDay);
+  set('kpi-overview-cowork-user-sub', `${d.coworkUserPct}% of users active`);
+  set('kpi-overview-cowork-growth', `+${d.coworkUserGrowthPct}% user growth`);
+  set('kpi-overview-chats', d.chatsPerDay);
+  set('kpi-overview-chat-user-sub', `${d.chatUserPct}% users with 1+ chat`);
+  set('kpi-overview-projects', d.projectsCreated);
+  set('kpi-overview-projects-sub', `${d.projectUserPct}% users with 1+ project`);
+
+  // Donut legends
+  document.getElementById('code-donut-legend').innerHTML =
+    `<div class="legend-item"><div class="legend-dot" style="background:var(--accent2)"></div>Active ${activeCnt}</div><div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>Inactive ${inactiveCnt}</div>`;
+  document.getElementById('ai-donut-legend').innerHTML =
+    `<div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div>Chatting ${d.chatUserPct}%</div><div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>Not yet ${100-d.chatUserPct}%</div>`;
+  document.getElementById('cowork-donut-legend').innerHTML =
+    `<div class="legend-item"><div class="legend-dot" style="background:var(--accent4)"></div>Using ${d.coworkUserPct}%</div><div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>Not yet ${100-d.coworkUserPct}%</div>`;
+
+  // Claude Code tab
+  set('kpi-code-total-lines', fmt(d.totalLines));
+  set('kpi-code-month', d.monthLabel);
+  set('kpi-code-accept-rate', `${d.acceptRate}%`);
+  set('kpi-code-active-members', `${activeCnt} / ${members.length}`);
+  set('kpi-code-active-pct', `${activePct}% of licensed seats active`);
+  set('kpi-code-avg-lines', fmt(d.avgLinesActive));
+  set('code-table-title', `All ${members.length} Members — Lines This Month`);
+
+  // Claude.ai tab
+  set('kpi-ai-chats', d.chatsPerDay);
+  set('kpi-ai-chat-user-pct', `${d.chatUserPct}%`);
+  set('kpi-ai-projects', d.projectsCreated);
+  set('kpi-ai-projects-month', `MTD ${d.monthLabel}`);
+  set('kpi-ai-project-user-pct', `${d.projectUserPct}%`);
+  set('kpi-ai-artifacts', d.artifactsCreated);
+  set('kpi-ai-artifact-sub', `${d.artifactUserPct}% of users generating artifacts`);
+  set('insight-chat-pct', d.chatUserPct);
+  set('insight-project-pct', d.projectUserPct);
+  set('insight-artifact-pct', d.artifactUserPct);
+
+  // Cowork tab
+  set('kpi-cowork-sessions', d.coworkSessionsPerDay);
+  set('kpi-cowork-session-growth', `+${d.coworkSessionGrowthPct}% sessions growth`);
+  set('kpi-cowork-user-pct', `${d.coworkUserPct}%`);
+  set('kpi-cowork-user-growth', `+${d.coworkUserGrowthPct}% user growth`);
+  set('kpi-cowork-not-using', `${100-d.coworkUserPct}%`);
+  set('insight-cowork-user-pct', d.coworkUserPct);
+  set('insight-cowork-user-growth', d.coworkUserGrowthPct);
+  set('insight-cowork-not-using', 100-d.coworkUserPct);
+
+  // Attention tab
+  set('attention-date', d.asOf);
+  document.getElementById('attention-gap-list').innerHTML = `
+    <li>${zeroLiners.length} members have <strong style="color:#fff">zero Claude Code lines</strong> this month</li>
+    <li>${veryLow.length} members have <strong style="color:#ffa726">&lt;100 lines</strong> — barely engaging with Claude Code</li>
+    <li><strong style="color:#fff">${100-d.chatUserPct}% of org</strong> has not had a single Claude.ai chat this month</li>
+    <li><strong style="color:#fff">${100-d.projectUserPct}% of org</strong> has not created a Project — biggest untapped lever</li>
+    <li><strong style="color:#fff">${100-d.coworkUserPct}% of org</strong> hasn't tried Cowork yet</li>`;
+  document.getElementById('zero-liners-table').innerHTML = zeroLiners.map(m =>
+    `<tr><td class="name-cell">${m.name}</td><td class="email-muted">${m.email}</td><td><span class="tier tier-none">Onboard to Code</span></td></tr>`).join('');
+  document.getElementById('very-low-table').innerHTML = veryLow.map(m =>
+    `<tr><td class="name-cell">${m.name}</td><td class="num-cell">${m.lines}</td><td><span class="tier tier-low">Very Low</span></td></tr>`).join('');
+  set('action-cowork-body', `${100-d.coworkUserPct}% haven't tried it. A 30-min live demo with a real use case could push adoption above 30%.`);
+  set('action-inactive-title', `1:1 onboarding for ${zeroLiners.length + veryLow.length} inactive/low members`);
+  set('action-inactive-body', `${zeroLiners.length} at zero + ${veryLow.length} very low. Understand blockers, assign a buddy from the top-10 list.`);
+}
+
+function initCharts() {
+  const d = DATA;
+  const activeCnt   = members.filter(m => m.lines > 0).length;
+  const inactiveCnt = members.filter(m => m.lines === 0).length;
+  const codeActivePct = Math.round(activeCnt / members.length * 100);
+
+  new Chart(document.getElementById('adoptionChart'), {
+    type:'bar', data:{
+      labels:['Code Active','Chat Active','Projects','Cowork','Artifacts'],
+      datasets:[{data:[codeActivePct,d.chatUserPct,d.projectUserPct,d.coworkUserPct,d.artifactUserPct],borderRadius:6,
+        backgroundColor:['rgba(0,212,170,0.75)','rgba(108,99,255,0.75)','rgba(108,99,255,0.5)','rgba(255,167,38,0.75)','rgba(255,107,107,0.5)']}]
+    },
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'%'}}},
+      scales:{x:{max:100,ticks:{color:'#8b92b8',callback:v=>v+'%'},grid:{color:'rgba(46,50,80,0.5)'}},y:{ticks:{color:'#8b92b8',font:{size:11}},grid:{display:false}}}}
+  });
+
+  new Chart(document.getElementById('codeTopChart'), {
+    type:'bar', data:{
+      labels:members.slice(0,10).map(m=>m.name.split(' ')[0]),
+      datasets:[{data:members.slice(0,10).map(m=>m.lines),borderRadius:5,
+        backgroundColor:members.slice(0,10).map((_,i)=>i<3?'rgba(0,212,170,0.85)':'rgba(108,99,255,0.65)')}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#8b92b8',font:{size:10}},grid:{display:false}},y:{ticks:{color:'#8b92b8',callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v},grid:{color:'rgba(46,50,80,0.5)'}}}}
+  });
+
+  new Chart(document.getElementById('codeDonut'),{type:'doughnut',
+    data:{datasets:[{data:[activeCnt,inactiveCnt],backgroundColor:['rgba(0,212,170,0.85)','rgba(46,50,80,0.8)'],borderWidth:0,hoverOffset:4}]},
+    options:{responsive:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}}}});
+  new Chart(document.getElementById('aiDonut'),{type:'doughnut',
+    data:{datasets:[{data:[d.chatUserPct,100-d.chatUserPct],backgroundColor:['rgba(108,99,255,0.85)','rgba(46,50,80,0.8)'],borderWidth:0,hoverOffset:4}]},
+    options:{responsive:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}}}});
+  new Chart(document.getElementById('coworkDonut'),{type:'doughnut',
+    data:{datasets:[{data:[d.coworkUserPct,100-d.coworkUserPct],backgroundColor:['rgba(255,167,38,0.85)','rgba(46,50,80,0.8)'],borderWidth:0,hoverOffset:4}]},
+    options:{responsive:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}}}});
+
+  new Chart(document.getElementById('allCodeChart'), {
+    type:'bar', data:{
+      labels:members.map(m=>{const p=m.name.split(' ');return p[0]+(p[1]?' '+p[1][0]:'');}),
+      datasets:[{data:members.map(m=>m.lines),borderRadius:4,backgroundColor:members.map(m=>barColor(m.lines)+'cc')}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#8b92b8',font:{size:9},maxRotation:45},grid:{display:false}},y:{ticks:{color:'#8b92b8',callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v},grid:{color:'rgba(46,50,80,0.5)'}}}}
+  });
+
+  new Chart(document.getElementById('funnelChart'), {
+    type:'bar', data:{
+      labels:['All Members','1+ Chat','1+ Project','1+ Artifact'],
+      datasets:[{data:[100,d.chatUserPct,d.projectUserPct,d.artifactUserPct],borderRadius:6,
+        backgroundColor:['rgba(46,50,80,0.8)','rgba(108,99,255,0.8)','rgba(108,99,255,0.55)','rgba(108,99,255,0.3)']}]
+    },
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+'%'}}},
+      scales:{x:{max:110,ticks:{color:'#8b92b8',callback:v=>v+'%'},grid:{color:'rgba(46,50,80,0.5)'}},y:{ticks:{color:'#8b92b8'},grid:{display:false}}}}
+  });
+
+  new Chart(document.getElementById('featureRadar'), {
+    type:'radar', data:{
+      labels:['Chat (daily)','Projects','Artifacts','Claude Code','Cowork'],
+      datasets:[
+        {label:'Current %',data:[d.chatUserPct,d.projectUserPct,d.artifactUserPct,codeActivePct,d.coworkUserPct],borderColor:'rgba(108,99,255,0.9)',backgroundColor:'rgba(108,99,255,0.15)',pointBackgroundColor:'#6c63ff',borderWidth:2},
+        {label:'Target %',data:[80,40,20,90,40],borderColor:'rgba(0,212,170,0.5)',backgroundColor:'rgba(0,212,170,0.06)',pointBackgroundColor:'#00d4aa',borderWidth:1.5,borderDash:[4,4]}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8b92b8',font:{size:11}}}},
+      scales:{r:{ticks:{color:'#8b92b8',backdropColor:'transparent',callback:v=>v+'%'},grid:{color:'rgba(46,50,80,0.6)'},pointLabels:{color:'#8b92b8',font:{size:10}}}}}
+  });
+
+  new Chart(document.getElementById('coworkTrendChart'), {
+    type:'line', data:{
+      labels:['Apr 1','Apr 7','Apr 14','Apr 21','Apr 28','May 5','Today'],
+      datasets:[
+        {label:'Sessions/Day',data:[28,32,35,38,40,43,d.coworkSessionsPerDay],borderColor:'#ffa726',backgroundColor:'rgba(255,167,38,0.1)',tension:0.4,fill:true,pointRadius:4,yAxisID:'y'},
+        {label:'% Users Active',data:[6,7,8,9,11,12,d.coworkUserPct],borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,0.07)',tension:0.4,fill:true,pointRadius:4,yAxisID:'y1'}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8b92b8'}}},
+      scales:{x:{ticks:{color:'#8b92b8'},grid:{color:'rgba(46,50,80,0.5)'}},
+        y:{ticks:{color:'#8b92b8'},grid:{color:'rgba(46,50,80,0.5)'},title:{display:true,text:'Sessions/Day',color:'#8b92b8'}},
+        y1:{position:'right',ticks:{color:'#8b92b8',callback:v=>v+'%'},grid:{display:false},title:{display:true,text:'% Users Active',color:'#8b92b8'}}}}
+  });
+
+  new Chart(document.getElementById('gapChart'), {
+    type:'bar', data:{
+      labels:['Chat','Projects','Artifacts','Cowork'],
+      datasets:[
+        {label:'Current',data:[d.chatUserPct,d.projectUserPct,d.artifactUserPct,d.coworkUserPct],backgroundColor:'rgba(108,99,255,0.7)',borderRadius:4},
+        {label:'Target', data:[80,40,20,40],backgroundColor:'rgba(0,212,170,0.2)',borderRadius:4}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8b92b8',font:{size:11}}}},
+      scales:{x:{ticks:{color:'#8b92b8'},grid:{display:false}},y:{max:100,ticks:{color:'#8b92b8',callback:v=>v+'%'},grid:{color:'rgba(46,50,80,0.5)'}}}}
+  });
+}
+
+
+// ==================== DAILY ADOPTION ====================
+const ADOPTION_DAYS=[{date:"2026-05-04",c:{"abhignya.pinnoju@sarasanalytics.com":14,"abhishek.baruah@sarasanalytics.com":12,"aerica.sethi@sarasanalytics.com":9,"aman.kumar@sarasanalytics.com":10,"anjuman.p@sarasanalytics.com":3,"anoop.joshi@sarasanalytics.com":5,"ashutosh.p@sarasanalytics.com":10,"ashyam.zubair@sarasanalytics.com":106,"bharath.pagadakula@sarasanalytics.com":6,"bhavika.rathore@sarasanalytics.com":44,"divij.gawri@sarasanalytics.com":7,"hemanta.bhoi@sarasanalytics.com":57,"jatin.sahu@sarasanalytics.com":4,"joe.p@sarasanalytics.com":101,"joseph.ubbarapu@sarasanalytics.com":43,"kakul.verma@sarasanalytics.com":237,"katharin.benson@sarasanalytics.com":33,"krishna.bhargavi@sarasanalytics.com":62,"manasa.karumuru@sarasanalytics.com":183,"mani.kumar@sarasanalytics.com":4,"mushtaq.mohd@sarasanalytics.com":58,"omprakash@sarasanalytics.com":4,"purna.subhash@sarasanalytics.com":38,"rudrasen.gouda@sarasanalytics.com":1,"sachin.kapgate@sarasanalytics.com":1,"sahil.chhimpa@sarasanalytics.com":23,"saiteja.katrapati@sarasanalytics.com":14,"saivarun.pathi@sarasanalytics.com":31,"saras@livemomentous.com":26,"shoaib.aleemuddin@sarasanalytics.com":12,"sibgat.ullah@sarasanalytics.com":12,"sneha.biju@sarasanalytics.com":16,"soumithri.c@sarasanalytics.com":47,"srinithi.reddy@sarasanalytics.com":48,"suraj.maurya@sarasanalytics.com":20,"swayam.satapathy@sarasanalytics.com":255,"vaibhav.singh@sarasanalytics.com":65,"zenul.abedeen@sarasanalytics.com":1},w:{}},{date:"2026-05-05",c:{"abhignya.pinnoju@sarasanalytics.com":20,"abhishek.baruah@sarasanalytics.com":44,"aditya.kumar@sarasanalytics.com":5,"aerica.sethi@sarasanalytics.com":18,"aman.kumar@sarasanalytics.com":21,"amith@sarasanalytics.com":4,"anoop.joshi@sarasanalytics.com":8,"ashutosh.p@sarasanalytics.com":20,"ashyam.zubair@sarasanalytics.com":6,"bharath.pagadakula@sarasanalytics.com":26,"bhavika.rathore@sarasanalytics.com":11,"divij.gawri@sarasanalytics.com":4,"hemanta.bhoi@sarasanalytics.com":11,"jatin.sahu@sarasanalytics.com":5,"joe.p@sarasanalytics.com":49,"kakul.verma@sarasanalytics.com":95,"karthik.b@sarasanalytics.com":6,"krishna.bhargavi@sarasanalytics.com":6,"manas.pradhan@sarasanalytics.com":1,"manasa.karumuru@sarasanalytics.com":10,"mani.kumar@sarasanalytics.com":19,"manoj.p@sarasanalytics.com":11,"mushtaq.mohd@sarasanalytics.com":20,"omprakash@sarasanalytics.com":8,"purna.subhash@sarasanalytics.com":18,"sachin.kapgate@sarasanalytics.com":3,"sahil.chhimpa@sarasanalytics.com":12,"saiteja.katrapati@sarasanalytics.com":12,"saivarun.pathi@sarasanalytics.com":60,"saras@livemomentous.com":11,"shoaib.aleemuddin@sarasanalytics.com":15,"sibgat.ullah@sarasanalytics.com":21,"sneha.biju@sarasanalytics.com":42,"soumithri.c@sarasanalytics.com":21,"srinithi.reddy@sarasanalytics.com":18,"suraj.maurya@sarasanalytics.com":8,"swayam.satapathy@sarasanalytics.com":121,"vaibhav.singh@sarasanalytics.com":6,"vishnu.priya@sarasanalytics.com":2,"zenul.abedeen@sarasanalytics.com":10},w:{}},{date:"2026-05-06",c:{"abhignya.pinnoju@sarasanalytics.com":30,"abhishek.baruah@sarasanalytics.com":4,"aditya.kumar@sarasanalytics.com":10,"aerica.sethi@sarasanalytics.com":17,"anoop.joshi@sarasanalytics.com":5,"ashutosh.p@sarasanalytics.com":23,"bharath.pagadakula@sarasanalytics.com":4,"divij.gawri@sarasanalytics.com":5,"hemanta.bhoi@sarasanalytics.com":5,"jatin.sahu@sarasanalytics.com":32,"joe.p@sarasanalytics.com":53,"kakul.verma@sarasanalytics.com":46,"kamal.bura@sarasanalytics.com":21,"manas.pradhan@sarasanalytics.com":8,"manasa.karumuru@sarasanalytics.com":17,"mani.kumar@sarasanalytics.com":12,"manoj.p@sarasanalytics.com":49,"mushtaq.mohd@sarasanalytics.com":68,"omprakash@sarasanalytics.com":1,"purna.subhash@sarasanalytics.com":11,"saad@sarasanalytics.com":9,"sachin.kapgate@sarasanalytics.com":22,"sahil.chhimpa@sarasanalytics.com":18,"saiteja.katrapati@sarasanalytics.com":19,"saivarun.pathi@sarasanalytics.com":23,"saras@livemomentous.com":13,"shoaib.aleemuddin@sarasanalytics.com":4,"sibgat.ullah@sarasanalytics.com":39,"sneha.biju@sarasanalytics.com":8,"soumithri.c@sarasanalytics.com":13,"srinithi.reddy@sarasanalytics.com":34,"swayam.satapathy@sarasanalytics.com":44,"vaibhav.singh@sarasanalytics.com":4,"vishnu.priya@sarasanalytics.com":2,"zenul.abedeen@sarasanalytics.com":6},w:{}},{date:"2026-05-07",c:{"abhignya.pinnoju@sarasanalytics.com":46,"abhishek.baruah@sarasanalytics.com":14,"aditya.kumar@sarasanalytics.com":11,"aerica.sethi@sarasanalytics.com":13,"aman.kumar@sarasanalytics.com":6,"ashutosh.p@sarasanalytics.com":10,"bharath.pagadakula@sarasanalytics.com":77,"bhavika.rathore@sarasanalytics.com":42,"divij.gawri@sarasanalytics.com":5,"eswar.penta@sarasanalytics.com":12,"hemanta.bhoi@sarasanalytics.com":8,"iqjot.singh@sarasanalytics.com":2,"jatin.sahu@sarasanalytics.com":5,"joe.p@sarasanalytics.com":37,"kakul.verma@sarasanalytics.com":93,"kamal.bura@sarasanalytics.com":5,"karthik.b@sarasanalytics.com":8,"krishna.bhargavi@sarasanalytics.com":16,"manas.pradhan@sarasanalytics.com":2,"manasa.karumuru@sarasanalytics.com":7,"manoj.p@sarasanalytics.com":9,"mushtaq.mohd@sarasanalytics.com":4,"omprakash@sarasanalytics.com":11,"purna.subhash@sarasanalytics.com":2,"saad@sarasanalytics.com":1,"sachin.kapgate@sarasanalytics.com":11,"sahil.chhimpa@sarasanalytics.com":31,"saiteja.katrapati@sarasanalytics.com":24,"saivarun.pathi@sarasanalytics.com":35,"shoaib.aleemuddin@sarasanalytics.com":11,"sibgat.ullah@sarasanalytics.com":6,"sneha.biju@sarasanalytics.com":35,"soumithri.c@sarasanalytics.com":17,"srinithi.reddy@sarasanalytics.com":43,"susmitha.peeka@sarasanalytics.com":11,"swayam.satapathy@sarasanalytics.com":85,"vaibhav.singh@sarasanalytics.com":3,"vipul.rathore@sarasanalytics.com":4,"zenul.abedeen@sarasanalytics.com":12},w:{}},{date:"2026-05-08",c:{"abhignya.pinnoju@sarasanalytics.com":29,"aditya.kumar@sarasanalytics.com":5,"aerica.sethi@sarasanalytics.com":39,"aman.kumar@sarasanalytics.com":21,"anoop.joshi@sarasanalytics.com":14,"ashutosh.p@sarasanalytics.com":12,"bharath.pagadakula@sarasanalytics.com":43,"bhavika.rathore@sarasanalytics.com":6,"divij.gawri@sarasanalytics.com":1,"eswar.penta@sarasanalytics.com":14,"hemanta.bhoi@sarasanalytics.com":11,"iqjot.singh@sarasanalytics.com":4,"jatin.sahu@sarasanalytics.com":13,"kakul.verma@sarasanalytics.com":101,"kamal.bura@sarasanalytics.com":18,"karthik.b@sarasanalytics.com":15,"krishna.bhargavi@sarasanalytics.com":3,"manasa.karumuru@sarasanalytics.com":15,"mani.kumar@sarasanalytics.com":18,"manoj.p@sarasanalytics.com":23,"nivid.k@sarasanalytics.com":3,"omprakash@sarasanalytics.com":1,"purna.subhash@sarasanalytics.com":26,"sachin.kapgate@sarasanalytics.com":20,"sahil.chhimpa@sarasanalytics.com":24,"saiteja.katrapati@sarasanalytics.com":19,"saivarun.pathi@sarasanalytics.com":18,"shoaib.aleemuddin@sarasanalytics.com":15,"sneha.biju@sarasanalytics.com":16,"soumithri.c@sarasanalytics.com":20,"srinithi.reddy@sarasanalytics.com":11,"susmitha.peeka@sarasanalytics.com":4,"swayam.satapathy@sarasanalytics.com":42,"vaibhav.singh@sarasanalytics.com":6,"vipul.rathore@sarasanalytics.com":1,"vishnu.priya@sarasanalytics.com":5,"zenul.abedeen@sarasanalytics.com":23},w:{}},{date:"2026-05-09",c:{"hemanta.bhoi@sarasanalytics.com":1,"kakul.verma@sarasanalytics.com":28,"sahil.chhimpa@sarasanalytics.com":20},w:{}},{date:"2026-05-10",c:{"jatin.sahu@sarasanalytics.com":7,"kakul.verma@sarasanalytics.com":11,"mushtaq.mohd@sarasanalytics.com":5,"sahil.chhimpa@sarasanalytics.com":79,"saivarun.pathi@sarasanalytics.com":15,"shivansh.gupta@sarasanalytics.com":1},w:{}},{date:"2026-05-11",c:{"abhignya.pinnoju@sarasanalytics.com":42,"abhishek.baruah@sarasanalytics.com":5,"aditya.kumar@sarasanalytics.com":5,"aerica.sethi@sarasanalytics.com":28,"aman.kumar@sarasanalytics.com":2,"anjuman.p@sarasanalytics.com":1,"anoop.joshi@sarasanalytics.com":33,"ashutosh.p@sarasanalytics.com":19,"bharath.pagadakula@sarasanalytics.com":63,"bhavika.rathore@sarasanalytics.com":4,"divij.gawri@sarasanalytics.com":3,"eswar.penta@sarasanalytics.com":19,"hemanta.bhoi@sarasanalytics.com":23,"jatin.sahu@sarasanalytics.com":31,"joe.p@sarasanalytics.com":3,"joseph.ubbarapu@sarasanalytics.com":16,"kakul.verma@sarasanalytics.com":70,"karthik.b@sarasanalytics.com":13,"krishna.bhargavi@sarasanalytics.com":10,"manas.pradhan@sarasanalytics.com":7,"manasa.karumuru@sarasanalytics.com":1,"mani.kumar@sarasanalytics.com":3,"manoj.p@sarasanalytics.com":27,"nivid.k@sarasanalytics.com":15,"omprakash@sarasanalytics.com":1,"purna.subhash@sarasanalytics.com":3,"rudrasen.gouda@sarasanalytics.com":3,"saad@sarasanalytics.com":1,"sachin.kapgate@sarasanalytics.com":3,"sahil.chhimpa@sarasanalytics.com":5,"saiteja.katrapati@sarasanalytics.com":18,"saivarun.pathi@sarasanalytics.com":6,"sibgat.ullah@sarasanalytics.com":3,"sneha.biju@sarasanalytics.com":16,"soumithri.c@sarasanalytics.com":25,"srinithi.reddy@sarasanalytics.com":85,"suraj.maurya@sarasanalytics.com":27,"susmitha.peeka@sarasanalytics.com":7,"swayam.satapathy@sarasanalytics.com":117,"vaibhav.singh@sarasanalytics.com":13,"vishnu.priya@sarasanalytics.com":14,"zenul.abedeen@sarasanalytics.com":12},w:{}},{date:"2026-05-12",c:{"abhignya.pinnoju@sarasanalytics.com":83,"aditya.kumar@sarasanalytics.com":1,"aerica.sethi@sarasanalytics.com":12,"amith@sarasanalytics.com":6,"anjuman.p@sarasanalytics.com":1,"anoop.joshi@sarasanalytics.com":20,"ashutosh.p@sarasanalytics.com":11,"bharath.pagadakula@sarasanalytics.com":9,"bhavika.rathore@sarasanalytics.com":11,"divij.gawri@sarasanalytics.com":5,"eswar.penta@sarasanalytics.com":16,"hemanta.bhoi@sarasanalytics.com":7,"jatin.sahu@sarasanalytics.com":17,"joe.p@sarasanalytics.com":17,"joseph.ubbarapu@sarasanalytics.com":4,"kakul.verma@sarasanalytics.com":96,"karthik.b@sarasanalytics.com":9,"krishna.bhargavi@sarasanalytics.com":7,"manasa.karumuru@sarasanalytics.com":29,"mani.kumar@sarasanalytics.com":5,"manoj.p@sarasanalytics.com":45,"nivid.k@sarasanalytics.com":14,"omprakash@sarasanalytics.com":1,"purna.subhash@sarasanalytics.com":22,"sachin.kapgate@sarasanalytics.com":3,"sahil.chhimpa@sarasanalytics.com":19,"saiteja.katrapati@sarasanalytics.com":5,"saivarun.pathi@sarasanalytics.com":29,"shoaib.aleemuddin@sarasanalytics.com":1,"sibgat.ullah@sarasanalytics.com":6,"sneha.biju@sarasanalytics.com":16,"soumithri.c@sarasanalytics.com":6,"srinithi.reddy@sarasanalytics.com":30,"suraj.maurya@sarasanalytics.com":32,"swayam.satapathy@sarasanalytics.com":48,"vaibhav.singh@sarasanalytics.com":5,"vishnu.priya@sarasanalytics.com":11,"zenul.abedeen@sarasanalytics.com":10},w:{"ram.gupta@sarasanalytics.com":1}},{date:"2026-05-13",c:{"abhignya.pinnoju@sarasanalytics.com":53,"aditya.kumar@sarasanalytics.com":7,"aerica.sethi@sarasanalytics.com":21,"amith@sarasanalytics.com":4,"anoop.joshi@sarasanalytics.com":14,"ashutosh.p@sarasanalytics.com":6,"ashyam.zubair@sarasanalytics.com":1,"bharath.pagadakula@sarasanalytics.com":13,"bhavika.rathore@sarasanalytics.com":10,"divij.gawri@sarasanalytics.com":7,"eswar.penta@sarasanalytics.com":13,"hemanta.bhoi@sarasanalytics.com":2,"iqjot.singh@sarasanalytics.com":15,"jatin.sahu@sarasanalytics.com":6,"joe.p@sarasanalytics.com":19,"kakul.verma@sarasanalytics.com":115,"karthik.b@sarasanalytics.com":5,"krishna.bhargavi@sarasanalytics.com":12,"manasa.karumuru@sarasanalytics.com":49,"mani.kumar@sarasanalytics.com":10,"manoj.p@sarasanalytics.com":1,"purna.subhash@sarasanalytics.com":47,"rudrasen.gouda@sarasanalytics.com":3,"saad@sarasanalytics.com":36,"sachin.kapgate@sarasanalytics.com":2,"sahil.chhimpa@sarasanalytics.com":87,"saivarun.pathi@sarasanalytics.com":9,"shoaib.aleemuddin@sarasanalytics.com":22,"sibgat.ullah@sarasanalytics.com":3,"soumithri.c@sarasanalytics.com":4,"srinithi.reddy@sarasanalytics.com":20,"suraj.maurya@sarasanalytics.com":38,"swayam.satapathy@sarasanalytics.com":46,"vaibhav.singh@sarasanalytics.com":2,"vishnu.priya@sarasanalytics.com":7,"zenul.abedeen@sarasanalytics.com":11},w:{"nithin.dornala@sarasanalytics.com":1,"pratishtha.yadav@sarasanalytics.com":1}},{date:"2026-05-14",c:{},w:{"jigar.trivedi@sarasanalytics.com":1,"sairaj.kujala@sarasanalytics.com":1}},{date:"2026-05-15",c:{},w:{"nithin.dornala@sarasanalytics.com":1,"ram.gupta@sarasanalytics.com":1,"pratishtha.yadav@sarasanalytics.com":1}}];
+const ADOPTION_CC_MTD={"sparsh.gupta@sarasanalytics.com":40182,"bheem@sarasanalytics.com":36796,"rakesh.varma@sarasanalytics.com":13402,"saivarun.pathi@sarasanalytics.com":12841,"rajavardhan@sarasanalytics.com":10826,"venkateshwaran.s@sarasanalytics.com":9575,"bhawna.kumari@sarasanalytics.com":9548,"saiteja.katrapati@sarasanalytics.com":9473,"harsh.sharma@sarasanalytics.com":7093,"moiz.essaji@sarasanalytics.com":6097,"anusha@sarasanalytics.com":5563,"rohit.pandey@sarasanalytics.com":4554,"katharin.benson@sarasanalytics.com":3178,"naveena.kolli@sarasanalytics.com":3099,"yashveer.gaur@sarasanalytics.com":2437,"satyam.deshwal@sarasanalytics.com":2253,"vignesh.bodiga@sarasanalytics.com":2218,"waheedul.akbar@sarasanalytics.com":2183,"abhignya.pinnoju@sarasanalytics.com":1505,"kritik.kumar@sarasanalytics.com":1174,"ritvik.vemula@sarasanalytics.com":1063,"sreeram.ravuri@sarasanalytics.com":893,"mohammed.muneeb@sarasanalytics.com":866,"joseph.ubbarapu@sarasanalytics.com":837,"nithin.dornala@sarasanalytics.com":372,"jigar.trivedi@sarasanalytics.com":138,"anudeep.kolla@sarasanalytics.com":138,"reeshab.nayak@sarasanalytics.com":0,"ajay@sarasanalytics.com":0,"sarath.buchi@sarasanalytics.com":0,"kranthi.kumar@sarasanalytics.com":0,"mahadas.srianshu@sarasanalytics.com":0,"ram.gupta@sarasanalytics.com":0,"arijit.bhattacharyya@sarasanalytics.com":0,"ripujit@sarasanalytics.com":0,"kaivalya@sarasanalytics.com":0,"rudrasen.gouda@sarasanalytics.com":0};
+const WINDSURF_USERS={
+  "nithin.dornala@sarasanalytics.com":"2026-05-15",
+  "ram.gupta@sarasanalytics.com":"2026-05-15",
+  "pratishtha.yadav@sarasanalytics.com":"2026-05-15",
+  "sairaj.kujala@sarasanalytics.com":"2026-05-14",
+  "jigar.trivedi@sarasanalytics.com":"2026-05-14",
+  "venkateshwaran.s@sarasanalytics.com":"2026-04-21",
+  "anudeep.kolla@sarasanalytics.com":null
+};
+let adoptView='cursor';
+function setAdoptView(v,btn){
+  adoptView=v;
+  document.querySelectorAll('#tab-adoption .filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAdoptHeatmap();
+}
+function cellClr(cnt,isWs){
+  if(isWs)return'background:#00d4aa;opacity:0.75';
+  if(!cnt)return'background:#1a1d27';
+  if(cnt>=50)return'background:#6c63ff';
+  if(cnt>=20)return'background:rgba(108,99,255,0.85)';
+  if(cnt>=10)return'background:rgba(108,99,255,0.6)';
+  if(cnt>=5) return'background:rgba(108,99,255,0.4)';
+  return'background:rgba(108,99,255,0.2)';
+}
+function nameFromEmail(e){return e.split('@')[0].split('.').map(p=>p[0].toUpperCase()+p.slice(1)).join(' ');}
+function initAdoption(){
+  const mayDays=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01');
+  const today='2026-05-15';
+  let totalEv=0; const uTotals={},uDays={};
+  mayDays.forEach(day=>{
+    Object.entries(day.c).forEach(([em,cnt])=>{
+      uTotals[em]=(uTotals[em]||0)+cnt;
+      uDays[em]=(uDays[em]||0)+1;
+      totalEv+=cnt;
+    });
+  });
+  // Find most recent day with cursor data
+  const latestCursorDay=[...mayDays].sort((a,b)=>b.date.localeCompare(a.date)).find(d=>Object.keys(d.c).length>0);
+  const cursorLatest=latestCursorDay?Object.keys(latestCursorDay.c).length:0;
+  const cursorLatestDate=latestCursorDay?'active on '+latestCursorDay.date.slice(5):'no data';
+  const wsToday=Object.values(WINDSURF_USERS).filter(d=>d===today).length;
+  const activeU=Object.keys(uTotals).length;
+  const avgD=activeU>0?(Object.values(uDays).reduce((a,b)=>a+b,0)/activeU).toFixed(1):0;
+  // Claude.ai active users: chatUserPct% of estimated total seats
+  const totalSeats=Math.round(DATA.wau/DATA.utilization*100);
+  const claudeAiUsers=Math.round(DATA.chatUserPct/100*totalSeats);
+  set('adopt-cursor-latest',cursorLatest||'–');
+  set('adopt-cursor-latest-sub',cursorLatestDate);
+  set('adopt-ws-today',wsToday||'–');
+  set('adopt-cursor-mtd',fmt(totalEv));
+  set('adopt-cursor-users',activeU+' unique users');
+  set('adopt-avg-days',avgD);
+  set('adopt-claudeai-users',claudeAiUsers);
+  set('adopt-claudeai-sub',DATA.chatUserPct+'% of org · '+DATA.chatsPerDay+' chats/day');
+  renderAdoptHeatmap();
+  renderAdoptTable(uTotals,uDays);
+}
+function renderAdoptHeatmap(){
+  const days=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01').sort((a,b)=>a.date.localeCompare(b.date));
+  const dates=days.map(d=>d.date);
+  const usersSet=new Set();
+  if(adoptView==='windsurf'){
+    Object.keys(WINDSURF_USERS).forEach(e=>usersSet.add(e));
+  } else {
+    days.forEach(day=>Object.keys(day.c).forEach(e=>usersSet.add(e)));
+  }
+  const users=[...usersSet].sort((a,b)=>{
+    const sa=days.reduce((s,d)=>s+(d.c[a]||0),0);
+    const sb=days.reduce((s,d)=>s+(d.c[b]||0),0);
+    return sb-sa;
+  });
+  let h=`<table style="border-collapse:separate;border-spacing:2px;font-size:0.72rem;min-width:max-content">`;
+  h+=`<tr><th style="padding:3px 10px 3px 4px;color:var(--muted);text-align:left;font-weight:400;min-width:130px">User</th>`;
+  dates.forEach(d=>{const day=d.slice(8);h+=`<th style="padding:2px 0;color:var(--muted);font-weight:400;text-align:center;width:18px">${day}</th>`;});
+  h+=`<th style="padding:3px 4px 3px 8px;color:var(--muted);font-weight:400;text-align:right">Total</th></tr>`;
+  users.forEach(email=>{
+    const label=nameFromEmail(email);
+    const total=days.reduce((s,d)=>s+(d.c[email]||0),0);
+    const wsLast=WINDSURF_USERS[email]||null;
+    h+=`<tr><td style="padding:2px 10px 2px 4px;color:var(--text);white-space:nowrap">${label}</td>`;
+    dates.forEach(d=>{
+      const day=days.find(x=>x.date===d);
+      if(adoptView==='windsurf'){
+        const active=wsLast===d?1:0;
+        h+=`<td style="${cellClr(0,active)};width:18px;height:18px;border-radius:3px;" title="${email}·${d}·${active?'active':'–'}"></td>`;
+      } else {
+        const cnt=day?(day.c[email]||0):0;
+        h+=`<td style="${cellClr(cnt,false)};width:18px;height:18px;border-radius:3px;" title="${email}·${d}·${cnt} events"></td>`;
+      }
+    });
+    h+=`<td style="padding:2px 4px 2px 8px;text-align:right;color:${total>0?'#fff':'var(--muted)'};font-weight:${total>0?'700':'400'}">${total||'–'}</td></tr>`;
+  });
+  h+=`</table>`;
+  document.getElementById('adopt-heatmap').innerHTML=h;
+  const leg=document.getElementById('adopt-legend');
+  if(adoptView==='windsurf'){
+    leg.innerHTML=`<div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#1a1d27"></div>No data</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#00d4aa;opacity:0.75"></div>Active (last-known date)</div><span style="color:var(--accent3)">⚠ Windsurf shows last-active date per feature only</span>`;
+  } else {
+    leg.innerHTML=`<div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#1a1d27"></div>0</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.2)"></div>1–4</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.4)"></div>5–9</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.6)"></div>10–19</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.85)"></div>20–49</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#6c63ff"></div>50+</div><span style="color:var(--muted)">Cursor AI requests/day</span>`;
+  }
+}
+function renderAdoptTable(uTotals,uDays){
+  const rows=Object.entries(uTotals).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('adopt-user-table').innerHTML=rows.map(([email,total],i)=>{
+    const days=uDays[email]||0;
+    const avg=days>0?(total/days).toFixed(0):0;
+    const ccLines=ADOPTION_CC_MTD[email]||0;
+    const wsLast=WINDSURF_USERS[email]||'–';
+    return `<tr><td class="rank">${i+1}</td><td><div class="name-cell">${nameFromEmail(email)}</div><div class="email-muted">${email}</div></td><td class="num-cell">${fmt(total)}</td><td class="num-cell">${days}</td><td class="num-cell">${avg}</td><td class="num-cell">${fmt(ccLines)}</td><td style="font-size:0.75rem;color:var(--muted)">${wsLast||'–'}</td></tr>`;
+  }).join('');
+}
+
+initFromData();
+initAdoption();
+initCharts();
+renderCodeTable();
+renderPeopleTable();
+</script>
+</body>
+</html>
+
