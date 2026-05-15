@@ -68,6 +68,8 @@
   .filter-btn.active, .filter-btn:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
   .search-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 7px 14px; color: var(--text); font-size: 0.83rem; width: 260px; outline: none; }
   .search-input:focus { border-color: var(--accent); }
+  .dept-select { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 5px 12px; color: var(--text); font-size: 0.78rem; cursor: pointer; outline: none; }
+  .dept-select:focus, .dept-select:hover { border-color: var(--accent); }
   .legend { display: flex; gap: 16px; flex-wrap: wrap; }
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--muted); }
   .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
@@ -199,16 +201,21 @@
   <div class="card-full">
     <div class="section-header">
       <div><div class="section-title" id="code-table-title"></div><div class="section-sub">Full roster · sorted by contribution · Claude Code CLI only</div></div>
-      <div class="filter-bar">
-        <button class="filter-btn active" onclick="filterCode('all',this)">All</button>
-        <button class="filter-btn" onclick="filterCode('high',this)">Power (5k+)</button>
-        <button class="filter-btn" onclick="filterCode('mid',this)">Regular (500–5k)</button>
-        <button class="filter-btn" onclick="filterCode('low',this)">Light (&lt;500)</button>
-        <button class="filter-btn" onclick="filterCode('zero',this)">Inactive</button>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="filter-bar">
+          <button class="filter-btn active" onclick="filterCode('all',this)">All</button>
+          <button class="filter-btn" onclick="filterCode('high',this)">Power (5k+)</button>
+          <button class="filter-btn" onclick="filterCode('mid',this)">Regular (500–5k)</button>
+          <button class="filter-btn" onclick="filterCode('low',this)">Light (&lt;500)</button>
+          <button class="filter-btn" onclick="filterCode('zero',this)">Inactive</button>
+        </div>
+        <select class="dept-select" id="codeDeptSelect" onchange="filterCodeDept(this.value)">
+          <option value="all">All Depts</option>
+        </select>
       </div>
     </div>
     <table class="data-table">
-      <thead><tr><th>#</th><th>Member</th><th style="text-align:right">Lines MTD</th><th>Share of Total</th><th>Contribution</th><th>Tier</th></tr></thead>
+      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Lines MTD</th><th>Share of Total</th><th>Contribution</th><th>Tier</th></tr></thead>
       <tbody id="codeTableBody"></tbody>
     </table>
   </div>
@@ -304,13 +311,16 @@
 <div class="page" id="tab-people">
   <div style="display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap">
     <input class="search-input" id="peopleSearch" placeholder="Search name or email..." oninput="filterPeopleSearch(this.value)">
-    <div class="filter-bar">
+    <div class="filter-bar" id="people-tier-filter">
       <button class="filter-btn active" onclick="filterPeopleTier('all',this)">All</button>
       <button class="filter-btn" onclick="filterPeopleTier('high',this)">Power Users</button>
       <button class="filter-btn" onclick="filterPeopleTier('mid',this)">Regular</button>
       <button class="filter-btn" onclick="filterPeopleTier('low',this)">Light</button>
       <button class="filter-btn" onclick="filterPeopleTier('none',this)">Inactive</button>
     </div>
+    <select class="dept-select" id="peopleDeptSelect" onchange="filterPeopleDept(this.value)">
+      <option value="all">All Depts</option>
+    </select>
   </div>
   <div class="card-full">
     <div class="section-header">
@@ -320,7 +330,7 @@
       </div>
     </div>
     <table class="data-table">
-      <thead><tr><th>#</th><th>Member</th><th style="text-align:right">Lines MTD</th><th>Contribution</th><th>Tier</th><th>Status</th></tr></thead>
+      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Lines MTD</th><th>Contribution</th><th>Tier</th><th>Status</th></tr></thead>
       <tbody id="peopleTableBody"></tbody>
     </table>
   </div>
@@ -393,9 +403,14 @@
   <div class="card-full">
     <div class="section-header">
       <div><div class="section-title">Daily Usage Heatmap — May 2026</div><div class="section-sub">Per user per day · hover cells for details</div></div>
-      <div class="filter-bar">
-        <button class="filter-btn active" onclick="setAdoptView('cursor',this)">Cursor</button>
-        <button class="filter-btn" onclick="setAdoptView('windsurf',this)">Windsurf</button>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div class="filter-bar">
+          <button class="filter-btn active" onclick="setAdoptView('cursor',this)">Cursor</button>
+          <button class="filter-btn" onclick="setAdoptView('windsurf',this)">Windsurf</button>
+        </div>
+        <select class="dept-select" id="adoptDeptSelect" onchange="filterAdoptDept(this.value)">
+          <option value="all">All Depts</option>
+        </select>
       </div>
     </div>
     <div id="adopt-heatmap" style="overflow-x:auto;margin-bottom:12px;"></div>
@@ -407,7 +422,7 @@
       <div class="section-sub">Cursor requests · active days · Claude Code lines · Windsurf last active</div>
     </div>
     <table class="data-table">
-      <thead><tr><th>#</th><th>User</th><th style="text-align:right">Cursor Events MTD</th><th style="text-align:right">Active Days</th><th style="text-align:right">Avg/Day</th><th style="text-align:right">Claude Code Lines</th><th>Windsurf Last Active</th></tr></thead>
+      <thead><tr><th>#</th><th>User</th><th>Dept</th><th style="text-align:right">Cursor Events MTD</th><th style="text-align:right">Active Days</th><th style="text-align:right">Avg/Day</th><th style="text-align:right">Claude Code Lines</th><th>Windsurf Last Active</th></tr></thead>
       <tbody id="adopt-user-table"></tbody>
     </table>
   </div>
@@ -439,46 +454,128 @@ const DATA = {
 };
 
 const members = [
-  {name:'Sparsh Gupta',          email:'sparsh.gupta@sarasanalytics.com',          lines:40182},
-  {name:'Bheem',                 email:'bheem@sarasanalytics.com',                 lines:36796},
-  {name:'Rakesh Varma',          email:'rakesh.varma@sarasanalytics.com',          lines:13402},
-  {name:'Sai Varun Pathi',       email:'saivarun.pathi@sarasanalytics.com',        lines:12841},
-  {name:'Rajavardhan',           email:'rajavardhan@sarasanalytics.com',           lines:10826},
-  {name:'Venkateshwaran S',      email:'venkateshwaran.s@sarasanalytics.com',      lines:9575},
-  {name:'Bhawna Kumari',         email:'bhawna.kumari@sarasanalytics.com',         lines:9548},
-  {name:'Sai Teja Katrapati',    email:'saiteja.katrapati@sarasanalytics.com',     lines:9473},
-  {name:'Harsh Sharma',          email:'harsh.sharma@sarasanalytics.com',          lines:7093},
-  {name:'Moiz Essaji',           email:'moiz.essaji@sarasanalytics.com',           lines:6097},
-  {name:'Anusha Danda',          email:'anusha@sarasanalytics.com',                lines:5563},
-  {name:'Rohit Pandey',          email:'rohit.pandey@sarasanalytics.com',          lines:4554},
-  {name:'Katharin Benson',       email:'katharin.benson@sarasanalytics.com',       lines:3178},
-  {name:'Naveena Kolli',         email:'naveena.kolli@sarasanalytics.com',         lines:3099},
-  {name:'Yashveer Gaur',         email:'yashveer.gaur@sarasanalytics.com',         lines:2437},
-  {name:'Satyam Deshwal',        email:'satyam.deshwal@sarasanalytics.com',        lines:2253},
-  {name:'Vignesh Bodiga',        email:'vignesh.bodiga@sarasanalytics.com',        lines:2218},
-  {name:'Waheedul Akbar',        email:'waheedul.akbar@sarasanalytics.com',        lines:2183},
-  {name:'Abhignya Pinnoju',      email:'abhignya.pinnoju@sarasanalytics.com',      lines:1505},
-  {name:'Kritik Kumar',          email:'kritik.kumar@sarasanalytics.com',          lines:1174},
-  {name:'Ritvik Vemula',         email:'ritvik.vemula@sarasanalytics.com',         lines:1063},
-  {name:'Sreeram Ravuri',        email:'sreeram.ravuri@sarasanalytics.com',        lines:893},
-  {name:'Mohammed Muneeb',       email:'mohammed.muneeb@sarasanalytics.com',       lines:866},
-  {name:'Joseph Ubbarapu',       email:'joseph.ubbarapu@sarasanalytics.com',       lines:837},
-  {name:'Nithin Dornala',        email:'nithin.dornala@sarasanalytics.com',        lines:372},
-  {name:'Jigar Trivedi',         email:'jigar.trivedi@sarasanalytics.com',         lines:138},
-  {name:'Anudeep Kolla',         email:'anudeep.kolla@sarasanalytics.com',         lines:138},
-  {name:'Reeshab Nayak',         email:'reeshab.nayak@sarasanalytics.com',         lines:0},
-  {name:'Ajay Kottapally',       email:'ajay@sarasanalytics.com',                  lines:0},
-  {name:'Sarath Buchi',          email:'sarath.buchi@sarasanalytics.com',          lines:0},
-  {name:'Kranthi Kumar',         email:'kranthi.kumar@sarasanalytics.com',         lines:0},
-  {name:'Mahadas Srianshu',      email:'mahadas.srianshu@sarasanalytics.com',      lines:0},
-  {name:'Ram Gupta',             email:'ram.gupta@sarasanalytics.com',             lines:0},
-  {name:'Arijit Bhattacharyya',  email:'arijit.bhattacharyya@sarasanalytics.com',  lines:0},
-  {name:'Ripujit',               email:'ripujit@sarasanalytics.com',               lines:0},
-  {name:'Kaivalya Sathe',        email:'kaivalya@sarasanalytics.com',              lines:0},
-  {name:'Rudrasen Gouda',        email:'rudrasen.gouda@sarasanalytics.com',        lines:0},
+  {name:'Sparsh Gupta',          email:'sparsh.gupta@sarasanalytics.com',          lines:40182, dept:'Engineering'},
+  {name:'Bheem',                 email:'bheem@sarasanalytics.com',                 lines:36796, dept:'Engineering'},
+  {name:'Rakesh Varma',          email:'rakesh.varma@sarasanalytics.com',          lines:13402, dept:'Marketing'},
+  {name:'Sai Varun Pathi',       email:'saivarun.pathi@sarasanalytics.com',        lines:12841, dept:'Data Engineering'},
+  {name:'Rajavardhan',           email:'rajavardhan@sarasanalytics.com',           lines:10826, dept:'Engineering'},
+  {name:'Venkateshwaran S',      email:'venkateshwaran.s@sarasanalytics.com',      lines:9575,  dept:'Engineering'},
+  {name:'Bhawna Kumari',         email:'bhawna.kumari@sarasanalytics.com',         lines:9548,  dept:'Consulting'},
+  {name:'Sai Teja Katrapati',    email:'saiteja.katrapati@sarasanalytics.com',     lines:9473,  dept:'Data Engineering'},
+  {name:'Harsh Sharma',          email:'harsh.sharma@sarasanalytics.com',          lines:7093,  dept:'Consulting'},
+  {name:'Moiz Essaji',           email:'moiz.essaji@sarasanalytics.com',           lines:6097,  dept:'Growth'},
+  {name:'Anusha Danda',          email:'anusha@sarasanalytics.com',                lines:5563,  dept:'Engineering'},
+  {name:'Rohit Pandey',          email:'rohit.pandey@sarasanalytics.com',          lines:4554,  dept:'Consulting'},
+  {name:'Katharin Benson',       email:'katharin.benson@sarasanalytics.com',       lines:3178,  dept:'Data Engineering'},
+  {name:'Naveena Kolli',         email:'naveena.kolli@sarasanalytics.com',         lines:3099,  dept:'Engineering'},
+  {name:'Yashveer Gaur',         email:'yashveer.gaur@sarasanalytics.com',         lines:2437,  dept:'Consulting'},
+  {name:'Satyam Deshwal',        email:'satyam.deshwal@sarasanalytics.com',        lines:2253,  dept:'Data Engineering'},
+  {name:'Vignesh Bodiga',        email:'vignesh.bodiga@sarasanalytics.com',        lines:2218,  dept:'Engineering'},
+  {name:'Waheedul Akbar',        email:'waheedul.akbar@sarasanalytics.com',        lines:2183,  dept:'Engineering'},
+  {name:'Abhignya Pinnoju',      email:'abhignya.pinnoju@sarasanalytics.com',      lines:1505,  dept:'Data Engineering'},
+  {name:'Kritik Kumar',          email:'kritik.kumar@sarasanalytics.com',          lines:1174,  dept:'Engineering'},
+  {name:'Ritvik Vemula',         email:'ritvik.vemula@sarasanalytics.com',         lines:1063,  dept:'Consulting'},
+  {name:'Sreeram Ravuri',        email:'sreeram.ravuri@sarasanalytics.com',        lines:893,   dept:'Engineering'},
+  {name:'Mohammed Muneeb',       email:'mohammed.muneeb@sarasanalytics.com',       lines:866,   dept:'Consulting'},
+  {name:'Joseph Ubbarapu',       email:'joseph.ubbarapu@sarasanalytics.com',       lines:837,   dept:'Data Engineering'},
+  {name:'Nithin Dornala',        email:'nithin.dornala@sarasanalytics.com',        lines:372,   dept:'Engineering'},
+  {name:'Jigar Trivedi',         email:'jigar.trivedi@sarasanalytics.com',         lines:138,   dept:'Engineering'},
+  {name:'Anudeep Kolla',         email:'anudeep.kolla@sarasanalytics.com',         lines:138,   dept:'IT'},
+  {name:'Reeshab Nayak',         email:'reeshab.nayak@sarasanalytics.com',         lines:0,     dept:'Customer Success'},
+  {name:'Ajay Kottapally',       email:'ajay@sarasanalytics.com',                  lines:0,     dept:'Engineering'},
+  {name:'Sarath Buchi',          email:'sarath.buchi@sarasanalytics.com',          lines:0,     dept:'Marketing'},
+  {name:'Kranthi Kumar',         email:'kranthi.kumar@sarasanalytics.com',         lines:0,     dept:'Marketing'},
+  {name:'Mahadas Srianshu',      email:'mahadas.srianshu@sarasanalytics.com',      lines:0,     dept:'Consulting'},
+  {name:'Ram Gupta',             email:'ram.gupta@sarasanalytics.com',             lines:0,     dept:'Engineering'},
+  {name:'Arijit Bhattacharyya',  email:'arijit.bhattacharyya@sarasanalytics.com',  lines:0,     dept:'Consulting'},
+  {name:'Ripujit',               email:'ripujit@sarasanalytics.com',               lines:0,     dept:'Consulting'},
+  {name:'Kaivalya Sathe',        email:'kaivalya@sarasanalytics.com',              lines:0,     dept:'Engineering'},
+  {name:'Rudrasen Gouda',        email:'rudrasen.gouda@sarasanalytics.com',        lines:0,     dept:'Data Engineering'},
 ];
 
 // =======================================================================
+
+// Department map for ALL users (incl. adoption-only users not in members[])
+// members[] dept fields are merged in below — do not edit this block manually
+const DEPT_MAP = {
+  'abhishek.baruah@sarasanalytics.com':   'Data Engineering',
+  'aerica.sethi@sarasanalytics.com':      'Data Engineering',
+  'aman.kumar@sarasanalytics.com':        'Data Engineering',
+  'amith@sarasanalytics.com':             'Data Engineering',
+  'anjuman.p@sarasanalytics.com':         'Data Engineering',
+  'anoop.joshi@sarasanalytics.com':       'Data Engineering',
+  'ashutosh.p@sarasanalytics.com':        'Data Engineering',
+  'ashyam.zubair@sarasanalytics.com':     'Data Engineering',
+  'bharath.pagadakula@sarasanalytics.com':'Data Engineering',
+  'bhavika.rathore@sarasanalytics.com':   'Data Engineering',
+  'divij.gawri@sarasanalytics.com':       'Data Engineering',
+  'eswar.penta@sarasanalytics.com':       'Data Engineering',
+  'hemanta.bhoi@sarasanalytics.com':      'Data Engineering',
+  'iqjot.singh@sarasanalytics.com':       'Data Engineering',
+  'jatin.sahu@sarasanalytics.com':        'Data Engineering',
+  'joe.p@sarasanalytics.com':             'Data Engineering',
+  'kakul.verma@sarasanalytics.com':       'Data Engineering',
+  'kamal.bura@sarasanalytics.com':        'Data Engineering',
+  'karthik.b@sarasanalytics.com':         'Data Engineering',
+  'krishna.bhargavi@sarasanalytics.com':  'Data Engineering',
+  'manas.pradhan@sarasanalytics.com':     'Data Engineering',
+  'manasa.karumuru@sarasanalytics.com':   'Data Engineering',
+  'mani.kumar@sarasanalytics.com':        'Data Engineering',
+  'manoj.p@sarasanalytics.com':           'Data Engineering',
+  'mushtaq.mohd@sarasanalytics.com':      'Data Engineering',
+  'nivid.k@sarasanalytics.com':           'Data Engineering',
+  'omprakash@sarasanalytics.com':         'Data Engineering',
+  'purna.subhash@sarasanalytics.com':     'Data Engineering',
+  'saad@sarasanalytics.com':              'Data Engineering',
+  'sachin.kapgate@sarasanalytics.com':    'Data Engineering',
+  'sahil.chhimpa@sarasanalytics.com':     'Data Engineering',
+  'shivansh.gupta@sarasanalytics.com':    'Data Engineering',
+  'shoaib.aleemuddin@sarasanalytics.com': 'Data Engineering',
+  'sibgat.ullah@sarasanalytics.com':      'Data Engineering',
+  'sneha.biju@sarasanalytics.com':        'Data Engineering',
+  'soumithri.c@sarasanalytics.com':       'Data Engineering',
+  'srinithi.reddy@sarasanalytics.com':    'Data Engineering',
+  'suraj.maurya@sarasanalytics.com':      'Data Engineering',
+  'susmitha.peeka@sarasanalytics.com':    'Data Engineering',
+  'swayam.satapathy@sarasanalytics.com':  'Data Engineering',
+  'vaibhav.singh@sarasanalytics.com':     'Data Engineering',
+  'vipul.rathore@sarasanalytics.com':     'Data Engineering',
+  'vishnu.priya@sarasanalytics.com':      'Data Engineering',
+  'zenul.abedeen@sarasanalytics.com':     'Data Engineering',
+  'aditya.kumar@sarasanalytics.com':      'Data Engineering',
+  'pratishtha.yadav@sarasanalytics.com':  'Engineering',
+  'sairaj.kujala@sarasanalytics.com':     'Engineering',
+};
+members.forEach(m => { DEPT_MAP[m.email] = m.dept; });
+
+function getDept(email) { return DEPT_MAP[email] || 'Other'; }
+
+function deptBadge(dept) {
+  const styles = {
+    'Engineering':      'rgba(108,99,255,0.18);color:#a89cff',
+    'Data Engineering': 'rgba(0,212,170,0.18);color:#00d4aa',
+    'Consulting':       'rgba(255,167,38,0.18);color:#ffa726',
+    'Growth':           'rgba(76,175,80,0.18);color:#81c784',
+    'Marketing':        'rgba(255,107,107,0.18);color:#ff6b6b',
+    'Customer Success': 'rgba(38,198,218,0.18);color:#26c6da',
+    'IT':               'rgba(186,104,200,0.18);color:#ce93d8',
+    'HR':               'rgba(255,193,7,0.18);color:#ffd740',
+    'Finance':          'rgba(0,188,212,0.18);color:#00bcd4',
+    'Product':          'rgba(240,98,146,0.18);color:#f48fb1',
+    'CEO Office':       'rgba(255,215,0,0.18);color:#ffd700',
+  };
+  const s = styles[dept] || 'rgba(139,146,184,0.12);color:#8b92b8';
+  const [bg, clr] = s.split(';color:');
+  return `<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:600;background:${bg};color:${clr};white-space:nowrap">${dept||'–'}</span>`;
+}
+
+const DEPT_OPTIONS = ['Consulting','Customer Success','Data Engineering','Engineering','Finance','Growth','HR','IT','Marketing','Product','CEO Office'];
+function deptSelectHTML(onchangeFn) {
+  return `<select class="dept-select" onchange="${onchangeFn}(this.value)">
+    <option value="all">All Depts</option>
+    ${DEPT_OPTIONS.map(d=>`<option value="${d}">${d}</option>`).join('')}
+  </select>`;
+}
 
 const maxLines = members[0].lines;
 
@@ -504,13 +601,14 @@ function switchTab(id, el) {
   el.classList.add('active');
 }
 
-let codeFilter = 'all';
+let codeFilter = 'all', codeDept = 'all';
 function renderCodeTable() {
   let rows = members;
   if (codeFilter === 'high') rows = rows.filter(m => m.lines >= 5000);
   else if (codeFilter === 'mid') rows = rows.filter(m => m.lines >= 500 && m.lines < 5000);
   else if (codeFilter === 'low') rows = rows.filter(m => m.lines > 0 && m.lines < 500);
   else if (codeFilter === 'zero') rows = rows.filter(m => m.lines === 0);
+  if (codeDept !== 'all') rows = rows.filter(m => m.dept === codeDept);
   document.getElementById('codeTableBody').innerHTML = rows.map((m,i) => {
     const pct = DATA.totalLines > 0 ? (m.lines/DATA.totalLines*100).toFixed(1) : '0.0';
     const bw  = maxLines > 0 ? (m.lines/maxLines*100) : 0;
@@ -518,6 +616,7 @@ function renderCodeTable() {
     return `<tr>
       <td class="rank">${i+1}</td>
       <td><div class="name-cell">${m.name}</div><div class="email-muted">${m.email}</div></td>
+      <td>${deptBadge(m.dept)}</td>
       <td class="num-cell">${fmt(m.lines)}</td>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar"><div class="mini-bar-fill" style="width:${bw}%;background:${barColor(m.lines)}"></div></div><span style="font-size:0.75rem;color:var(--muted)">${pct}%</span></div></td>
       <td><span class="tier ${t.cls}">${t.label}</span></td>
@@ -530,15 +629,17 @@ function filterCode(f, btn) {
   btn.classList.add('active');
   renderCodeTable();
 }
+function filterCodeDept(val) { codeDept = val; renderCodeTable(); }
 
-let peopleTier = 'all', peopleQ = '';
+let peopleTier = 'all', peopleQ = '', peopleDept = 'all';
 function renderPeopleTable() {
   let rows = [...members];
   if (peopleTier === 'high') rows = rows.filter(m => m.lines >= 5000);
   else if (peopleTier === 'mid') rows = rows.filter(m => m.lines >= 500 && m.lines < 5000);
   else if (peopleTier === 'low') rows = rows.filter(m => m.lines > 0 && m.lines < 500);
   else if (peopleTier === 'none') rows = rows.filter(m => m.lines === 0);
-  if (peopleQ) rows = rows.filter(m => m.name.toLowerCase().includes(peopleQ) || m.email.toLowerCase().includes(peopleQ));
+  if (peopleDept !== 'all') rows = rows.filter(m => m.dept === peopleDept);
+  if (peopleQ) rows = rows.filter(m => m.name.toLowerCase().includes(peopleQ) || m.email.toLowerCase().includes(peopleQ) || (m.dept||'').toLowerCase().includes(peopleQ));
   set('people-subtitle', `${DATA.monthLabel} MTD · ${rows.length} members shown`);
   document.getElementById('peopleTableBody').innerHTML = rows.map((m,i) => {
     const bw = maxLines > 0 ? (m.lines/maxLines*100) : 0;
@@ -547,6 +648,7 @@ function renderPeopleTable() {
     return `<tr>
       <td class="rank">${i+1}</td>
       <td><div class="name-cell">${m.name}</div><div class="email-muted">${m.email}</div></td>
+      <td>${deptBadge(m.dept)}</td>
       <td class="num-cell">${fmt(m.lines)}</td>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar" style="width:120px"><div class="mini-bar-fill" style="width:${bw}%;background:${barColor(m.lines)}"></div></div></div></td>
       <td><span class="tier ${t.cls}">${t.label}</span></td>
@@ -556,10 +658,11 @@ function renderPeopleTable() {
 }
 function filterPeopleTier(f, btn) {
   peopleTier = f;
-  document.querySelectorAll('#tab-people .filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#people-tier-filter .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderPeopleTable();
 }
+function filterPeopleDept(val) { peopleDept = val; renderPeopleTable(); }
 function filterPeopleSearch(v) { peopleQ = v.toLowerCase(); renderPeopleTable(); }
 
 function initFromData() {
@@ -757,13 +860,15 @@ const WINDSURF_USERS={
   "venkateshwaran.s@sarasanalytics.com":"2026-04-21",
   "anudeep.kolla@sarasanalytics.com":null
 };
-let adoptView='cursor';
+let adoptView='cursor', adoptDept='all';
+let adoptUTotals={}, adoptUDays={};
 function setAdoptView(v,btn){
   adoptView=v;
   document.querySelectorAll('#tab-adoption .filter-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderAdoptHeatmap();
 }
+function filterAdoptDept(val){ adoptDept=val; renderAdoptHeatmap(); renderAdoptTable(adoptUTotals,adoptUDays); }
 function cellClr(cnt,isWs){
   if(isWs)return'background:#00d4aa;opacity:0.75';
   if(!cnt)return'background:#1a1d27';
@@ -777,11 +882,11 @@ function nameFromEmail(e){return e.split('@')[0].split('.').map(p=>p[0].toUpperC
 function initAdoption(){
   const mayDays=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01');
   const today='2026-05-15';
-  let totalEv=0; const uTotals={},uDays={};
+  let totalEv=0;
   mayDays.forEach(day=>{
     Object.entries(day.c).forEach(([em,cnt])=>{
-      uTotals[em]=(uTotals[em]||0)+cnt;
-      uDays[em]=(uDays[em]||0)+1;
+      adoptUTotals[em]=(adoptUTotals[em]||0)+cnt;
+      adoptUDays[em]=(adoptUDays[em]||0)+1;
       totalEv+=cnt;
     });
   });
@@ -790,8 +895,8 @@ function initAdoption(){
   const cursorLatest=latestCursorDay?Object.keys(latestCursorDay.c).length:0;
   const cursorLatestDate=latestCursorDay?'active on '+latestCursorDay.date.slice(5):'no data';
   const wsToday=Object.values(WINDSURF_USERS).filter(d=>d===today).length;
-  const activeU=Object.keys(uTotals).length;
-  const avgD=activeU>0?(Object.values(uDays).reduce((a,b)=>a+b,0)/activeU).toFixed(1):0;
+  const activeU=Object.keys(adoptUTotals).length;
+  const avgD=activeU>0?(Object.values(adoptUDays).reduce((a,b)=>a+b,0)/activeU).toFixed(1):0;
   // Claude.ai active users: chatUserPct% of estimated total seats
   const totalSeats=Math.round(DATA.wau/DATA.utilization*100);
   const claudeAiUsers=Math.round(DATA.chatUserPct/100*totalSeats);
@@ -804,7 +909,7 @@ function initAdoption(){
   set('adopt-claudeai-users',claudeAiUsers);
   set('adopt-claudeai-sub',DATA.chatUserPct+'% of org · '+DATA.chatsPerDay+' chats/day');
   renderAdoptHeatmap();
-  renderAdoptTable(uTotals,uDays);
+  renderAdoptTable(adoptUTotals,adoptUDays);
 }
 function renderAdoptHeatmap(){
   const days=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01').sort((a,b)=>a.date.localeCompare(b.date));
@@ -815,7 +920,7 @@ function renderAdoptHeatmap(){
   } else {
     days.forEach(day=>Object.keys(day.c).forEach(e=>usersSet.add(e)));
   }
-  const users=[...usersSet].sort((a,b)=>{
+  const users=[...usersSet].filter(e=>adoptDept==='all'||getDept(e)===adoptDept).sort((a,b)=>{
     const sa=days.reduce((s,d)=>s+(d.c[a]||0),0);
     const sb=days.reduce((s,d)=>s+(d.c[b]||0),0);
     return sb-sa;
@@ -851,15 +956,24 @@ function renderAdoptHeatmap(){
   }
 }
 function renderAdoptTable(uTotals,uDays){
-  const rows=Object.entries(uTotals).sort((a,b)=>b[1]-a[1]);
+  const rows=Object.entries(uTotals).filter(([email])=>adoptDept==='all'||getDept(email)===adoptDept).sort((a,b)=>b[1]-a[1]);
   document.getElementById('adopt-user-table').innerHTML=rows.map(([email,total],i)=>{
     const days=uDays[email]||0;
     const avg=days>0?(total/days).toFixed(0):0;
     const ccLines=ADOPTION_CC_MTD[email]||0;
     const wsLast=WINDSURF_USERS[email]||'–';
-    return `<tr><td class="rank">${i+1}</td><td><div class="name-cell">${nameFromEmail(email)}</div><div class="email-muted">${email}</div></td><td class="num-cell">${fmt(total)}</td><td class="num-cell">${days}</td><td class="num-cell">${avg}</td><td class="num-cell">${fmt(ccLines)}</td><td style="font-size:0.75rem;color:var(--muted)">${wsLast||'–'}</td></tr>`;
+    return `<tr><td class="rank">${i+1}</td><td><div class="name-cell">${nameFromEmail(email)}</div><div class="email-muted">${email}</div></td><td>${deptBadge(getDept(email))}</td><td class="num-cell">${fmt(total)}</td><td class="num-cell">${days}</td><td class="num-cell">${avg}</td><td class="num-cell">${fmt(ccLines)}</td><td style="font-size:0.75rem;color:var(--muted)">${wsLast||'–'}</td></tr>`;
   }).join('');
 }
+
+// Populate dept selects dynamically from DEPT_OPTIONS
+(function populateDeptSelects(){
+  const optHTML = DEPT_OPTIONS.map(d=>`<option value="${d}">${d}</option>`).join('');
+  ['codeDeptSelect','peopleDeptSelect','adoptDeptSelect'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.insertAdjacentHTML('beforeend', optHTML);
+  });
+})();
 
 initFromData();
 initAdoption();
