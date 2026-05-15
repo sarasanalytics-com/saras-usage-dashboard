@@ -446,17 +446,12 @@
     <div class="kpi c2"><div class="kpi-label">Windsurf Active Today</div><div class="kpi-value" id="adopt-ws-today">–</div><div class="kpi-sub">from last-active timestamp</div></div>
     <div class="kpi c3"><div class="kpi-label">Cursor Events (May MTD)</div><div class="kpi-value" id="adopt-cursor-mtd">–</div><div class="kpi-sub" id="adopt-cursor-users">across all users</div></div>
     <div class="kpi c4"><div class="kpi-label">Avg Active Days</div><div class="kpi-value" id="adopt-avg-days">–</div><div class="kpi-sub">avg per active Cursor user</div></div>
-    <div class="kpi c5"><div class="kpi-label">Claude.ai Active (MTD)</div><div class="kpi-value" id="adopt-claudeai-users">–</div><div class="kpi-sub" id="adopt-claudeai-sub">users with 1+ chat this month</div></div>
   </div>
   <!-- DEPT METRICS -->
   <div class="two-col">
     <div class="card">
       <div class="section-title" style="margin-bottom:14px">Cursor Events by Department — MTD</div>
       <div style="height:280px"><canvas id="deptCursorChart"></canvas></div>
-    </div>
-    <div class="card">
-      <div class="section-title" style="margin-bottom:14px">Claude Code Lines by Department — MTD</div>
-      <div style="height:280px"><canvas id="deptCCChart"></canvas></div>
     </div>
   </div>
   <div class="card-full">
@@ -467,8 +462,6 @@
         <th style="text-align:right">Cursor Active Users</th>
         <th style="text-align:right">Cursor Events MTD</th>
         <th style="text-align:right">Avg Events / User</th>
-        <th style="text-align:right">Claude Code Lines</th>
-        <th style="text-align:right">CC Active Users</th>
       </tr></thead>
       <tbody id="dept-breakdown-table"></tbody>
     </table>
@@ -482,7 +475,6 @@
           <button class="filter-btn active" onclick="setAdoptView('overall',this)">Overall</button>
           <button class="filter-btn" onclick="setAdoptView('cursor',this)">Cursor</button>
           <button class="filter-btn" onclick="setAdoptView('windsurf',this)">Windsurf</button>
-          <button class="filter-btn" onclick="setAdoptView('cc',this)">Claude Code</button>
         </div>
         <select class="dept-select" id="adoptDeptSelect" onchange="filterAdoptDept(this.value)">
           <option value="all">All Depts</option>
@@ -495,10 +487,10 @@
   <div class="card-full">
     <div class="section-header">
       <div class="section-title">User Summary — May 2026</div>
-      <div class="section-sub">Cursor requests · active days · Claude Code lines · Windsurf last active</div>
+      <div class="section-sub">Cursor requests · active days · Windsurf last active</div>
     </div>
     <table class="data-table">
-      <thead><tr><th>#</th><th>User</th><th>Dept</th><th style="text-align:right">Cursor Events MTD</th><th style="text-align:right">Active Days</th><th style="text-align:right">Avg/Day</th><th style="text-align:right">Claude Code Lines</th><th>Windsurf Last Active</th></tr></thead>
+      <thead><tr><th>#</th><th>User</th><th>Dept</th><th style="text-align:right">Cursor Events MTD</th><th style="text-align:right">Active Days</th><th style="text-align:right">Avg/Day</th><th>Windsurf Last Active</th></tr></thead>
       <tbody id="adopt-user-table"></tbody>
     </table>
   </div>
@@ -1014,8 +1006,6 @@ function initAdoption(){
   set('adopt-cursor-mtd',fmt(totalEv));
   set('adopt-cursor-users',activeU+' unique users');
   set('adopt-avg-days',avgD);
-  set('adopt-claudeai-users',claudeAiUsers);
-  set('adopt-claudeai-sub',DATA.chatUserPct+'% of org · '+DATA.chatsPerDay+' chats/day');
   // Populate exec summary Coding Tools KPIs
   set('kpi-cursor-mtd-ov', fmt(totalEv));
   set('kpi-cursor-users-ov', activeU+' unique Cursor users');
@@ -1032,7 +1022,7 @@ function initAdoption(){
 
 function renderDeptMetrics() {
   const mayDays = ADOPTION_DAYS.filter(d => d.date >= '2026-05-01');
-  const deptCursorEv = {}, deptCursorUserSet = {}, deptCCLines = {}, deptCCActive = {};
+  const deptCursorEv = {}, deptCursorUserSet = {};
 
   // Aggregate Cursor events by dept
   mayDays.forEach(day => {
@@ -1044,13 +1034,6 @@ function renderDeptMetrics() {
     });
   });
 
-  // Aggregate Claude Code lines by dept
-  Object.entries(ADOPTION_CC_MTD).forEach(([email, lines]) => {
-    const dept = getDept(email);
-    deptCCLines[dept] = (deptCCLines[dept] || 0) + lines;
-    if (lines > 0) deptCCActive[dept] = (deptCCActive[dept] || 0) + 1;
-  });
-
   const DCOL = {
     'Engineering':'#a89cff','Data Engineering':'#00d4aa','Consulting':'#ffa726',
     'Growth':'#81c784','Marketing':'#ff6b6b','Customer Success':'#26c6da',
@@ -1058,9 +1041,7 @@ function renderDeptMetrics() {
     'CEO Office':'#ffd700','Other':'#8b92b8'
   };
 
-  // Sort depts for each chart
   const cursorDepts = Object.keys(deptCursorEv).sort((a,b) => deptCursorEv[b]-deptCursorEv[a]);
-  const ccDepts     = Object.keys(deptCCLines).filter(d=>deptCCLines[d]>0).sort((a,b)=>deptCCLines[b]-deptCCLines[a]);
 
   new Chart(document.getElementById('deptCursorChart'), {
     type:'bar',
@@ -1082,44 +1063,16 @@ function renderDeptMetrics() {
     }
   });
 
-  new Chart(document.getElementById('deptCCChart'), {
-    type:'bar',
-    data:{
-      labels: ccDepts,
-      datasets:[{
-        data: ccDepts.map(d=>deptCCLines[d]||0),
-        backgroundColor: ccDepts.map(d=>(DCOL[d]||'#8b92b8')+'bb'),
-        borderRadius:5
-      }]
-    },
-    options:{
-      indexAxis:'y', responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmt(c.raw)+' lines'}}},
-      scales:{
-        x:{ticks:{color:'#8b92b8',callback:v=>v>=1000?(v/1000).toFixed(0)+'k':v},grid:{color:'rgba(46,50,80,0.5)'}},
-        y:{ticks:{color:'#e8eaf6',font:{size:11}},grid:{display:false}}
-      }
-    }
-  });
-
-  // Summary table — all depts with any data, sorted by cursor events desc
-  const allDepts = [...new Set([...cursorDepts,...ccDepts])].sort((a,b)=>(deptCursorEv[b]||0)-(deptCursorEv[a]||0));
-  document.getElementById('dept-breakdown-table').innerHTML = allDepts.map(dept => {
-    const activeU  = deptCursorUserSet[dept] ? deptCursorUserSet[dept].size : 0;
-    const events   = deptCursorEv[dept] || 0;
-    const avg      = activeU > 0 ? Math.round(events / activeU) : 0;
-    const ccLines  = deptCCLines[dept] || 0;
-    const ccActiveU= deptCCActive[dept] || 0;
-    const bar = ccLines > 0
-      ? `<div style="display:inline-flex;align-items:center;gap:6px"><span style="font-weight:700">${fmt(ccLines)}</span><div style="width:60px;height:5px;border-radius:3px;background:var(--border);overflow:hidden"><div style="height:100%;border-radius:3px;background:${DCOL[dept]||'#8b92b8'};width:${Math.round(ccLines/Math.max(...ccDepts.map(d=>deptCCLines[d]))*100)}%"></div></div></div>`
-      : `<span style="color:var(--muted)">0</span>`;
+  // Summary table — depts with Cursor data, sorted by cursor events desc
+  document.getElementById('dept-breakdown-table').innerHTML = cursorDepts.map(dept => {
+    const activeU = deptCursorUserSet[dept] ? deptCursorUserSet[dept].size : 0;
+    const events  = deptCursorEv[dept] || 0;
+    const avg     = activeU > 0 ? Math.round(events / activeU) : 0;
     return `<tr>
       <td>${deptBadge(dept)}</td>
       <td class="num-cell">${activeU||'<span style="color:var(--muted)">—</span>'}</td>
       <td class="num-cell">${events ? fmt(events) : '<span style="color:var(--muted)">—</span>'}</td>
       <td class="num-cell">${avg||'<span style="color:var(--muted)">—</span>'}</td>
-      <td class="num-cell">${bar}</td>
-      <td class="num-cell">${ccActiveU||'<span style="color:var(--muted)">—</span>'}</td>
     </tr>`;
   }).join('');
 }
@@ -1145,22 +1098,18 @@ function renderAdoptHeatmap(){
   const usersSet=new Set();
   if(adoptView==='windsurf'){
     Object.keys(WINDSURF_USERS).forEach(e=>usersSet.add(e));
-  } else if(adoptView==='cc'){
-    Object.keys(ADOPTION_CC_MTD).forEach(e=>usersSet.add(e));
   } else if(adoptView==='overall'){
-    // All three sources
+    // Cursor + Windsurf sources
     days.forEach(day=>Object.keys(day.c).forEach(e=>usersSet.add(e)));
     Object.keys(WINDSURF_USERS).forEach(e=>usersSet.add(e));
-    Object.keys(ADOPTION_CC_MTD).forEach(e=>usersSet.add(e));
   } else {
     days.forEach(day=>Object.keys(day.c).forEach(e=>usersSet.add(e)));
   }
   const users=[...usersSet].filter(e=>adoptDept==='all'||getDept(e)===adoptDept).sort((a,b)=>{
-    if(adoptView==='cc') return (ADOPTION_CC_MTD[b]||0)-(ADOPTION_CC_MTD[a]||0);
     if(adoptView==='overall'){
-      // Sort by: total cursor events + 500 bonus per windsurf day + CC lines/100
-      const scoreA=days.reduce((s,d)=>s+(d.c[a]||0),0)+(WINDSURF_USERS[a]?200:0)+(ADOPTION_CC_MTD[a]||0)/100;
-      const scoreB=days.reduce((s,d)=>s+(d.c[b]||0),0)+(WINDSURF_USERS[b]?200:0)+(ADOPTION_CC_MTD[b]||0)/100;
+      // Sort by: total cursor events + bonus for windsurf
+      const scoreA=days.reduce((s,d)=>s+(d.c[a]||0),0)+(WINDSURF_USERS[a]?200:0);
+      const scoreB=days.reduce((s,d)=>s+(d.c[b]||0),0)+(WINDSURF_USERS[b]?200:0);
       return scoreB-scoreA;
     }
     const sa=days.reduce((s,d)=>s+(d.c[a]||0),0);
@@ -1170,41 +1119,34 @@ function renderAdoptHeatmap(){
   let h=`<table style="border-collapse:separate;border-spacing:2px;font-size:0.72rem;min-width:max-content">`;
   h+=`<tr><th style="padding:3px 10px 3px 4px;color:var(--muted);text-align:left;font-weight:400;min-width:130px">User</th>`;
   dates.forEach(d=>{const day=d.slice(8);h+=`<th style="padding:2px 0;color:var(--muted);font-weight:400;text-align:center;width:18px">${day}</th>`;});
-  const colLabel=adoptView==='cc'?'Lines MTD':adoptView==='overall'?'Activity':' Total';
+  const colLabel=adoptView==='overall'?'Activity':' Total';
   h+=`<th style="padding:3px 4px 3px 8px;color:var(--muted);font-weight:400;text-align:right">${colLabel}</th></tr>`;
   users.forEach(email=>{
     const label=nameFromEmail(email);
     const cursorTotal=days.reduce((s,d)=>s+(d.c[email]||0),0);
-    const ccLines=ADOPTION_CC_MTD[email]||0;
     const wsLast=WINDSURF_USERS[email]||null;
     // Build total cell for each view
     let totalVal;
-    if(adoptView==='cc'){
-      totalVal=`<span style="color:${ccLines>0?'#fff':'var(--muted)'};font-weight:${ccLines>0?'700':'400'}">${ccLines>0?fmt(ccLines):'0'}</span>`;
-    } else if(adoptView==='overall'){
+    if(adoptView==='overall'){
       const parts=[];
       if(cursorTotal>0) parts.push(`<span style="color:#a89cff;font-size:0.68rem">${fmt(cursorTotal)}c</span>`);
       if(wsLast)        parts.push(`<span style="color:#00d4aa;font-size:0.68rem">WS</span>`);
-      if(ccLines>0)     parts.push(`<span style="color:#ffa726;font-size:0.68rem">${fmt(ccLines)}L</span>`);
       totalVal=parts.length?parts.join(' '):`<span style="color:var(--muted)">–</span>`;
     } else {
       totalVal=`<span style="color:${cursorTotal>0?'#fff':'var(--muted)'};font-weight:${cursorTotal>0?'700':'400'}">${cursorTotal||'–'}</span>`;
     }
-    // Row background tint for CC view: subtle tint based on lines level
-    const rowBg=adoptView==='overall'&&ccLines>0?'background:rgba(255,167,38,0.03);':'';
+    const rowBg='';
     h+=`<tr style="${rowBg}"><td style="padding:2px 10px 2px 4px;color:var(--text);white-space:nowrap">${label}</td>`;
     dates.forEach(d=>{
       const day=days.find(x=>x.date===d);
       const cnt=day?(day.c[email]||0):0;
       const wsActive=wsLast===d;
       let style, tip;
-      if(adoptView==='cc'){
-        style=ccCellClr(ccLines); tip=`${email} · ${fmt(ccLines)} lines MTD`;
-      } else if(adoptView==='windsurf'){
+      if(adoptView==='windsurf'){
         style=cellClr(0,wsActive?1:0); tip=`${email}·${d}·${wsActive?'active':'–'}`;
       } else if(adoptView==='overall'){
         style=overallCellClr(cnt,wsActive);
-        const tools=[cnt>0?`Cursor:${cnt}`:'',wsActive?'Windsurf':'',ccLines>0?`CC:${fmt(ccLines)}L`:''].filter(Boolean).join(' · ');
+        const tools=[cnt>0?`Cursor:${cnt}`:'',wsActive?'Windsurf':''].filter(Boolean).join(' · ');
         tip=`${email} · ${d} · ${tools||'no activity'}`;
       } else {
         style=cellClr(cnt,false); tip=`${email}·${d}·${cnt} events`;
@@ -1224,9 +1166,7 @@ function renderAdoptHeatmap(){
       <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#6c63ff"></div>Cursor 50+</div>
       <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(0,212,170,0.75)"></div>Windsurf only</div>
       <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#ffd740"></div>Cursor + Windsurf</div>
-      <span style="color:var(--muted);margin-left:4px">Total column: <span style="color:#a89cff">Nc</span>=Cursor events · <span style="color:#00d4aa">WS</span>=Windsurf · <span style="color:#ffa726">NL</span>=CC lines MTD</span>`;
-  } else if(adoptView==='cc'){
-    leg.innerHTML=`<div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#1a1d27"></div>0 lines</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(255,167,38,0.65)"></div>Light (&lt;500)</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.8)"></div>Regular (500–5k)</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#00d4aa"></div>Power (5k+)</div><span style="color:var(--muted)">Claude Code CLI lines — MTD total per member</span>`;
+      <span style="color:var(--muted);margin-left:4px">Total column: <span style="color:#a89cff">Nc</span>=Cursor events · <span style="color:#00d4aa">WS</span>=Windsurf</span>`;
   } else if(adoptView==='windsurf'){
     leg.innerHTML=`<div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#1a1d27"></div>No data</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#00d4aa;opacity:0.75"></div>Active (last-known date)</div><span style="color:var(--accent3)">⚠ Windsurf shows last-active date per feature only</span>`;
   } else {
@@ -1234,28 +1174,25 @@ function renderAdoptHeatmap(){
   }
 }
 function renderAdoptTable(uTotals,uDays){
-  // Full roster: union of cursor users, CC members, and windsurf users
+  // Full roster: union of cursor users and windsurf users
   const allEmails=new Set([
     ...Object.keys(uTotals),
-    ...Object.keys(ADOPTION_CC_MTD),
     ...Object.keys(WINDSURF_USERS)
   ]);
   const dash='<span style="color:var(--muted)">—</span>';
   const rows=[...allEmails]
     .filter(e=>adoptDept==='all'||getDept(e)===adoptDept)
     .sort((a,b)=>{
-      // Primary: cursor events desc; secondary: CC lines desc
+      // Primary: cursor events desc; secondary: windsurf active
       const ca=uTotals[a]||0, cb=uTotals[b]||0;
       if(cb!==ca) return cb-ca;
-      return (ADOPTION_CC_MTD[b]||0)-(ADOPTION_CC_MTD[a]||0);
+      return (WINDSURF_USERS[b]?1:0)-(WINDSURF_USERS[a]?1:0);
     });
   document.getElementById('adopt-user-table').innerHTML=rows.map((email,i)=>{
     const total  =uTotals[email]||0;
     const days   =uDays[email]||0;
     const avg    =days>0?Math.round(total/days):0;
-    const ccLines=ADOPTION_CC_MTD[email]||0;
     const wsLast =WINDSURF_USERS[email]||null;
-    const tier   =ccLines>=5000?'<span class="tier tier-high">Power</span>':ccLines>=500?'<span class="tier tier-mid">Regular</span>':ccLines>0?'<span class="tier tier-low">Light</span>':'';
     return `<tr>
       <td class="rank">${i+1}</td>
       <td><div class="name-cell">${nameFromEmail(email)}</div><div class="email-muted">${email}</div></td>
@@ -1263,7 +1200,6 @@ function renderAdoptTable(uTotals,uDays){
       <td class="num-cell">${total?fmt(total):dash}</td>
       <td class="num-cell">${days||dash}</td>
       <td class="num-cell">${avg||dash}</td>
-      <td class="num-cell">${ccLines?fmt(ccLines)+' '+tier:dash}</td>
       <td style="font-size:0.75rem;color:${wsLast?'var(--accent2)':'var(--muted)'}">${wsLast||dash}</td>
     </tr>`;
   }).join('');
