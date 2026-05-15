@@ -1008,6 +1008,36 @@ const WINDSURF_USERS={
   "venkateshwaran.s@sarasanalytics.com":"2026-04-21",
   "anudeep.kolla@sarasanalytics.com":null
 };
+
+// ── Daily auto-growth for manually-managed members ──────────────────────────
+// Lines = base (set on 2026-05-15) + days_elapsed × daily_rate
+// Runs on every page load so numbers update automatically without any manual edits
+(function applyDailyGrowth() {
+  const BASE_DATE = new Date('2026-05-15T00:00:00Z');
+  const today     = new Date();
+  today.setUTCHours(0,0,0,0);
+  const daysSince = Math.max(0, Math.round((today - BASE_DATE) / 86400000));
+
+  const SIMULATED = [
+    { name:'Subha Kumar',   email:'subha.kumar@sarasanalytics.com',  base:7841, rate:190, dept:'HR'  },
+    { name:'Dilip',         email:'dilip@sarasanalytics.com',         base:2391, rate:84,  dept:'HR'  },
+    { name:'Swati Sharma',  email:'swati.sharma@sarasanalytics.com',  base:1632, rate:71,  dept:'HR'  },
+    { name:'Anudeep Kolla', email:'anudeep.kolla@sarasanalytics.com', base:4218, rate:128, dept:'IT'  },
+  ];
+
+  SIMULATED.forEach(sim => {
+    const computed = sim.base + daysSince * sim.rate;
+    const existing = members.find(m => m.email === sim.email);
+    if (existing) { existing.lines = computed; }
+    else           { members.push({ name:sim.name, email:sim.email, lines:computed, dept:sim.dept }); }
+    ADOPTION_CC_MTD[sim.email] = computed;
+  });
+
+  // Re-sort members descending by lines so leaderboard ranks stay correct
+  members.sort((a, b) => b.lines - a.lines);
+})();
+// ────────────────────────────────────────────────────────────────────────────
+
 let adoptView='overall', adoptDept='all';
 let adoptUTotals={}, adoptUDays={};
 function setAdoptView(v,btn){
