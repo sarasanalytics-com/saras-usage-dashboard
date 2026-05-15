@@ -431,7 +431,8 @@
       <div><div class="section-title">Daily Usage Heatmap — May 2026</div><div class="section-sub">Per user per day · hover cells for details</div></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div class="filter-bar">
-          <button class="filter-btn active" onclick="setAdoptView('cursor',this)">Cursor</button>
+          <button class="filter-btn active" onclick="setAdoptView('overall',this)">Overall</button>
+          <button class="filter-btn" onclick="setAdoptView('cursor',this)">Cursor</button>
           <button class="filter-btn" onclick="setAdoptView('windsurf',this)">Windsurf</button>
           <button class="filter-btn" onclick="setAdoptView('cc',this)">Claude Code</button>
         </div>
@@ -887,7 +888,7 @@ const WINDSURF_USERS={
   "venkateshwaran.s@sarasanalytics.com":"2026-04-21",
   "anudeep.kolla@sarasanalytics.com":null
 };
-let adoptView='cursor', adoptDept='all';
+let adoptView='overall', adoptDept='all';
 let adoptUTotals={}, adoptUDays={};
 function setAdoptView(v,btn){
   adoptView=v;
@@ -1039,6 +1040,16 @@ function ccCellClr(lines){
   if(lines>0)     return'background:rgba(255,167,38,0.65)';
   return'background:#1a1d27';
 }
+function overallCellClr(cursorCnt, wsActive){
+  if(cursorCnt>0 && wsActive) return'background:#ffd740';          // gold — both Cursor + Windsurf
+  if(cursorCnt>=50) return'background:#6c63ff';
+  if(cursorCnt>=20) return'background:rgba(108,99,255,0.85)';
+  if(cursorCnt>=10) return'background:rgba(108,99,255,0.6)';
+  if(cursorCnt>=5)  return'background:rgba(108,99,255,0.4)';
+  if(cursorCnt>0)   return'background:rgba(108,99,255,0.22)';
+  if(wsActive)      return'background:rgba(0,212,170,0.75)';       // teal — Windsurf only
+  return'background:#1a1d27';
+}
 function renderAdoptHeatmap(){
   const days=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01').sort((a,b)=>a.date.localeCompare(b.date));
   const dates=days.map(d=>d.date);
@@ -1047,11 +1058,22 @@ function renderAdoptHeatmap(){
     Object.keys(WINDSURF_USERS).forEach(e=>usersSet.add(e));
   } else if(adoptView==='cc'){
     Object.keys(ADOPTION_CC_MTD).forEach(e=>usersSet.add(e));
+  } else if(adoptView==='overall'){
+    // All three sources
+    days.forEach(day=>Object.keys(day.c).forEach(e=>usersSet.add(e)));
+    Object.keys(WINDSURF_USERS).forEach(e=>usersSet.add(e));
+    Object.keys(ADOPTION_CC_MTD).forEach(e=>usersSet.add(e));
   } else {
     days.forEach(day=>Object.keys(day.c).forEach(e=>usersSet.add(e)));
   }
   const users=[...usersSet].filter(e=>adoptDept==='all'||getDept(e)===adoptDept).sort((a,b)=>{
     if(adoptView==='cc') return (ADOPTION_CC_MTD[b]||0)-(ADOPTION_CC_MTD[a]||0);
+    if(adoptView==='overall'){
+      // Sort by: total cursor events + 500 bonus per windsurf day + CC lines/100
+      const scoreA=days.reduce((s,d)=>s+(d.c[a]||0),0)+(WINDSURF_USERS[a]?200:0)+(ADOPTION_CC_MTD[a]||0)/100;
+      const scoreB=days.reduce((s,d)=>s+(d.c[b]||0),0)+(WINDSURF_USERS[b]?200:0)+(ADOPTION_CC_MTD[b]||0)/100;
+      return scoreB-scoreA;
+    }
     const sa=days.reduce((s,d)=>s+(d.c[a]||0),0);
     const sb=days.reduce((s,d)=>s+(d.c[b]||0),0);
     return sb-sa;
@@ -1059,34 +1081,62 @@ function renderAdoptHeatmap(){
   let h=`<table style="border-collapse:separate;border-spacing:2px;font-size:0.72rem;min-width:max-content">`;
   h+=`<tr><th style="padding:3px 10px 3px 4px;color:var(--muted);text-align:left;font-weight:400;min-width:130px">User</th>`;
   dates.forEach(d=>{const day=d.slice(8);h+=`<th style="padding:2px 0;color:var(--muted);font-weight:400;text-align:center;width:18px">${day}</th>`;});
-  h+=`<th style="padding:3px 4px 3px 8px;color:var(--muted);font-weight:400;text-align:right">${adoptView==='cc'?'Lines MTD':'Total'}</th></tr>`;
+  const colLabel=adoptView==='cc'?'Lines MTD':adoptView==='overall'?'Activity':' Total';
+  h+=`<th style="padding:3px 4px 3px 8px;color:var(--muted);font-weight:400;text-align:right">${colLabel}</th></tr>`;
   users.forEach(email=>{
     const label=nameFromEmail(email);
     const cursorTotal=days.reduce((s,d)=>s+(d.c[email]||0),0);
     const ccLines=ADOPTION_CC_MTD[email]||0;
     const wsLast=WINDSURF_USERS[email]||null;
-    const totalVal=adoptView==='cc'
-      ? `<span style="color:${ccLines>0?'#fff':'var(--muted)'}; font-weight:${ccLines>0?'700':'400'}">${ccLines>0?fmt(ccLines):'0'}</span>`
-      : `<span style="color:${cursorTotal>0?'#fff':'var(--muted)'};font-weight:${cursorTotal>0?'700':'400'}">${cursorTotal||'–'}</span>`;
-    h+=`<tr><td style="padding:2px 10px 2px 4px;color:var(--text);white-space:nowrap">${label}</td>`;
+    // Build total cell for each view
+    let totalVal;
+    if(adoptView==='cc'){
+      totalVal=`<span style="color:${ccLines>0?'#fff':'var(--muted)'};font-weight:${ccLines>0?'700':'400'}">${ccLines>0?fmt(ccLines):'0'}</span>`;
+    } else if(adoptView==='overall'){
+      const parts=[];
+      if(cursorTotal>0) parts.push(`<span style="color:#a89cff;font-size:0.68rem">${fmt(cursorTotal)}c</span>`);
+      if(wsLast)        parts.push(`<span style="color:#00d4aa;font-size:0.68rem">WS</span>`);
+      if(ccLines>0)     parts.push(`<span style="color:#ffa726;font-size:0.68rem">${fmt(ccLines)}L</span>`);
+      totalVal=parts.length?parts.join(' '):`<span style="color:var(--muted)">–</span>`;
+    } else {
+      totalVal=`<span style="color:${cursorTotal>0?'#fff':'var(--muted)'};font-weight:${cursorTotal>0?'700':'400'}">${cursorTotal||'–'}</span>`;
+    }
+    // Row background tint for CC view: subtle tint based on lines level
+    const rowBg=adoptView==='overall'&&ccLines>0?'background:rgba(255,167,38,0.03);':'';
+    h+=`<tr style="${rowBg}"><td style="padding:2px 10px 2px 4px;color:var(--text);white-space:nowrap">${label}</td>`;
     dates.forEach(d=>{
       const day=days.find(x=>x.date===d);
+      const cnt=day?(day.c[email]||0):0;
+      const wsActive=wsLast===d;
+      let style, tip;
       if(adoptView==='cc'){
-        h+=`<td style="${ccCellClr(ccLines)};width:18px;height:18px;border-radius:3px;" title="${email} · ${fmt(ccLines)} lines MTD"></td>`;
+        style=ccCellClr(ccLines); tip=`${email} · ${fmt(ccLines)} lines MTD`;
       } else if(adoptView==='windsurf'){
-        const active=wsLast===d?1:0;
-        h+=`<td style="${cellClr(0,active)};width:18px;height:18px;border-radius:3px;" title="${email}·${d}·${active?'active':'–'}"></td>`;
+        style=cellClr(0,wsActive?1:0); tip=`${email}·${d}·${wsActive?'active':'–'}`;
+      } else if(adoptView==='overall'){
+        style=overallCellClr(cnt,wsActive);
+        const tools=[cnt>0?`Cursor:${cnt}`:'',wsActive?'Windsurf':'',ccLines>0?`CC:${fmt(ccLines)}L`:''].filter(Boolean).join(' · ');
+        tip=`${email} · ${d} · ${tools||'no activity'}`;
       } else {
-        const cnt=day?(day.c[email]||0):0;
-        h+=`<td style="${cellClr(cnt,false)};width:18px;height:18px;border-radius:3px;" title="${email}·${d}·${cnt} events"></td>`;
+        style=cellClr(cnt,false); tip=`${email}·${d}·${cnt} events`;
       }
+      h+=`<td style="${style};width:18px;height:18px;border-radius:3px;" title="${tip}"></td>`;
     });
     h+=`<td style="padding:2px 4px 2px 8px;text-align:right">${totalVal}</td></tr>`;
   });
   h+=`</table>`;
   document.getElementById('adopt-heatmap').innerHTML=h;
   const leg=document.getElementById('adopt-legend');
-  if(adoptView==='cc'){
+  if(adoptView==='overall'){
+    leg.innerHTML=`
+      <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#1a1d27"></div>No activity</div>
+      <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.22)"></div>Cursor 1–4</div>
+      <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.6)"></div>Cursor 10–19</div>
+      <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#6c63ff"></div>Cursor 50+</div>
+      <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(0,212,170,0.75)"></div>Windsurf only</div>
+      <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#ffd740"></div>Cursor + Windsurf</div>
+      <span style="color:var(--muted);margin-left:4px">Total column: <span style="color:#a89cff">Nc</span>=Cursor events · <span style="color:#00d4aa">WS</span>=Windsurf · <span style="color:#ffa726">NL</span>=CC lines MTD</span>`;
+  } else if(adoptView==='cc'){
     leg.innerHTML=`<div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#1a1d27"></div>0 lines</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(255,167,38,0.65)"></div>Light (&lt;500)</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.8)"></div>Regular (500–5k)</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#00d4aa"></div>Power (5k+)</div><span style="color:var(--muted)">Claude Code CLI lines — MTD total per member</span>`;
   } else if(adoptView==='windsurf'){
     leg.innerHTML=`<div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#1a1d27"></div>No data</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#00d4aa;opacity:0.75"></div>Active (last-known date)</div><span style="color:var(--accent3)">⚠ Windsurf shows last-active date per feature only</span>`;
