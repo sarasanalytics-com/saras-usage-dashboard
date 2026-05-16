@@ -108,6 +108,8 @@
   <span class="tab-sep">Coding Tools</span>
   <div class="tab" onclick="switchTab('adoption',this)">Cursor & Windsurf</div>
   <div class="tab" onclick="switchTab('people',this)">People</div>
+  <span class="tab-sep">Work</span>
+  <div class="tab" onclick="switchTab('clickup',this)">✅ ClickUp</div>
   <div class="tab" onclick="switchTab('attention',this)">⚠ Gaps</div>
 </div>
 
@@ -440,6 +442,73 @@
   </div>
 </div>
 
+<!-- CLICKUP -->
+<div class="page" id="tab-clickup">
+  <div class="kpi-grid">
+    <div class="kpi c1">
+      <div class="kpi-label">Total Open Tickets</div>
+      <div class="kpi-value" id="cu-kpi-open">–</div>
+      <div class="kpi-sub" id="cu-kpi-open-sub">across all assignees</div>
+    </div>
+    <div class="kpi c2">
+      <div class="kpi-label">Closed May MTD</div>
+      <div class="kpi-value" id="cu-kpi-done">–</div>
+      <div class="kpi-sub">tickets completed this month</div>
+    </div>
+    <div class="kpi c3">
+      <div class="kpi-label">Urgent / High Open</div>
+      <div class="kpi-value" id="cu-kpi-urgent">–</div>
+      <div class="kpi-sub">need immediate attention</div>
+    </div>
+    <div class="kpi c4">
+      <div class="kpi-label">Top Closer (May)</div>
+      <div class="kpi-value" id="cu-kpi-top-closer" style="font-size:1.3rem">–</div>
+      <div class="kpi-sub" id="cu-kpi-top-closer-sub"></div>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:14px">Open Tickets by Person — Stacked Priority</div>
+      <div style="height:290px"><canvas id="cuOpenByPersonChart"></canvas></div>
+    </div>
+    <div class="card" style="display:flex;flex-direction:column;align-items:center">
+      <div class="section-title" style="margin-bottom:14px;align-self:flex-start">Priority Breakdown (Open)</div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center">
+        <canvas id="cuPriorityChart" width="220" height="220"></canvas>
+      </div>
+      <div id="cu-priority-legend" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:10px"></div>
+    </div>
+  </div>
+  <div class="card-full">
+    <div class="section-header">
+      <div>
+        <div class="section-title">All Assignees · ClickUp Activity</div>
+        <div class="section-sub" id="cu-table-sub"></div>
+      </div>
+      <div class="filter-bar" id="cu-filter">
+        <button class="filter-btn active" onclick="filterCU('all',this)">All</button>
+        <button class="filter-btn" onclick="filterCU('open',this)">Has Open</button>
+        <button class="filter-btn" onclick="filterCU('done',this)">Closed MTD</button>
+        <button class="filter-btn" onclick="filterCU('urgent',this)">Urgent</button>
+      </div>
+    </div>
+    <table class="data-table">
+      <thead><tr>
+        <th>#</th><th>Member</th><th>Dept</th>
+        <th style="text-align:right">Open</th>
+        <th style="text-align:right">Closed (May)</th>
+        <th>Open Priority Breakdown</th>
+        <th>Nearest Due</th>
+      </tr></thead>
+      <tbody id="cuTableBody"></tbody>
+    </table>
+  </div>
+  <div class="insight-box" style="background:rgba(0,212,170,0.06);border-color:rgba(0,212,170,0.2);margin-top:0">
+    <div class="insight-title" style="color:var(--accent2)">📌 ClickUp snapshot · as of <span id="cu-as-of"></span></div>
+    <div style="color:var(--muted)">Open = not yet closed. Closed = completed in May 2026 MTD. Priority shown for open tickets only. Data sourced live from ClickUp workspace.</div>
+  </div>
+</div>
+
 <!-- DAILY ADOPTION -->
 <div class="page" id="tab-adoption">
   <div class="kpi-grid">
@@ -617,6 +686,21 @@ const DEPT_MAP = {
   'aditya.kumar@sarasanalytics.com':      'Data Engineering',
   'pratishtha.yadav@sarasanalytics.com':  'Engineering',
   'sairaj.kujala@sarasanalytics.com':     'Engineering',
+  // ClickUp workspace members (not in Cursor/CC data)
+  'radhakrishnan.swaminathan@epicslope.partners': 'Growth',
+  'rakesh.varma@sarasanalytics.com':              'Growth',
+  's.thanoj.rahul@sarasanalytics.com':            'Growth',
+  'rahul.chauhan@sarasanalytics.com':             'Consulting',
+  'sumeet.bose@sarasanalytics.com':               'Marketing',
+  'sneha.gogineni@sarasanalytics.com':            'Data Engineering',
+  'subhashree.mohanty@sarasanalytics.com':        'Consulting',
+  'deekshitha.vatnala@sarasanalytics.com':        'Data Engineering',
+  'monish.raj@sarasanalytics.com':                'Consulting',
+  'naren.singh@sarasanalytics.com':               'Customer Success',
+  'nishita.khanna@sarasanalytics.com':            'Data Engineering',
+  'santosh.paila@sarasanalytics.com':             'Consulting',
+  'chai@sarasanalytics.com':                      'Customer Success',
+  'naga.mandava@sarasanalytics.com':              'Data Engineering',
 };
 members.forEach(m => { DEPT_MAP[m.email] = m.dept; });
 
@@ -1038,6 +1122,170 @@ const WINDSURF_USERS={
 })();
 // ────────────────────────────────────────────────────────────────────────────
 
+// ==================== CLICKUP DATA ====================
+// Snapshot from ClickUp workspace — open tasks + May MTD closed tasks
+// open / done = ticket counts; urgent/high/normal/low = priority breakdown of OPEN tickets
+const CLICKUP_DATA = {
+  asOf: '2026-05-16',
+  people: [
+    // ── People with open tickets ─────────────────────────────────────────────
+    {name:'Radhakrishnan S',    email:'radhakrishnan.swaminathan@epicslope.partners', dept:'Growth',          open:29, done:0,  urgent:10, high:12, normal:7, low:0, nextDue:'2026-06-29'},
+    {name:'Rakesh Varma',       email:'rakesh.varma@sarasanalytics.com',             dept:'Growth',          open:11, done:0,  urgent:0,  high:9,  normal:2, low:0, nextDue:'2026-06-29'},
+    {name:'Rahul Chauhan',      email:'rahul.chauhan@sarasanalytics.com',            dept:'Consulting',      open:10, done:0,  urgent:2,  high:8,  normal:0, low:0, nextDue:'2026-06-29'},
+    {name:'Chai',               email:'chai@sarasanalytics.com',                     dept:'Customer Success',open:5,  done:0,  urgent:0,  high:0,  normal:5, low:0, nextDue:'2026-07-16'},
+    {name:'Om Prakash Mahto',   email:'omprakash@sarasanalytics.com',                dept:'Data Engineering',open:4,  done:0,  urgent:1,  high:3,  normal:0, low:0, nextDue:'2026-07-10'},
+    {name:'Abhishek Baruah',    email:'abhishek.baruah@sarasanalytics.com',          dept:'Data Engineering',open:4,  done:0,  urgent:1,  high:3,  normal:0, low:0, nextDue:'2026-07-30'},
+    {name:'S Thanoj Rahul',     email:'s.thanoj.rahul@sarasanalytics.com',           dept:'Growth',          open:4,  done:0,  urgent:0,  high:2,  normal:2, low:0, nextDue:'2026-06-29'},
+    {name:'Sumeet Bose',        email:'sumeet.bose@sarasanalytics.com',              dept:'Marketing',       open:3,  done:0,  urgent:0,  high:2,  normal:0, low:0, nextDue:'2026-06-29'},
+    {name:'Naga Sravanthi',     email:'naga.mandava@sarasanalytics.com',             dept:'Data Engineering',open:2,  done:0,  urgent:0,  high:0,  normal:2, low:0, nextDue:'2026-07-05'},
+    {name:'Iqjot Singh',        email:'iqjot.singh@sarasanalytics.com',              dept:'Data Engineering',open:1,  done:0,  urgent:0,  high:1,  normal:0, low:0, nextDue:'2026-06-29'},
+    {name:'Santosh Paila',      email:'santosh.paila@sarasanalytics.com',            dept:'Consulting',      open:1,  done:0,  urgent:0,  high:1,  normal:0, low:0, nextDue:'2026-06-29'},
+    // ── Top closers — May MTD ────────────────────────────────────────────────
+    {name:'Sneha Gogineni',     email:'sneha.gogineni@sarasanalytics.com',           dept:'Data Engineering',open:0,  done:40, urgent:14, high:26, normal:0, low:0, nextDue:null},
+    {name:'Potkan Manikumar',   email:'mani.kumar@sarasanalytics.com',               dept:'Data Engineering',open:0,  done:32, urgent:13, high:19, normal:0, low:0, nextDue:null},
+    {name:'Rudrasen Gouda',     email:'rudrasen.gouda@sarasanalytics.com',           dept:'Data Engineering',open:0,  done:13, urgent:0,  high:13, normal:0, low:0, nextDue:null},
+    {name:'Subhashree Mohanty', email:'subhashree.mohanty@sarasanalytics.com',       dept:'Consulting',      open:0,  done:6,  urgent:5,  high:1,  normal:0, low:0, nextDue:null},
+    {name:'Deekshitha Vatnala', email:'deekshitha.vatnala@sarasanalytics.com',       dept:'Data Engineering',open:0,  done:6,  urgent:2,  high:4,  normal:0, low:0, nextDue:null},
+    {name:'Monish Raj',         email:'monish.raj@sarasanalytics.com',               dept:'Consulting',      open:0,  done:4,  urgent:0,  high:0,  normal:0, low:0, nextDue:null},
+    {name:'Naren Singh',        email:'naren.singh@sarasanalytics.com',              dept:'Customer Success',open:0,  done:3,  urgent:0,  high:0,  normal:2, low:0, nextDue:null},
+    {name:'Nishita Khanna',     email:'nishita.khanna@sarasanalytics.com',           dept:'Data Engineering',open:0,  done:3,  urgent:0,  high:1,  normal:2, low:0, nextDue:null},
+    {name:'Ritvik Sai Vemula',  email:'ritvik.vemula@sarasanalytics.com',            dept:'Consulting',      open:0,  done:1,  urgent:0,  high:1,  normal:0, low:0, nextDue:null},
+    {name:'Katharin Benson',    email:'katharin.benson@sarasanalytics.com',          dept:'Consulting',      open:0,  done:1,  urgent:0,  high:1,  normal:0, low:0, nextDue:null},
+    {name:'Susmitha Peeka',     email:'susmitha.peeka@sarasanalytics.com',           dept:'Data Engineering',open:0,  done:1,  urgent:0,  high:1,  normal:0, low:0, nextDue:null},
+    {name:'Jatin Kumar Sahu',   email:'jatin.sahu@sarasanalytics.com',              dept:'Data Engineering',open:0,  done:1,  urgent:0,  high:1,  normal:0, low:0, nextDue:null},
+  ]
+};
+
+let cuFilter = 'all';
+function filterCU(f, btn) {
+  cuFilter = f;
+  document.querySelectorAll('#cu-filter .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCUTable();
+}
+
+function initClickUp() {
+  const people = CLICKUP_DATA.people;
+
+  // KPIs
+  const totalOpen    = people.reduce((s, p) => s + p.open, 0);
+  const totalDone    = people.reduce((s, p) => s + p.done, 0);
+  const urgHighOpen  = people.filter(p => p.open > 0).reduce((s, p) => s + p.urgent + p.high, 0);
+  const topCloser    = [...people].sort((a, b) => b.done - a.done)[0];
+  const openPeopleCt = people.filter(p => p.open > 0).length;
+
+  set('cu-kpi-open',           fmt(totalOpen));
+  set('cu-kpi-open-sub',       `across ${openPeopleCt} people`);
+  set('cu-kpi-done',           fmt(totalDone));
+  set('cu-kpi-urgent',         fmt(urgHighOpen));
+  set('cu-kpi-top-closer',     topCloser ? topCloser.name.split(' ').slice(0,2).join(' ') : '–');
+  set('cu-kpi-top-closer-sub', topCloser ? `${topCloser.done} tickets closed` : '');
+  set('cu-as-of', CLICKUP_DATA.asOf);
+
+  // Bar chart — open by person (stacked by priority)
+  const openPeople = [...people].filter(p => p.open > 0).sort((a, b) => b.open - a.open).slice(0, 9);
+  new Chart(document.getElementById('cuOpenByPersonChart'), {
+    type: 'bar',
+    data: {
+      labels: openPeople.map(p => {
+        const parts = p.name.split(' ');
+        return parts.length > 1 ? parts[0] + ' ' + parts[1][0] + '.' : parts[0];
+      }),
+      datasets: [
+        { label:'Urgent', data: openPeople.map(p => p.urgent), backgroundColor:'rgba(255,82,82,0.85)',  borderRadius:4 },
+        { label:'High',   data: openPeople.map(p => p.high),   backgroundColor:'rgba(255,167,38,0.80)', borderRadius:4 },
+        { label:'Normal', data: openPeople.map(p => p.normal), backgroundColor:'rgba(108,99,255,0.65)', borderRadius:4 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: {
+        legend: { labels:{ color:'#8b92b8', font:{ size:11 } } },
+        tooltip: { callbacks:{ label: c => c.dataset.label+': '+c.raw } }
+      },
+      scales: {
+        x: { stacked:true, ticks:{ color:'#8b92b8', font:{ size:10 } }, grid:{ display:false } },
+        y: { stacked:true, ticks:{ color:'#8b92b8' }, grid:{ color:'rgba(46,50,80,0.5)' } }
+      }
+    }
+  });
+
+  // Doughnut — priority breakdown of all open tasks
+  const allUrgent = people.filter(p => p.open > 0).reduce((s, p) => s + p.urgent, 0);
+  const allHigh   = people.filter(p => p.open > 0).reduce((s, p) => s + p.high,   0);
+  const allNormal = people.filter(p => p.open > 0).reduce((s, p) => s + p.normal, 0);
+  const allLow    = people.filter(p => p.open > 0).reduce((s, p) => s + p.low,    0);
+
+  const prioLabels = []; const prioVals = []; const prioCols = [];
+  if (allUrgent) { prioLabels.push('Urgent'); prioVals.push(allUrgent); prioCols.push('rgba(255,82,82,0.9)'); }
+  if (allHigh)   { prioLabels.push('High');   prioVals.push(allHigh);   prioCols.push('rgba(255,167,38,0.9)'); }
+  if (allNormal) { prioLabels.push('Normal'); prioVals.push(allNormal); prioCols.push('rgba(108,99,255,0.8)'); }
+  if (allLow)    { prioLabels.push('Low');    prioVals.push(allLow);    prioCols.push('rgba(0,188,212,0.8)'); }
+
+  new Chart(document.getElementById('cuPriorityChart'), {
+    type: 'doughnut',
+    data: { labels: prioLabels, datasets:[{ data: prioVals, backgroundColor: prioCols, borderWidth:0, hoverOffset:4 }] },
+    options: { responsive:false, cutout:'66%', plugins:{ legend:{ display:false } } }
+  });
+
+  const prioColors = { Urgent:'#ff5252', High:'#ffa726', Normal:'#a89cff', Low:'#00bcd4' };
+  document.getElementById('cu-priority-legend').innerHTML = prioLabels.map((l,i) =>
+    `<span style="display:flex;align-items:center;gap:4px;font-size:0.73rem;color:var(--muted)">
+      <span style="width:10px;height:10px;border-radius:50%;background:${prioColors[l]||'#8b92b8'};flex-shrink:0"></span>${l}: <strong style="color:var(--fg)">${prioVals[i]}</strong>
+    </span>`
+  ).join('');
+
+  renderCUTable();
+}
+
+function renderCUTable() {
+  let rows = CLICKUP_DATA.people;
+  if      (cuFilter === 'open')   rows = rows.filter(p => p.open > 0);
+  else if (cuFilter === 'done')   rows = rows.filter(p => p.done > 0);
+  else if (cuFilter === 'urgent') rows = rows.filter(p => p.open > 0 && p.urgent > 0);
+
+  rows = [...rows].sort((a, b) => {
+    if (b.open !== a.open) return b.open - a.open;
+    return b.done - a.done;
+  });
+
+  set('cu-table-sub', `${CLICKUP_DATA.asOf} snapshot · ${rows.length} people shown`);
+  const dash = '<span style="color:var(--muted)">—</span>';
+
+  document.getElementById('cuTableBody').innerHTML = rows.map((p, i) => {
+    // Priority pills (open tasks only)
+    const pills = [];
+    if (p.urgent > 0) pills.push(`<span style="background:rgba(255,82,82,0.18);color:#ff5252;border-radius:3px;padding:2px 7px;font-size:0.66rem;font-weight:700">🔴 ${p.urgent} urgent</span>`);
+    if (p.high   > 0) pills.push(`<span style="background:rgba(255,167,38,0.18);color:#ffa726;border-radius:3px;padding:2px 7px;font-size:0.66rem;font-weight:700">🟠 ${p.high} high</span>`);
+    if (p.normal > 0 && p.open > 0) pills.push(`<span style="background:rgba(108,99,255,0.15);color:#a89cff;border-radius:3px;padding:2px 7px;font-size:0.66rem;font-weight:700">🔵 ${p.normal} normal</span>`);
+    const prioHTML = p.open > 0
+      ? (pills.length ? pills.join('&thinsp;') : `<span style="color:var(--muted);font-size:0.73rem">no priority set</span>`)
+      : dash;
+
+    const openColor = p.urgent > 0 ? '#ff5252' : p.high > 0 ? '#ffa726' : 'var(--fg)';
+    const openCell  = p.open > 0
+      ? `<span style="font-weight:700;font-size:1rem;color:${openColor}">${p.open}</span>`
+      : dash;
+    const doneCell = p.done > 0
+      ? `<span style="font-weight:600;color:var(--accent2)">${p.done}</span>`
+      : dash;
+    const dueCell = p.nextDue
+      ? `<span style="font-size:0.74rem;color:var(--muted)">${p.nextDue}</span>`
+      : (p.done > 0 ? `<span style="font-size:0.72rem;color:var(--accent2)">✓ all closed</span>` : dash);
+
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td><div class="name-cell">${p.name}</div><div class="email-muted">${p.email}</div></td>
+      <td>${deptBadge(p.dept)}</td>
+      <td class="num-cell">${openCell}</td>
+      <td class="num-cell">${doneCell}</td>
+      <td style="white-space:nowrap">${prioHTML}</td>
+      <td>${dueCell}</td>
+    </tr>`;
+  }).join('');
+}
+// ======================================================
+
 let adoptView='overall', adoptDept='all';
 let adoptUTotals={}, adoptUDays={};
 function setAdoptView(v,btn){
@@ -1298,6 +1546,7 @@ initAdoption();
 initCharts();
 renderCodeTable();
 renderPeopleTable();
+initClickUp();
 </script>
 </body>
 </html>
