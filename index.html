@@ -384,6 +384,7 @@
       <button class="filter-btn" onclick="filterPeopleTier('cc',this)">Claude Code</button>
       <button class="filter-btn" onclick="filterPeopleTier('cursor',this)">Cursor</button>
       <button class="filter-btn" onclick="filterPeopleTier('ws',this)">Windsurf</button>
+      <button class="filter-btn" onclick="filterPeopleTier('cu',this)">ClickUp</button>
       <button class="filter-btn" onclick="filterPeopleTier('none',this)">No Activity</button>
     </div>
     <select class="dept-select" id="peopleDeptSelect" onchange="filterPeopleDept(this.value)">
@@ -730,6 +731,218 @@ const DEPT_MAP = {
 };
 members.forEach(m => { DEPT_MAP[m.email] = m.dept; });
 
+// ── Full employee roster (source of truth: Employee Data.xlsx, 209 rows) ────
+const ALL_EMPLOYEES = [
+  {name:'Sreeram Ravuri', email:'sreeram.ravuri@sarasanalytics.com', dept:'Engineering'},
+  {name:'Beem Singh M', email:'bheem@sarasanalytics.com', dept:'Engineering'},
+  {name:'Sparsh Gupta', email:'sparsh.gupta@sarasanalytics.com', dept:'Engineering'},
+  {name:'Balaji Kolli', email:'balaji.kolli@sarasanalytics.com', dept:'Growth'},
+  {name:'Ajay Kottapally', email:'ajay@sarasanalytics.com', dept:'Engineering'},
+  {name:'Bejjenki Sandeep Reddy', email:'bejjenki.sandeep@sarasanalytics.com', dept:'Consulting'},
+  {name:'Mohammad Ashraf', email:'mohammad.ashraf@sarasanalytics.com', dept:'Consulting'},
+  {name:'Sarath Buchi', email:'sarath.buchi@sarasanalytics.com', dept:'Marketing'},
+  {name:'Koundinya Manchi', email:'koundinya.manchi@sarasanalytics.com', dept:'Consulting'},
+  {name:'Sri Harsha Jaya Satya Srireddy', email:'sri.harsha@sarasanalytics.com', dept:'Consulting'},
+  {name:'Krishna Chaitanya Poda', email:'krishna.chaitanya@sarasanalytics.com', dept:'Engineering'},
+  {name:'Madhavi Poda', email:'madhavi.poda@sarasanalytics.com', dept:'Engineering'},
+  {name:'Zehra Taher Saleem', email:'zehra.taher@sarasanalytics.com', dept:'Engineering'},
+  {name:'Deepthi Boyanapalli', email:'deepthi.boyanapalli@sarasanalytics.com', dept:'Customer Success'},
+  {name:'Abhijit G N', email:'abhijit.g@sarasanalytics.com', dept:'Consulting'},
+  {name:'Kaivalya Sathe', email:'kaivalya@sarasanalytics.com', dept:'Engineering'},
+  {name:'Abhishek Baruah', email:'abhishek.baruah@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Deep Kumar', email:'deep.kumar@sarasanalytics.com', dept:'Consulting'},
+  {name:'Vipul Rathore', email:'vipul.rathore@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Moiz Saifuddin Essaji', email:'moiz.essaji@sarasanalytics.com', dept:'Consulting'},
+  {name:'Smriti Singh', email:'smriti.singh@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Joseph George', email:'joseph.george@sarasanalytics.com', dept:'Growth'},
+  {name:'Arfat Khan', email:'arfat.khan@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Waheedul Akbar', email:'waheedul.akbar@sarasanalytics.com', dept:'Engineering'},
+  {name:'Nandini Pericharlla', email:'nandini.pericharlla@sarasanalytics.com', dept:'Engineering'},
+  {name:'Saikiran Kallem', email:'saikiran.kallem@sarasanalytics.com', dept:'Product'},
+  {name:'Pranav Hundoo', email:'pranav.hundoo@sarasanalytics.com', dept:'Growth'},
+  {name:'Vishnu Priya Palle', email:'vishnu.priya@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Kumari Bhawna', email:'bhawna.kumari@sarasanalytics.com', dept:'Consulting'},
+  {name:'Om Prakash Mahto', email:'omprakash@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Pravalika Guduru', email:'pravalika.guduru@sarasanalytics.com', dept:'Product'},
+  {name:'Karthik Bompalli', email:'karthik.b@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Mayank Sharma', email:'mayank.sharma@sarasanalytics.com', dept:'Growth'},
+  {name:'Rajavardhan Goud K', email:'rajavardhan@sarasanalytics.com', dept:'Engineering'},
+  {name:'Anudeep Yashaswi Chengalvala', email:'anudeep.yashaswi@sarasanalytics.com', dept:'Consulting'},
+  {name:'Fridolin Steffe Mijo S J', email:'fridolin.steffe@sarasanalytics.com', dept:'Consulting'},
+  {name:'Santhosh Kumar Dowluri', email:'santhosh.kumar@sarasanalytics.com', dept:'Engineering'},
+  {name:'Saad Shahab Qureshi', email:'saad@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Shivansh Gupta', email:'shivansh.gupta@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Purna Subhash Kondepati', email:'purna.subhash@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Srinivas Janipalli', email:'srinivas.janipalli@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Satyam Deshwal', email:'satyam.deshwal@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'S R Nikita Gulabi Kuchimanchi', email:'s.r@sarasanalytics.com', dept:'Consulting'},
+  {name:'Naveen Kumar Allu', email:'naveen.kumar@sarasanalytics.com', dept:'Consulting'},
+  {name:'Karthik R', email:'karthik.r@sarasanalytics.com', dept:'Product'},
+  {name:'Arpit Jain', email:'arpit.jain@sarasanalytics.com', dept:'Product'},
+  {name:'Divij Gawri', email:'divij.gawri@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Aditya Kumar', email:'aditya.kumar@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Katharin Benson', email:'katharin.benson@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Maninder Kumar Singh', email:'maninder.kumar@sarasanalytics.com', dept:'Engineering'},
+  {name:'Gaurav Sharma', email:'gaurav.sharma@sarasanalytics.com', dept:'Engineering'},
+  {name:'PSR', email:'psr@sarasanalytics.com', dept:'Growth'},
+  {name:'Pratishtha Yadav', email:'pratishtha.yadav@sarasanalytics.com', dept:'Engineering'},
+  {name:'Uday Kiran Reddy Aredla', email:'uday.kiran@sarasanalytics.com', dept:'Engineering'},
+  {name:'Pydipalli Kartik', email:'pydipalli.kartik@sarasanalytics.com', dept:'Consulting'},
+  {name:'Ravali Manne', email:'ravali.manne@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Shivang Mishra', email:'shivang.mishra@sarasanalytics.com', dept:'Growth'},
+  {name:'Aerica Sethi', email:'aerica.sethi@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Arif Raja Mondal', email:'arif.raja@sarasanalytics.com', dept:'Engineering'},
+  {name:'Sri Priya Rudavath', email:'sri.priya@sarasanalytics.com', dept:'Customer Success'},
+  {name:'Mastan Reddy Paluri', email:'mastan.reddy@sarasanalytics.com', dept:'Consulting'},
+  {name:'Smriti Ojha', email:'smriti.ojha@sarasanalytics.com', dept:'Engineering'},
+  {name:'Sahil Chhimpa', email:'sahil.chhimpa@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Chaitanya Bhairy', email:'chai@sarasanalytics.com', dept:'Customer Success'},
+  {name:'Himanshi Jugani', email:'himanshi.jugani@sarasanalytics.com', dept:'Consulting'},
+  {name:'Ganesh kamineni', email:'ganesh.kamineni@sarasanalytics.com', dept:'Consulting'},
+  {name:'Anutejaswani Chintha', email:'anutejaswani.chintha@sarasanalytics.com', dept:'Consulting'},
+  {name:'Swati Sharma', email:'swati.sharma@sarasanalytics.com', dept:'HR'},
+  {name:'Bikram Das', email:'bikram.das@sarasanalytics.com', dept:'Engineering'},
+  {name:'Reeshab Kumar Nayak', email:'reeshab.nayak@sarasanalytics.com', dept:'Customer Success'},
+  {name:'Swayam Satapathy', email:'swayam.satapathy@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Kranthi', email:'kranthi.kumar@sarasanalytics.com', dept:'Marketing'},
+  {name:'Udaya Sree Mutyala', email:'udaya.sree@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Susmitha Peeka', email:'susmitha.peeka@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Subha Kumar', email:'subha.kumar@sarasanalytics.com', dept:'HR'},
+  {name:'Ashyam Zubair', email:'ashyam.zubair@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Vamsi Krishna Talari', email:'vamsi.krishna@sarasanalytics.com', dept:'Consulting'},
+  {name:'Abhishek Diwan', email:'abhishek.diwan@sarasanalytics.com', dept:'Product'},
+  {name:'Deepankar Jain', email:'deepankar.jain@sarasanalytics.com', dept:'Consulting'},
+  {name:'Tejaswini Surineni', email:'tejaswini.surineni@sarasanalytics.com', dept:'Engineering'},
+  {name:'Abburi V Datta', email:'abburi.v@sarasanalytics.com', dept:'Marketing'},
+  {name:'Mohammad Zenul Abedeen Ansari', email:'zenul.abedeen@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Bhavya Challa', email:'bhavya.challa@sarasanalytics.com', dept:'Consulting'},
+  {name:'Naveena Kolli', email:'naveena.kolli@sarasanalytics.com', dept:'Engineering'},
+  {name:'Sid', email:'sid@sarasanalytics.com', dept:'Consulting'},
+  {name:'Ritvik Sai Vemula', email:'ritvik.vemula@sarasanalytics.com', dept:'Consulting'},
+  {name:'Mandala Sriram Reddy', email:'mandala.sriram@sarasanalytics.com', dept:'Consulting'},
+  {name:'Shoaib Aleemuddin', email:'shoaib.aleemuddin@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Rahul Chauhan', email:'rahul.chauhan@sarasanalytics.com', dept:'Consulting'},
+  {name:'Sharath Polu', email:'sharath.polu@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Ravi Kant Singh', email:'ravi.kant@sarasanalytics.com', dept:'Consulting'},
+  {name:'Anoop Joshi', email:'anoop.joshi@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Anu Apurvaa Sindol', email:'anu.apurvaa@sarasanalytics.com', dept:'Consulting'},
+  {name:'Vicky Kumar', email:'vicky.kumar@sarasanalytics.com', dept:'Consulting'},
+  {name:'Arijit Bhattacharyya', email:'arijit.bhattacharyya@sarasanalytics.com', dept:'Consulting'},
+  {name:'Sai Varun Pathi', email:'saivarun.pathi@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Saurabh Upadhyay', email:'saurabh.upadhyay@sarasanalytics.com', dept:'Consulting'},
+  {name:'Bhavana Buragadda', email:'bhavana.buragadda@sarasanalytics.com', dept:'Marketing'},
+  {name:'Nivid Kher', email:'nivid.k@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Joe Payappilly', email:'joe.p@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Dilip Muralidhar Mekala Venkata', email:'dilip@sarasanalytics.com', dept:'HR'},
+  {name:'Jigar Trivedi', email:'jigar.trivedi@sarasanalytics.com', dept:'Engineering'},
+  {name:'SaiRaj Kujala', email:'sairaj.kujala@sarasanalytics.com', dept:'Engineering'},
+  {name:'Niharika Namala', email:'niharika.namala@sarasanalytics.com', dept:'Customer Success'},
+  {name:'Anusha Danda', email:'anusha@sarasanalytics.com', dept:'Engineering'},
+  {name:'Soumithri Chilakamarri', email:'soumithri.c@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Sai Teja Katrapati', email:'saiteja.katrapati@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Bharath Kumar Pagadakula', email:'bharath.pagadakula@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Sibgat Ullah', email:'sibgat.ullah@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Sumeet Bose', email:'sumeet.bose@sarasanalytics.com', dept:'Marketing'},
+  {name:'Umesh Chaudhari', email:'umesh.chaudhari@sarasanalytics.com', dept:'Consulting'},
+  {name:'Rohit Kumar Pandey', email:'rohit.pandey@sarasanalytics.com', dept:'Consulting'},
+  {name:'Ankush Reddy K', email:'ankush.reddy@sarasanalytics.com', dept:'HR'},
+  {name:'Thanoj Rahul Siddabathula', email:'thanoj.rahul@sarasanalytics.com', dept:'Marketing'},
+  {name:'Baisakhi Dash', email:'baisakhi.dash@sarasanalytics.com', dept:'HR'},
+  {name:'J. Narayana Aditya', email:'j.narayana@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Mohammad Ali Khan', email:'mohammad.ali@sarasanalytics.com', dept:'Consulting'},
+  {name:'Lakshay Virmani', email:'lakshay.virmani@sarasanalytics.com', dept:'Consulting'},
+  {name:'Joseph Billy Graham Ubbarapu', email:'joseph.ubbarapu@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Lokesh Joshi', email:'lokesh.joshi@sarasanalytics.com', dept:'Consulting'},
+  {name:'Rakesh Varma Dokkada', email:'rakesh.varma@sarasanalytics.com', dept:'Marketing'},
+  {name:'Chinmay Joshi', email:'chinmay.joshi@sarasanalytics.com', dept:'Consulting'},
+  {name:'Krishna Bhargavi MNV', email:'krishna.bhargavi@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Kritik Kumar', email:'kritik.kumar@sarasanalytics.com', dept:'Engineering'},
+  {name:'Ayan Bhattacharyya', email:'ayan.bhattacharyya@sarasanalytics.com', dept:'Consulting'},
+  {name:'Rohit Singh', email:'rohit.singh@sarasanalytics.com', dept:'Consulting'},
+  {name:'Saransh Saxena', email:'saransh.saxena@sarasanalytics.com', dept:'Consulting'},
+  {name:'Chahat Kochar', email:'chahat.kochar@sarasanalytics.com', dept:'Growth'},
+  {name:'BHAVIKA RATHORE', email:'bhavika.rathore@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Iqjot Singh', email:'iqjot.singh@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Uttam Swain', email:'uttam.swain@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Subhashree Mohanty', email:'subhashree.mohanty@sarasanalytics.com', dept:'Consulting'},
+  {name:'Jatin Sahu', email:'jatin.sahu@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Manas Reddy Gavva', email:'manas.reddy@sarasanalytics.com', dept:'Growth'},
+  {name:'Manasa Karumuru', email:'manasa.karumuru@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Srinithi Reddy Geereddy', email:'srinithi.reddy@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Srinivas Sai Ram Sampathirao', email:'srinivas.sai@sarasanalytics.com', dept:'Engineering'},
+  {name:'KOMAL SARAOGI', email:'komal.saraogi@sarasanalytics.com', dept:'Consulting'},
+  {name:'Kashish Galhotra', email:'kashish.galhotra@sarasanalytics.com', dept:'Consulting'},
+  {name:'Aditya Ayinavolu', email:'aditya.ayinavolu@sarasanalytics.com', dept:'Finance'},
+  {name:'Harsh Sharma', email:'harsh.sharma@sarasanalytics.com', dept:'Consulting'},
+  {name:'Sravanthi Gaali', email:'sravanthi.gaali@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Sachin Kapgate', email:'sachin.kapgate@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'SURAJ MAURYA', email:'suraj.maurya@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Eswar Penta', email:'eswar.penta@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'John Joseph', email:'john.joseph@sarasanalytics.com', dept:'Consulting'},
+  {name:'Priyabrata Dash', email:'priyabrata.dash@sarasanalytics.com', dept:'Consulting'},
+  {name:'Pinnoju Abhignya', email:'abhignya.pinnoju@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Santosh Paila', email:'santosh.paila@sarasanalytics.com', dept:'Growth'},
+  {name:'Qurrat Ul Ain', email:'qurrat.ul@sarasanalytics.com', dept:'Consulting'},
+  {name:'Anuj Dandawate', email:'anuj.dandawate@sarasanalytics.com', dept:'Consulting'},
+  {name:'Anudeep kolla', email:'anudeep.kolla@sarasanalytics.com', dept:'IT'},
+  {name:'Sriraagh Rao Anugu', email:'sriraagh.rao@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Ajay Chandra Mateti', email:'ajay.chandra@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Rajas S Thanekar', email:'rajas.s@sarasanalytics.com', dept:'Consulting'},
+  {name:'Naga Sravanthi Mandava', email:'naga.mandava@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Nischala Agnihotri', email:'nischala.agnihotri@sarasanalytics.com', dept:'Marketing'},
+  {name:'Sushanth Pratap Singh', email:'sushanth.pratap@sarasanalytics.com', dept:'CEO Office'},
+  {name:'Kumar Anunay', email:'kumar.anunay@sarasanalytics.com', dept:'Consulting'},
+  {name:'Sayeeda Afreen Syed', email:'sayeeda.afreen@sarasanalytics.com', dept:'Consulting'},
+  {name:'Sneha Gogineni', email:'sneha.gogineni@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Kakul Verma', email:'kakul.verma@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Kedar Dave', email:'kedar.dave@sarasanalytics.com', dept:'Product Engineering'},
+  {name:'Manya Shukla', email:'manya.shukla@sarasanalytics.com', dept:'Consulting'},
+  {name:'Harshita Kaushik', email:'harshita.kaushik@sarasanalytics.com', dept:'HR'},
+  {name:'Naren Sai Deepak Singh Adoni Rajput', email:'naren.singh@sarasanalytics.com', dept:'Customer Success'},
+  {name:'Nishita Khanna', email:'nishita.khanna@sarasanalytics.com', dept:'Customer Success'},
+  {name:'Lalit Reddy Muthyala', email:'lalit.reddy@sarasanalytics.com', dept:'Consulting'},
+  {name:'Neelima Routhu', email:'neelima.routhu@sarasanalytics.com', dept:'Consulting'},
+  {name:'Amith Lakkakula', email:'amith@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Yashveer Gaur', email:'yashveer.gaur@sarasanalytics.com', dept:'Consulting'},
+  {name:'Mahadas Srianshu', email:'mahadas.srianshu@sarasanalytics.com', dept:'Consulting'},
+  {name:'Harshit Kumar', email:'harshit.kumar@sarasanalytics.com', dept:'Consulting'},
+  {name:'Monish Raj M', email:'monish.raj@sarasanalytics.com', dept:'Consulting'},
+  {name:'Subhadeep Mukherjee', email:'subhadeep.mukherjee@sarasanalytics.com', dept:'Customer Success'},
+  {name:'Mohammed Aamer Suhail', email:'mohammed.aamer@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Param', email:'param@sarasanalytics.com', dept:'Consulting'},
+  {name:'Aanchal Mehta', email:'aanchal.mehta@sarasanalytics.com', dept:'Consulting'},
+  {name:'Adithya Shaji', email:'adithya.shaji@sarasanalytics.com', dept:'Consulting'},
+  {name:'Anmol Redasani', email:'anmol.redasani@sarasanalytics.com', dept:'Consulting'},
+  {name:'Dinesh Kavuru', email:'dinesh.kavuru@sarasanalytics.com', dept:'Consulting'},
+  {name:'Sathish Kumar', email:'sathish.kumar@sarasanalytics.com', dept:'Customer Success'},
+  {name:'Nandhini Ilangovan', email:'nandhini.ilangovan@sarasanalytics.com', dept:'Customer Success'},
+  {name:'Manogna Sodum', email:'manogna.sodum@sarasanalytics.com', dept:'Marketing'},
+  {name:'Venkateshwaran S', email:'venkateshwaran.s@sarasanalytics.com', dept:'Engineering'},
+  {name:'Ripujit G N', email:'ripujit@sarasanalytics.com', dept:'Consulting'},
+  {name:'Mohammed Muneeb Nawal', email:'mohammed.muneeb@sarasanalytics.com', dept:'Consulting'},
+  {name:'Birhane Tinsae Wale', email:'birhane.tinsae@sarasanalytics.com', dept:'Engineering'},
+  {name:'Mark Sider', email:'mark.sider@sarasanalytics.com', dept:'Growth'},
+  {name:'Tanuja Jampana', email:'tanuja.jampana@sarasanalytics.com', dept:'Consulting'},
+  {name:'Abhiram Dharmavarapu', email:'abhiram.dharmavarapu@sarasanalytics.com', dept:'Engineering'},
+  {name:'Kondur Ranjith Kumar', email:'kondur.ranjith@sarasanalytics.com', dept:'CEO Office'},
+  {name:'Manas Ranjan Pradhan', email:'manas.pradhan@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Vaibhav Pratap Singh', email:'vaibhav.singh@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Hemanta Kumar Bhoi', email:'hemanta.bhoi@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Aman Kumar', email:'aman.kumar@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Rudrasen Gouda', email:'rudrasen.gouda@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Sneha Biju', email:'sneha.biju@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Kamal Bura', email:'kamal.bura@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Mohammed Mushtaq Hussain', email:'mushtaq.mohd@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'Deekshitha Manikonda Vatnala', email:'deekshitha.vatnala@sarasanalytics.com', dept:'Data Engineering'},
+  {name:'K Dheeksha', email:'k.dheeksha@sarasanalytics.com', dept:'Consulting'},
+  {name:'Preethi Kamal Gajula', email:'preethi.kamal@sarasanalytics.com', dept:'Consulting'},
+  {name:'Ashritha Akkinepally', email:'ashritha.akkinepally@sarasanalytics.com', dept:'Consulting'},
+  {name:'Vignesh Bodiga', email:'vignesh.bodiga@sarasanalytics.com', dept:'Engineering'},
+  {name:'Saurabh', email:'saurabh@sarasanalytics.com', dept:'Consulting'},
+  {name:'Pradeep AP', email:'pradeep.ap@sarasanalytics.com', dept:'Consulting'},
+  {name:'Lohitha Srinivasalu', email:'lohitha.srinivasalu@sarasanalytics.com', dept:'Consulting'},
+];
+
 function getDept(email) { return DEPT_MAP[email] || 'Other'; }
 
 function deptBadge(dept) {
@@ -832,28 +1045,25 @@ function filterCodeDept(val) { codeDept = val; renderCodeTable(); updateDistChar
 
 let peopleTier = 'all', peopleQ = '', peopleDept = 'all';
 function renderPeopleTable() {
-  // Build unified roster: Claude Code members + Cursor users + Windsurf users
-  const emailSet = new Set([
-    ...members.map(m => m.email),
-    ...Object.keys(adoptUTotals),
-    ...Object.keys(WINDSURF_USERS)
-  ]);
-  let rows = [...emailSet].map(email => {
+  // Base roster: all 209 employees from Employee Data.xlsx
+  let rows = ALL_EMPLOYEES.map(emp => {
+    const email        = emp.email;
     const member       = members.find(m => m.email === email);
-    const ccLines      = member ? member.lines : 0;
+    const ccLines      = member ? member.lines : (ADOPTION_CC_MTD[email] || 0);
     const cursorEvents = adoptUTotals[email] || 0;
     const wsLast       = WINDSURF_USERS[email] || null;
-    const name         = member ? member.name : nameFromEmail(email);
-    const dept         = member ? member.dept : getDept(email);
-    const toolCount    = (ccLines > 0 ? 1 : 0) + (cursorEvents > 0 ? 1 : 0) + (wsLast ? 1 : 0);
-    return { email, name, ccLines, cursorEvents, wsLast, dept, toolCount };
+    const cuPerson     = CLICKUP_DATA.people.find(p => p.email === email);
+    const hasCu        = !!(cuPerson && (cuPerson.open > 0 || cuPerson.done > 0));
+    const toolCount    = (ccLines > 0 ? 1 : 0) + (cursorEvents > 0 ? 1 : 0) + (wsLast ? 1 : 0) + (hasCu ? 1 : 0);
+    return { email, name: emp.name, dept: emp.dept, ccLines, cursorEvents, wsLast, hasCu, toolCount };
   });
 
   // Apply tool filter
-  if (peopleTier === 'multi')  rows = rows.filter(r => r.toolCount >= 2);
+  if      (peopleTier === 'multi')  rows = rows.filter(r => r.toolCount >= 2);
   else if (peopleTier === 'cc')     rows = rows.filter(r => r.ccLines > 0);
   else if (peopleTier === 'cursor') rows = rows.filter(r => r.cursorEvents > 0);
   else if (peopleTier === 'ws')     rows = rows.filter(r => r.wsLast);
+  else if (peopleTier === 'cu')     rows = rows.filter(r => r.hasCu);
   else if (peopleTier === 'none')   rows = rows.filter(r => r.toolCount === 0);
 
   if (peopleDept !== 'all') rows = rows.filter(r => r.dept === peopleDept);
@@ -863,10 +1073,10 @@ function renderPeopleTable() {
     (r.dept||'').toLowerCase().includes(peopleQ)
   );
 
-  // Sort: multi-tool first, then CC lines desc, then cursor events desc
+  // Sort: active first (by tool count), then CC lines desc, then cursor events desc
   rows.sort((a, b) => {
     if (b.toolCount !== a.toolCount) return b.toolCount - a.toolCount;
-    if (b.ccLines !== a.ccLines) return b.ccLines - a.ccLines;
+    if (b.ccLines !== a.ccLines)     return b.ccLines - a.ccLines;
     return b.cursorEvents - a.cursorEvents;
   });
 
@@ -874,11 +1084,12 @@ function renderPeopleTable() {
   const dash = '<span style="color:var(--muted)">—</span>';
 
   document.getElementById('peopleTableBody').innerHTML = rows.map((r, i) => {
-    // Tool pills
+    // Tool pills: CC · Cursor · Windsurf · ClickUp
     const pills = [];
     if (r.ccLines > 0)      pills.push(`<span style="background:#6c63ff;color:#fff;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">CC</span>`);
     if (r.cursorEvents > 0) pills.push(`<span style="background:#00bcd4;color:#111;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">Cursor</span>`);
     if (r.wsLast)           pills.push(`<span style="background:#00d4aa;color:#111;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">WS</span>`);
+    if (r.hasCu)            pills.push(`<span style="background:#ffa726;color:#111;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">ClickUp</span>`);
     const toolPills = pills.length
       ? pills.join('&thinsp;')
       : `<span style="color:var(--muted);font-size:0.75rem">no activity</span>`;
