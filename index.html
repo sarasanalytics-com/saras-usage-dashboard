@@ -889,7 +889,7 @@ function renderPeopleTable() {
       ? `<div style="display:flex;align-items:center;justify-content:flex-end;gap:8px"><span>${fmt(r.ccLines)}</span><div class="mini-bar" style="width:70px"><div class="mini-bar-fill" style="width:${bw}%;background:${barColor(r.ccLines)}"></div></div></div>`
       : dash;
 
-    return `<tr>
+    return `<tr class="clickable-row" onclick="openPersonPanel('${r.email}')">
       <td class="rank">${i+1}</td>
       <td><div class="name-cell">${r.name}</div><div class="email-muted">${r.email}</div></td>
       <td>${deptBadge(r.dept)}</td>
