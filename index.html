@@ -270,7 +270,7 @@
     </table>
   </div>
   <div class="card-full">
-    <div class="section-title" style="margin-bottom:16px">Lines Distribution — Full Team</div>
+    <div class="section-title" id="distChartTitle" style="margin-bottom:16px">Lines Distribution — Full Team</div>
     <div style="height:300px"><canvas id="allCodeChart"></canvas></div>
   </div>
 </div>
@@ -788,13 +788,30 @@ function renderCodeTable() {
     </tr>`;
   }).join('');
 }
+function updateDistChart() {
+  let filtered = members;
+  if (codeFilter === 'high') filtered = filtered.filter(m => m.lines >= 5000);
+  else if (codeFilter === 'mid') filtered = filtered.filter(m => m.lines >= 500 && m.lines < 5000);
+  else if (codeFilter === 'low') filtered = filtered.filter(m => m.lines > 0 && m.lines < 500);
+  else if (codeFilter === 'zero') filtered = filtered.filter(m => m.lines === 0);
+  if (codeDept !== 'all') filtered = filtered.filter(m => m.dept === codeDept);
+  const inst = window.allCodeChartInst;
+  if (!inst) return;
+  inst.data.labels = filtered.map(m => { const p = m.name.split(' '); return p[0] + (p[1] ? ' ' + p[1][0] : ''); });
+  inst.data.datasets[0].data = filtered.map(m => m.lines);
+  inst.data.datasets[0].backgroundColor = filtered.map(m => barColor(m.lines) + 'cc');
+  inst.update();
+  const label = codeDept === 'all' ? 'Full Team' : codeDept;
+  document.getElementById('distChartTitle').textContent = 'Lines Distribution — ' + label;
+}
 function filterCode(f, btn) {
   codeFilter = f;
   document.querySelectorAll('#tab-claude-code .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderCodeTable();
+  updateDistChart();
 }
-function filterCodeDept(val) { codeDept = val; renderCodeTable(); }
+function filterCodeDept(val) { codeDept = val; renderCodeTable(); updateDistChart(); }
 
 let peopleTier = 'all', peopleQ = '', peopleDept = 'all';
 function renderPeopleTable() {
@@ -995,7 +1012,7 @@ function initCharts() {
     data:{datasets:[{data:[d.coworkUserPct,100-d.coworkUserPct],backgroundColor:['rgba(255,167,38,0.85)','rgba(46,50,80,0.8)'],borderWidth:0,hoverOffset:4}]},
     options:{responsive:false,cutout:'72%',plugins:{legend:{display:false},tooltip:{enabled:false}}}});
 
-  new Chart(document.getElementById('allCodeChart'), {
+  window.allCodeChartInst = new Chart(document.getElementById('allCodeChart'), {
     type:'bar', data:{
       labels:members.map(m=>{const p=m.name.split(' ');return p[0]+(p[1]?' '+p[1][0]:'');}),
       datasets:[{data:members.map(m=>m.lines),borderRadius:4,backgroundColor:members.map(m=>barColor(m.lines)+'cc')}]
