@@ -492,16 +492,15 @@
           <button class="filter-btn" onclick="filterCU('done',this)">Closed MTD</button>
           <button class="filter-btn" onclick="filterCU('urgent',this)">Urgent</button>
         </div>
-        <select id="cu-dept-select" onchange="filterCUDept(this.value)"
-          style="background:var(--card);color:var(--muted);border:1px solid rgba(108,99,255,0.25);border-radius:6px;padding:5px 10px;font-size:0.74rem;cursor:pointer;outline:none">
-          <option value="all">All Teams</option>
-          <option value="Data Engineering">Data Engineering</option>
-          <option value="Engineering">Engineering</option>
-          <option value="Consulting">Consulting</option>
-          <option value="Growth">Growth</option>
-          <option value="Marketing">Marketing</option>
-          <option value="Customer Success">Customer Success</option>
-        </select>
+        <div class="filter-bar" id="cu-dept-filter">
+          <button class="filter-btn active" onclick="filterCUDept('all',this)">All Teams</button>
+          <button class="filter-btn" onclick="filterCUDept('Data Engineering',this)">Data Eng</button>
+          <button class="filter-btn" onclick="filterCUDept('Engineering',this)">Engineering</button>
+          <button class="filter-btn" onclick="filterCUDept('Consulting',this)">Consulting</button>
+          <button class="filter-btn" onclick="filterCUDept('Growth',this)">Growth</button>
+          <button class="filter-btn" onclick="filterCUDept('Marketing',this)">Marketing</button>
+          <button class="filter-btn" onclick="filterCUDept('Customer Success',this)">Cust Success</button>
+        </div>
       </div>
     </div>
     <table class="data-table">
@@ -1230,8 +1229,12 @@ function filterCU(f, btn) {
   renderCUTable();
 }
 
-function filterCUDept(val) {
+function filterCUDept(val, btn) {
   cuDeptFilter = val;
+  if (btn) {
+    document.querySelectorAll('#cu-dept-filter .filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
   renderCUTable();
 }
 
