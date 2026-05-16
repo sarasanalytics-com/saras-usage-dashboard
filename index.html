@@ -339,6 +339,20 @@
       <li><strong style="color:#fff">Artifacts (<span id="insight-artifact-pct"></span>% active)</strong> — Structured outputs: dashboards, code files, documents. Almost entirely untapped — training opportunity.</li>
     </ul>
   </div>
+
+  <!-- Projects top users -->
+  <div class="card-full">
+    <div class="section-header" style="margin-bottom:16px">
+      <div>
+        <div class="section-title">Top Users by Projects</div>
+        <div class="section-sub">Projects used MTD · as of <span id="projects-as-of"></span></div>
+      </div>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Projects Used</th><th style="text-align:right;width:200px">Usage Bar</th></tr></thead>
+      <tbody id="projectsTableBody"></tbody>
+    </table>
+  </div>
 </div>
 
 <!-- COWORK -->
@@ -385,6 +399,7 @@
       <button class="filter-btn" onclick="filterPeopleTier('cursor',this)">Cursor</button>
       <button class="filter-btn" onclick="filterPeopleTier('ws',this)">Windsurf</button>
       <button class="filter-btn" onclick="filterPeopleTier('cu',this)">ClickUp</button>
+      <button class="filter-btn" onclick="filterPeopleTier('proj',this)">Projects</button>
       <button class="filter-btn" onclick="filterPeopleTier('none',this)">No Activity</button>
     </div>
     <select class="dept-select" id="peopleDeptSelect" onchange="filterPeopleDept(this.value)">
@@ -618,6 +633,23 @@ const DATA = {
   projectUserPct: 9,
   artifactsCreated: 4,
   artifactUserPct: 1,
+};
+
+// ── Claude.ai Projects per user (Top 10, MTD) ────────────────────────────
+const PROJECTS_DATA = {
+  asOf: 'May 16, 2026',
+  topUsers: [
+    {email:'sairaj.kujala@sarasanalytics.com',    projects:15},
+    {email:'chahat.kochar@sarasanalytics.com',     projects:5},
+    {email:'abhijeet@sarasanalytics.com',          projects:5},
+    {email:'abhishek.diwan@sarasanalytics.com',    projects:4},
+    {email:'sayeeda.afreen@sarasanalytics.com',    projects:4},
+    {email:'srireddy.jayasatya@sarasanalytics.com',projects:4},
+    {email:'anuj.dandawate@sarasanalytics.com',    projects:3},
+    {email:'shivang.mishra@sarasanalytics.com',    projects:3},
+    {email:'yashveer.gaur@sarasanalytics.com',     projects:3},
+    {email:'ravikant.singh@sarasanalytics.com',    projects:3},
+  ]
 };
 
 const members = [
@@ -1054,8 +1086,10 @@ function renderPeopleTable() {
     const wsLast       = WINDSURF_USERS[email] || null;
     const cuPerson     = CLICKUP_DATA.people.find(p => p.email === email);
     const hasCu        = !!(cuPerson && (cuPerson.open > 0 || cuPerson.done > 0));
-    const toolCount    = (ccLines > 0 ? 1 : 0) + (cursorEvents > 0 ? 1 : 0) + (wsLast ? 1 : 0) + (hasCu ? 1 : 0);
-    return { email, name: emp.name, dept: emp.dept, ccLines, cursorEvents, wsLast, hasCu, toolCount };
+    const projEntry    = PROJECTS_DATA.topUsers.find(p => p.email === email);
+    const projCount    = projEntry ? projEntry.projects : 0;
+    const toolCount    = (ccLines > 0 ? 1 : 0) + (cursorEvents > 0 ? 1 : 0) + (wsLast ? 1 : 0) + (hasCu ? 1 : 0) + (projCount > 0 ? 1 : 0);
+    return { email, name: emp.name, dept: emp.dept, ccLines, cursorEvents, wsLast, hasCu, projCount, toolCount };
   });
 
   // Apply tool filter
@@ -1064,6 +1098,7 @@ function renderPeopleTable() {
   else if (peopleTier === 'cursor') rows = rows.filter(r => r.cursorEvents > 0);
   else if (peopleTier === 'ws')     rows = rows.filter(r => r.wsLast);
   else if (peopleTier === 'cu')     rows = rows.filter(r => r.hasCu);
+  else if (peopleTier === 'proj')   rows = rows.filter(r => r.projCount > 0);
   else if (peopleTier === 'none')   rows = rows.filter(r => r.toolCount === 0);
 
   if (peopleDept !== 'all') rows = rows.filter(r => r.dept === peopleDept);
@@ -1090,6 +1125,7 @@ function renderPeopleTable() {
     if (r.cursorEvents > 0) pills.push(`<span style="background:#00bcd4;color:#111;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">Cursor</span>`);
     if (r.wsLast)           pills.push(`<span style="background:#00d4aa;color:#111;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">WS</span>`);
     if (r.hasCu)            pills.push(`<span style="background:#ffa726;color:#111;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">ClickUp</span>`);
+    if (r.projCount > 0)    pills.push(`<span style="background:#ab47bc;color:#fff;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">Projects&thinsp;${r.projCount}</span>`);
     const toolPills = pills.length
       ? pills.join('&thinsp;')
       : `<span style="color:var(--muted);font-size:0.75rem">no activity</span>`;
@@ -1119,6 +1155,26 @@ function filterPeopleTier(f, btn) {
 }
 function filterPeopleDept(val) { peopleDept = val; renderPeopleTable(); }
 function filterPeopleSearch(v) { peopleQ = v.toLowerCase(); renderPeopleTable(); }
+
+function renderProjectsTable() {
+  const set_el = document.getElementById('projects-as-of');
+  if (set_el) set_el.textContent = PROJECTS_DATA.asOf;
+  const maxP = PROJECTS_DATA.topUsers[0].projects;
+  const dash = '<span style="color:var(--muted)">—</span>';
+  document.getElementById('projectsTableBody').innerHTML = PROJECTS_DATA.topUsers.map((p, i) => {
+    const emp  = ALL_EMPLOYEES.find(e => e.email === p.email);
+    const name = emp ? emp.name : p.email.split('@')[0].split('.').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
+    const dept = emp ? emp.dept : getDept(p.email);
+    const bw   = (p.projects / maxP * 100).toFixed(1);
+    return `<tr class="clickable-row" onclick="openPersonPanel('${p.email}')">
+      <td class="rank">${i+1}</td>
+      <td><div class="name-cell">${name}</div><div class="email-muted">${p.email}</div></td>
+      <td>${deptBadge(dept)}</td>
+      <td class="num-cell" style="font-size:1rem;font-weight:700;color:#ab47bc">${p.projects}</td>
+      <td><div class="mini-bar" style="width:160px"><div class="mini-bar-fill" style="width:${bw}%;background:#ab47bc"></div></div></td>
+    </tr>`;
+  }).join('');
+}
 
 function initFromData() {
   const d = DATA;
@@ -1898,6 +1954,10 @@ function openPersonPanel(email) {
   const tier  = getTier(lines);
   const hasCc = member != null || ADOPTION_CC_MTD[email] !== undefined;
 
+  // Projects
+  const projEntry = PROJECTS_DATA.topUsers.find(p => p.email === email);
+  const projCount = projEntry ? projEntry.projects : 0;
+
   // Weekly trend
   const snapLabels = WEEKLY_SNAPSHOTS.map(s=>s.label);
   const snapLines  = WEEKLY_SNAPSHOTS.map(s=>s.lines[email]||0);
@@ -1950,7 +2010,20 @@ function openPersonPanel(email) {
     </div>`;
   }
 
-  if (!hasCc && !hasCursor && !cuPerson) {
+  // Projects section
+  let projSec = '';
+  if (projCount > 0) {
+    projSec = `<div class="panel-section">
+      <div class="panel-section-title">Claude.ai Projects</div>
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div class="panel-stat" style="color:#ab47bc">${projCount}</div>
+        <span style="font-size:0.78rem;color:var(--muted)">projects used MTD</span>
+      </div>
+      <div class="panel-stat-label">Top ${PROJECTS_DATA.topUsers.findIndex(p=>p.email===email)+1} in org for project usage</div>
+    </div>`;
+  }
+
+  if (!hasCc && !hasCursor && !cuPerson && !projCount) {
     cuSec = `<div class="panel-section"><div style="color:var(--muted);font-size:0.83rem">No activity data found for this person yet.</div></div>`;
   }
 
@@ -1964,7 +2037,7 @@ function openPersonPanel(email) {
         <span style="font-size:0.72rem;color:var(--muted)">${email}</span>
       </div>
     </div>
-    ${ccSec}${cursorSec}${cuSec}`;
+    ${ccSec}${projSec}${cursorSec}${cuSec}`;
 
   _panelCharts.forEach(c=>c.destroy()); _panelCharts=[];
   document.getElementById('personPanel').classList.add('open');
@@ -2006,6 +2079,7 @@ function openPersonPanel(email) {
 }
 
 initFromData();
+renderProjectsTable();
 initAdoption();
 initCharts();
 renderCodeTable();
