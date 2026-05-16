@@ -84,6 +84,23 @@
   .insight-box.red { background: rgba(244,67,54,0.07); border: 1px solid rgba(244,67,54,0.2); }
   .insight-box.yellow { background: rgba(255,193,7,0.07); border: 1px solid rgba(255,193,7,0.2); }
   .insight-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 6px; }
+  /* ── Person detail panel ── */
+  .person-panel{position:fixed;top:0;right:-460px;width:440px;height:100vh;background:var(--surface);border-left:1px solid var(--border);z-index:1000;transition:right 0.3s cubic-bezier(.4,0,.2,1);overflow-y:auto;}
+  .person-panel.open{right:0;box-shadow:-8px 0 40px rgba(0,0,0,0.5);}
+  .panel-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:999;display:none;}
+  .panel-overlay.open{display:block;}
+  .panel-header{padding:20px 20px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1;}
+  .panel-close{float:right;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:2px 4px;line-height:1;border-radius:4px;}
+  .panel-close:hover{color:var(--text);background:var(--surface2);}
+  .panel-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:1.05rem;color:#fff;margin-bottom:10px;}
+  .panel-section{padding:16px 20px;border-bottom:1px solid rgba(46,50,80,0.5);}
+  .panel-section-title{font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px;font-weight:600;}
+  .panel-stat{font-size:2rem;font-weight:800;color:#fff;line-height:1;}
+  .panel-stat-label{font-size:0.72rem;color:var(--muted);margin-top:4px;}
+  .panel-chart-wrap{height:120px;margin-top:12px;}
+  .panel-hint{font-size:0.72rem;color:var(--muted);font-style:italic;margin-top:8px;}
+  .data-table tr.clickable-row{cursor:pointer;}
+  .data-table tr.clickable-row:hover td{background:rgba(108,99,255,0.1);}
 </style>
 </head>
 <body>
@@ -778,7 +795,7 @@ function renderCodeTable() {
     const pct = DATA.totalLines > 0 ? (m.lines/DATA.totalLines*100).toFixed(1) : '0.0';
     const bw  = maxLines > 0 ? (m.lines/maxLines*100) : 0;
     const t   = getTier(m.lines);
-    return `<tr>
+    return `<tr class="clickable-row" onclick="openPersonPanel('${m.email}')">
       <td class="rank">${i+1}</td>
       <td><div class="name-cell">${m.name}</div><div class="email-muted">${m.email}</div></td>
       <td>${deptBadge(m.dept)}</td>
@@ -1236,6 +1253,16 @@ const CLICKUP_DATA = {
   ]
 };
 
+// ── Weekly historical snapshots ─────────────────────────────────────────────
+// Add a new entry each week: { week:'YYYY-MM-DD', label:'Mon D', lines:{email:n,...}, cu_open:{email:n,...} }
+// The first entry is seeded from current live data so tracking starts immediately.
+const WEEKLY_SNAPSHOTS = (function() {
+  const snap = { week: CLICKUP_DATA.asOf, label: 'May 16' };
+  snap.lines   = {};  members.forEach(m => { snap.lines[m.email]   = m.lines; });
+  snap.cu_open = {};  CLICKUP_DATA.people.forEach(p => { snap.cu_open[p.email] = p.open; });
+  return [snap];
+})();
+
 let cuFilter = 'all';
 let cuDeptFilter = 'all';
 
@@ -1366,7 +1393,7 @@ function renderCUTable() {
       ? `<span style="font-size:0.74rem;color:var(--muted)">${p.nextDue}</span>`
       : (p.done > 0 ? `<span style="font-size:0.72rem;color:var(--accent2)">✓ all closed</span>` : dash);
 
-    return `<tr>
+    return `<tr class="clickable-row" onclick="openPersonPanel('${p.email}')">
       <td class="rank">${i+1}</td>
       <td><div class="name-cell">${p.name}</div><div class="email-muted">${p.email}</div></td>
       <td>${deptBadge(p.dept)}</td>
@@ -1634,6 +1661,139 @@ function renderAdoptTable(uTotals,uDays){
   });
 })();
 
+// ── Person detail panel ─────────────────────────────────────────────────────
+let _panelCharts = [];
+function closePersonPanel() {
+  document.getElementById('personPanel').classList.remove('open');
+  document.getElementById('panelOverlay').classList.remove('open');
+  _panelCharts.forEach(c => c.destroy()); _panelCharts = [];
+}
+function openPersonPanel(email) {
+  const member   = members.find(m => m.email === email);
+  const cuPerson = CLICKUP_DATA.people.find(p => p.email === email);
+  const name     = member ? member.name : (cuPerson ? cuPerson.name : nameFromEmail(email));
+  const dept     = getDept(email);
+  const initials = name.split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
+
+  // Cursor daily data (May 2026)
+  const allDays     = ADOPTION_DAYS.filter(d=>d.date>='2026-05-01').sort((a,b)=>a.date.localeCompare(b.date));
+  const cursorLabels= allDays.map(d=>{const p=d.date.split('-');return p[1]+'/'+p[2];});
+  const cursorData  = allDays.map(d=>d.c[email]||0);
+  const hasCursor   = cursorData.some(v=>v>0);
+  const totalCursor = cursorData.reduce((a,b)=>a+b,0);
+
+  // CC data
+  const lines = member ? member.lines : 0;
+  const tier  = getTier(lines);
+  const hasCc = member != null || ADOPTION_CC_MTD[email] !== undefined;
+
+  // Weekly trend
+  const snapLabels = WEEKLY_SNAPSHOTS.map(s=>s.label);
+  const snapLines  = WEEKLY_SNAPSHOTS.map(s=>s.lines[email]||0);
+  const snapCuOpen = WEEKLY_SNAPSHOTS.map(s=>s.cu_open[email]!=null?s.cu_open[email]:-1);
+  const multiSnap  = WEEKLY_SNAPSHOTS.length > 1;
+
+  // Build sections HTML
+  let ccSec = '';
+  if (hasCc) {
+    ccSec = `<div class="panel-section">
+      <div class="panel-section-title">Claude Code · Lines Written</div>
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div class="panel-stat">${fmt(lines)}</div>
+        <span class="tier ${tier.cls}">${tier.label}</span>
+      </div>
+      <div class="panel-stat-label">Cumulative lines MTD</div>
+      ${multiSnap
+        ? `<div class="panel-chart-wrap"><canvas id="panelLinesChart"></canvas></div>`
+        : `<div class="panel-hint">Weekly trend tracking started ${CLICKUP_DATA.asOf} — check back next week</div>`}
+    </div>`;
+  }
+
+  let cursorSec = '';
+  if (hasCursor) {
+    cursorSec = `<div class="panel-section">
+      <div class="panel-section-title">Cursor Activity · May 2026</div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:4px">${totalCursor.toLocaleString()} events this month</div>
+      <div class="panel-chart-wrap" style="height:130px"><canvas id="panelCursorChart"></canvas></div>
+    </div>`;
+  }
+
+  let cuSec = '';
+  if (cuPerson) {
+    const pills=[];
+    if(cuPerson.urgent>0) pills.push(`<span style="background:rgba(255,82,82,0.18);color:#ff5252;border-radius:3px;padding:2px 7px;font-size:0.69rem;font-weight:700">🔴 ${cuPerson.urgent} urgent</span>`);
+    if(cuPerson.high>0)   pills.push(`<span style="background:rgba(255,167,38,0.18);color:#ffa726;border-radius:3px;padding:2px 7px;font-size:0.69rem;font-weight:700">🟠 ${cuPerson.high} high</span>`);
+    if(cuPerson.normal>0&&cuPerson.open>0) pills.push(`<span style="background:rgba(108,99,255,0.15);color:#a89cff;border-radius:3px;padding:2px 7px;font-size:0.69rem;font-weight:700">🔵 ${cuPerson.normal} normal</span>`);
+    const openColor=cuPerson.urgent>0?'#ff5252':cuPerson.high>0?'#ffa726':'#fff';
+    cuSec = `<div class="panel-section">
+      <div class="panel-section-title">ClickUp Tasks · ${CLICKUP_DATA.asOf}</div>
+      <div style="display:flex;gap:28px;margin-bottom:10px">
+        <div><div class="panel-stat" style="color:${openColor}">${cuPerson.open||'0'}</div><div class="panel-stat-label">Open</div></div>
+        <div><div class="panel-stat" style="color:var(--accent2)">${cuPerson.done||'0'}</div><div class="panel-stat-label">Closed MTD</div></div>
+        ${cuPerson.nextDue?`<div><div style="font-size:0.9rem;font-weight:700;color:var(--yellow);padding-top:6px">${cuPerson.nextDue}</div><div class="panel-stat-label">Next due</div></div>`:''}
+      </div>
+      ${pills.length?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px">${pills.join('')}</div>`:''}
+      ${multiSnap
+        ? `<div class="panel-chart-wrap"><canvas id="panelCuChart"></canvas></div>`
+        : `<div class="panel-hint">Weekly trend tracking started ${CLICKUP_DATA.asOf} — check back next week</div>`}
+    </div>`;
+  }
+
+  if (!hasCc && !hasCursor && !cuPerson) {
+    cuSec = `<div class="panel-section"><div style="color:var(--muted);font-size:0.83rem">No activity data found for this person yet.</div></div>`;
+  }
+
+  document.getElementById('personPanelContent').innerHTML = `
+    <div class="panel-header">
+      <button class="panel-close" onclick="closePersonPanel()">✕</button>
+      <div class="panel-avatar">${initials}</div>
+      <div style="font-size:1rem;font-weight:700;color:#fff;margin-bottom:5px">${name}</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        ${deptBadge(dept)}
+        <span style="font-size:0.72rem;color:var(--muted)">${email}</span>
+      </div>
+    </div>
+    ${ccSec}${cursorSec}${cuSec}`;
+
+  _panelCharts.forEach(c=>c.destroy()); _panelCharts=[];
+  document.getElementById('personPanel').classList.add('open');
+  document.getElementById('panelOverlay').classList.add('open');
+
+  const chartOpts = (color) => ({
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw}}},
+    scales:{
+      x:{ticks:{color:'#8b92b8',font:{size:9}},grid:{display:false}},
+      y:{ticks:{color:'#8b92b8',font:{size:9},callback:v=>v>=1000?(v/1000).toFixed(1)+'k':v},grid:{color:'rgba(46,50,80,0.5)'}}
+    }
+  });
+
+  requestAnimationFrame(()=>{
+    if (hasCursor) {
+      const ctx=document.getElementById('panelCursorChart');
+      if(ctx) _panelCharts.push(new Chart(ctx,{
+        type:'bar',
+        data:{labels:cursorLabels,datasets:[{data:cursorData,backgroundColor:'rgba(108,99,255,0.65)',borderRadius:3,hoverBackgroundColor:'rgba(108,99,255,0.9)'}]},
+        options:chartOpts('#6c63ff')
+      }));
+    }
+    if (multiSnap) {
+      const lCtx=document.getElementById('panelLinesChart');
+      if(lCtx) _panelCharts.push(new Chart(lCtx,{
+        type:'line',
+        data:{labels:snapLabels,datasets:[{data:snapLines,borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,0.12)',fill:true,tension:0.35,pointBackgroundColor:'#6c63ff',pointRadius:4}]},
+        options:chartOpts('#6c63ff')
+      }));
+      const cCtx=document.getElementById('panelCuChart');
+      if(cCtx && snapCuOpen.some(v=>v>=0)) _panelCharts.push(new Chart(cCtx,{
+        type:'line',
+        data:{labels:snapLabels,datasets:[{data:snapCuOpen.map(v=>v>=0?v:null),borderColor:'#00d4aa',backgroundColor:'rgba(0,212,170,0.12)',fill:true,tension:0.35,pointBackgroundColor:'#00d4aa',pointRadius:4,spanGaps:false}]},
+        options:chartOpts('#00d4aa')
+      }));
+    }
+  });
+}
+
 initFromData();
 initAdoption();
 initCharts();
@@ -1641,6 +1801,13 @@ renderCodeTable();
 renderPeopleTable();
 initClickUp();
 </script>
+
+<!-- Person detail slide-in panel -->
+<div id="panelOverlay" class="panel-overlay" onclick="closePersonPanel()"></div>
+<div id="personPanel" class="person-panel">
+  <div id="personPanelContent"></div>
+</div>
+
 </body>
 </html>
 
