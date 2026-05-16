@@ -260,7 +260,7 @@
           <button class="filter-btn" onclick="filterCode('zero',this)">Inactive</button>
         </div>
         <select class="dept-select" id="codeDeptSelect" onchange="filterCodeDept(this.value)">
-          <option value="all">All Depts</option>
+          <option value="all">All Teams</option>
         </select>
       </div>
     </div>
@@ -494,7 +494,7 @@
         </div>
         <select id="cu-dept-select" onchange="filterCUDept(this.value)"
           style="background:var(--card);color:var(--muted);border:1px solid rgba(108,99,255,0.25);border-radius:6px;padding:5px 10px;font-size:0.74rem;cursor:pointer;outline:none">
-          <option value="all">All Depts</option>
+          <option value="all">All Teams</option>
           <option value="Data Engineering">Data Engineering</option>
           <option value="Engineering">Engineering</option>
           <option value="Consulting">Consulting</option>
@@ -506,7 +506,7 @@
     </div>
     <table class="data-table">
       <thead><tr>
-        <th>#</th><th>Member</th><th>Dept</th>
+        <th>#</th><th>Member</th><th>Team</th>
         <th style="text-align:right">Open</th>
         <th style="text-align:right">Closed (May)</th>
         <th>Open Priority Breakdown</th>
@@ -559,7 +559,7 @@
           <button class="filter-btn" onclick="setAdoptView('windsurf',this)">Windsurf</button>
         </div>
         <select class="dept-select" id="adoptDeptSelect" onchange="filterAdoptDept(this.value)">
-          <option value="all">All Depts</option>
+          <option value="all">All Teams</option>
         </select>
       </div>
     </div>
@@ -1138,6 +1138,8 @@ const WINDSURF_USERS={
 const CLICKUP_DATA = {
   asOf: '2026-05-16',
   people: [
+    // ── 182 open — Cstudio automated CDK pipeline tickets ───────────────────
+    {name:'Gaurav Sharma',       email:'gaurav.sharma@sarasanalytics.com',             dept:'Engineering',      open:182,done:0,  urgent:0,  high:182,normal:0, low:0, nextDue:null},
     // ── 46+ open — DQ pulse workhorses ──────────────────────────────────────
     {name:'Sneha Gogineni',      email:'sneha.gogineni@sarasanalytics.com',            dept:'Data Engineering', open:46, done:40, urgent:6,  high:38, normal:2, low:0, nextDue:'2026-05-14'},
     {name:'Potkan Manikumar',    email:'mani.kumar@sarasanalytics.com',                dept:'Data Engineering', open:44, done:32, urgent:6,  high:36, normal:2, low:0, nextDue:'2026-05-14'},
@@ -1145,9 +1147,9 @@ const CLICKUP_DATA = {
     {name:'Naga Sravanthi',      email:'naga.mandava@sarasanalytics.com',              dept:'Data Engineering', open:30, done:0,  urgent:0,  high:6,  normal:24,low:0, nextDue:'2026-05-26'},
     // ── Growth (separate workspace) ─────────────────────────────────────────
     {name:'Radhakrishnan S',     email:'radhakrishnan.swaminathan@epicslope.partners', dept:'Growth',           open:29, done:0,  urgent:10, high:12, normal:7, low:0, nextDue:'2026-06-29'},
-    {name:'Rudrasen Gouda',      email:'rudrasen.gouda@sarasanalytics.com',            dept:'Data Engineering', open:19, done:13, urgent:0,  high:4,  normal:15,low:0, nextDue:'2026-05-22'},
+    {name:'Rudrasen Gouda',      email:'rudrasen.gouda@sarasanalytics.com',            dept:'Data Engineering', open:20, done:13, urgent:0,  high:4,  normal:16,low:0, nextDue:'2026-05-22'},
     // ── Divi source connections ──────────────────────────────────────────────
-    {name:'Sayeeda Afreen',      email:'sayeeda.afreen@sarasanalytics.com',            dept:'Consulting',       open:13, done:0,  urgent:2,  high:3,  normal:8, low:0, nextDue:'2026-05-23'},
+    {name:'Sayeeda Afreen',      email:'sayeeda.afreen@sarasanalytics.com',            dept:'Consulting',       open:14, done:0,  urgent:2,  high:3,  normal:9, low:0, nextDue:'2026-05-23'},
     {name:'Rakesh Varma',        email:'rakesh.varma@sarasanalytics.com',              dept:'Marketing',        open:11, done:0,  urgent:0,  high:9,  normal:2, low:0, nextDue:'2026-06-29'},
     {name:'Rahul Chauhan',       email:'rahul.chauhan@sarasanalytics.com',             dept:'Consulting',       open:10, done:0,  urgent:2,  high:8,  normal:0, low:0, nextDue:'2026-06-29'},
     {name:'Om Prakash Mahto',    email:'omprakash@sarasanalytics.com',                 dept:'Data Engineering', open:9,  done:0,  urgent:2,  high:5,  normal:2, low:0, nextDue:'2026-05-18'},
@@ -1207,12 +1209,12 @@ const CLICKUP_DATA = {
     {name:'Sri Raagh Rao',       email:'sri.raagh@sarasanalytics.com',                 dept:'Data Engineering', open:1,  done:0,  urgent:0,  high:1,  normal:0, low:0, nextDue:'2026-04-28'},
     {name:'Anjuman',             email:'anjuman@sarasanalytics.com',                   dept:'Data Engineering', open:1,  done:0,  urgent:0,  high:0,  normal:1, low:0, nextDue:null},
     {name:'Narayana Aditya',     email:'narayana.aditya@sarasanalytics.com',           dept:'Data Engineering', open:1,  done:1,  urgent:0,  high:1,  normal:0, low:0, nextDue:null},
-    {name:'Ravalimanne',         email:'ravalimanne@sarasanalytics.com',               dept:'Engineering',      open:1,  done:0,  urgent:0,  high:0,  normal:1, low:0, nextDue:'2026-05-23'},
+    {name:'Ravalimanne',         email:'ravalimanne@sarasanalytics.com',               dept:'Data Engineering', open:1,  done:0,  urgent:0,  high:0,  normal:1, low:0, nextDue:'2026-05-23'},
     {name:'Monish Raj',          email:'monish.raj@sarasanalytics.com',                dept:'Consulting',       open:1,  done:4,  urgent:0,  high:1,  normal:0, low:0, nextDue:'2026-05-22'},
     {name:'Srinivas Janipalli',  email:'srinivas.janipalli@sarasanalytics.com',        dept:'Data Engineering', open:1,  done:0,  urgent:0,  high:0,  normal:1, low:0, nextDue:null},
     {name:'Ashyam Zubair',       email:'ashyam.zubair@sarasanalytics.com',             dept:'Data Engineering', open:1,  done:0,  urgent:1,  high:0,  normal:0, low:0, nextDue:'2026-05-23'},
     // ── May MTD closers (no open tickets) ───────────────────────────────────
-    {name:'Subhashree Mohanty',  email:'subhashree.mohanty@sarasanalytics.com',        dept:'Consulting',       open:0,  done:6,  urgent:5,  high:1,  normal:0, low:0, nextDue:null},
+    {name:'Subhashree Mohanty',  email:'subhashree.mohanty@sarasanalytics.com',        dept:'Consulting',       open:1,  done:6,  urgent:1,  high:0,  normal:0, low:0, nextDue:'2026-05-14'},
     {name:'Nishita Khanna',      email:'nishita.khanna@sarasanalytics.com',            dept:'Customer Success', open:0,  done:3,  urgent:0,  high:1,  normal:2, low:0, nextDue:null},
     {name:'Ritvik Sai Vemula',   email:'ritvik.vemula@sarasanalytics.com',             dept:'Consulting',       open:0,  done:1,  urgent:0,  high:1,  normal:0, low:0, nextDue:null},
   ]
