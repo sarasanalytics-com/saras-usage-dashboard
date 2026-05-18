@@ -249,6 +249,9 @@
     <div id="wk-hero-sub" style="font-size:1rem;color:var(--muted);margin-top:8px">–</div>
   </div>
 
+  <!-- Week-over-Week comparison strip -->
+  <div id="wk-compare" style="margin-bottom:24px"></div>
+
   <!-- KPIs -->
   <div class="kpi-grid" style="margin-bottom:28px">
     <div class="kpi c1">
@@ -2063,6 +2066,14 @@ function renderWeeklyTab() {
   }
   const days7 = d7.map(date => ADOPTION_DAYS.find(d => d.date === date) || {date, c:{}, w:{}});
 
+  // Previous week (7–13 days before anchor)
+  const d7prev = [];
+  for (let i = 13; i >= 7; i--) {
+    const dt = new Date(base); dt.setUTCDate(dt.getUTCDate() - i);
+    d7prev.push(dt.toISOString().slice(0,10));
+  }
+  const daysPrev = d7prev.map(date => ADOPTION_DAYS.find(d => d.date === date) || {date, c:{}, w:{}});
+
   // Collect all users active in this window
   const usersSet = new Set();
   days7.forEach(day => Object.keys(day.c).forEach(e => usersSet.add(e)));
@@ -2115,6 +2126,53 @@ function renderWeeklyTab() {
   const casual   = userStats.filter(u => u.events > 0 && u.events < 20);
   const wsOnly   = userStats.filter(u => u.events === 0 && u.hasWs);
   const maxCount = Math.max(power.length, regular.length, casual.length, 1);
+
+  // ── Last-week aggregates for WoW comparison ──
+  const prevUsersSet = new Set();
+  daysPrev.forEach(day => Object.keys(day.c).forEach(e => prevUsersSet.add(e)));
+  Object.entries(WINDSURF_USERS).forEach(([email, lastDate]) => {
+    if (lastDate && lastDate >= d7prev[0] && lastDate <= d7prev[6]) prevUsersSet.add(email);
+  });
+  const totalEvPrev = daysPrev.reduce((s, d) => s + Object.values(d.c).reduce((a, v) => a + v, 0), 0);
+  const powerPrev   = [...prevUsersSet].filter(email => {
+    const ev   = daysPrev.reduce((s, d) => s + (d.c[email] || 0), 0);
+    const days = daysPrev.filter(d => (d.c[email] || 0) > 0).length;
+    return ev >= 100 || days >= 5;
+  }).length;
+
+  // ── Render WoW comparison strip ──
+  function wowDelta(curr, prev) {
+    if (!prev) return prev === 0 && curr > 0 ? {arrow:'▲', txt:'new', col:'#4caf50'} : {arrow:'–', txt:'–', col:'var(--muted)'};
+    const d = curr - prev; const p = Math.round(Math.abs(d) / prev * 100);
+    if (d > 0) return {arrow:'▲', txt:`+${d} (+${p}%)`, col:'#4caf50'};
+    if (d < 0) return {arrow:'▼', txt:`${d} (${p}%)`,   col:'#f44336'};
+    return {arrow:'→', txt:'no change', col:'var(--muted)'};
+  }
+  const wowMetrics = [
+    {label:'Active Users',    curr:usersSet.size,  prev:prevUsersSet.size, fmt:v=>v},
+    {label:'Total AI Actions',curr:totalEv7,       prev:totalEvPrev,       fmt:fmt},
+    {label:'Power Users',     curr:power.length,   prev:powerPrev,         fmt:v=>v},
+  ];
+  const prevDateLabel = `${d7prev[0].slice(5).replace('-','/')} – ${d7prev[6].slice(5).replace('-','/')}`;
+  document.getElementById('wk-compare').innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 24px">
+      <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px;font-weight:600">
+        This Week vs Last Week &nbsp;<span style="font-weight:400;opacity:0.6">(prev: ${prevDateLabel})</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+        ${wowMetrics.map(m => {
+          const δ = wowDelta(m.curr, m.prev);
+          return `<div style="border-right:1px solid var(--border);padding-right:16px;last-child:border:none">
+            <div style="font-size:0.72rem;color:var(--muted);margin-bottom:6px">${m.label}</div>
+            <div style="display:flex;align-items:baseline;gap:10px">
+              <span style="font-size:1.6rem;font-weight:800;color:#fff">${m.fmt(m.curr)}</span>
+              <span style="font-size:0.78rem;color:var(--muted)">vs ${m.fmt(m.prev)}</span>
+            </div>
+            <div style="font-size:0.78rem;color:${δ.col};font-weight:600;margin-top:4px">${δ.arrow} ${δ.txt}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
 
   const tiers = [
     {label:'Power Users',      desc:'100+ actions or active 5+ days',  count:power.length,   color:'#6c63ff', people:power},
@@ -2172,8 +2230,8 @@ function renderWeeklyTab() {
     return 'background:rgba(255,255,255,0.04)';
   }
 
-  const heatUsers = userStats.slice(0, 30);
-  set('wk-heatmap-sub', `Top ${heatUsers.length} most active employees · hover any cell for details`);
+  const heatUsers = userStats;
+  set('wk-heatmap-sub', `All ${heatUsers.length} active employees this week · hover any cell for details`);
   document.getElementById('wk-heatmap-legend').innerHTML = `
     <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1)"></div>No activity</div>
     <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.32)"></div>Light (1–14)</div>
