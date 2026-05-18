@@ -112,7 +112,7 @@
   </div>
   <div class="header-meta">
     <div>As of <strong id="header-date"></strong></div>
-    <div style="margin-top:2px;">Source: claude.ai/analytics · UTC · Updated daily</div>
+    <div style="margin-top:2px;">Source: Claude Admin · Cursor Admin · ClickUp API · Updated daily</div>
   </div>
 </header>
 
@@ -128,17 +128,19 @@
   <div class="tab" onclick="switchTab('people',this)">People</div>
   <span class="tab-sep">Work</span>
   <div class="tab" onclick="switchTab('clickup',this)">✅ ClickUp</div>
-  <div class="tab" onclick="switchTab('attention',this)">⚠ Gaps</div>
+  <div class="tab" onclick="switchTab('attention',this)">🎯 Opportunities</div>
 </div>
 
 <!-- OVERVIEW / EXECUTIVE SUMMARY -->
 <div class="page active" id="tab-overview">
+  <!-- Key Takeaways -->
+  <div id="key-takeaways" style="margin-bottom:24px"></div>
   <div class="section-divider"><span>🤖 Claude Tools</span></div>
   <div class="kpi-grid">
     <div class="kpi c1">
       <div class="kpi-label">Weekly Active Users</div>
       <div class="kpi-value" id="kpi-wau"></div>
-      <div class="kpi-sub">Across all Claude products</div>
+      <div class="kpi-sub">Claude.ai · Claude Code · Cowork (from Claude admin)</div>
       <span class="kpi-badge badge-green" id="kpi-utilization-badge"></span>
     </div>
     <div class="kpi c2">
@@ -329,6 +331,11 @@
       <div class="kpi-value" id="kpi-code-avg-lines"></div>
       <div class="kpi-sub">Among those with any usage</div>
     </div>
+    <div class="kpi c5">
+      <div class="kpi-label">License Utilization</div>
+      <div class="kpi-value" id="kpi-code-license-util"></div>
+      <div class="kpi-sub" id="kpi-code-license-sub"></div>
+    </div>
   </div>
   <div style="background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:10px;padding:12px 18px;margin-bottom:16px;font-size:0.8rem;color:var(--muted)">
     <strong style="color:#a89cff">ℹ️ Claude Code only tracks the CLI tool.</strong> A member with 0 lines may still be active on Claude.ai or Cowork daily — check the People tab for the full picture.
@@ -461,7 +468,7 @@
     </div>
   </div>
   <div class="card-full">
-    <div class="section-title" style="margin-bottom:16px">Session Volume Trend (Estimated)</div>
+    <div class="section-title" style="margin-bottom:16px">Session Volume Trend</div>
     <div style="height:280px"><canvas id="coworkTrendChart"></canvas></div>
   </div>
   <div class="insight-box yellow">
@@ -505,13 +512,13 @@
   </div>
 </div>
 
-<!-- ATTENTION -->
+<!-- OPPORTUNITIES -->
 <div class="page" id="tab-attention">
   <div style="background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.25);border-radius:10px;padding:14px 18px;margin-bottom:18px;font-size:0.8rem;color:var(--muted)">
-    <strong style="color:#a89cff">ℹ️ Note:</strong> "Claude Code lines = 0" only means the person isn't using the <strong style="color:#fff">Claude Code CLI</strong>. They may be active on <strong style="color:#fff">Claude.ai</strong> or <strong style="color:#fff">Cowork</strong> daily.
+    <strong style="color:#a89cff">ℹ️ Note:</strong> "Claude Code lines = 0" only means the person isn't using the <strong style="color:#fff">Claude Code CLI</strong>. They may be active on <strong style="color:#fff">Claude.ai</strong> or <strong style="color:#fff">Cowork</strong> daily — check the People tab for the full picture.
   </div>
-  <div class="insight-box red" style="margin-bottom:24px">
-    <div class="insight-title" style="color:#ff7070">Summary of gaps as of <span id="attention-date"></span></div>
+  <div class="insight-box yellow" style="margin-bottom:24px">
+    <div class="insight-title" style="color:#ffd740">🎯 Adoption Opportunities — as of <span id="attention-date"></span></div>
     <ul id="attention-gap-list" style="color:var(--muted);padding-left:18px;display:flex;flex-direction:column;gap:5px;margin-top:6px"></ul>
   </div>
   <div style="margin-bottom:16px">
@@ -712,6 +719,7 @@ const DATA = {
   monthLabel: 'May 2026',
   wau: 141,
   utilization: 94,
+  licensedSeats: 120, // approx unique employees licensed for ≥1 AI tool (CC+Cursor+Windsurf+Claude.ai)
   totalLines: 214875,
   acceptRate: 98.5,
   activeMembers: 30,
@@ -1313,6 +1321,27 @@ function initFromData() {
   set('header-month', `Claude Code · Claude.ai · Cowork · ${d.monthLabel}`);
   set('overview-month-label', d.monthLabel);
 
+  // Key Takeaways box
+  const ccActive = members.filter(m => m.lines > 0).length;
+  document.getElementById('key-takeaways').innerHTML = `
+    <div style="background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(0,212,170,0.06));border:1px solid rgba(108,99,255,0.25);border-radius:12px;padding:20px 24px">
+      <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;font-weight:600">📌 Key Takeaways — ${d.asOf}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <span style="font-size:1.3rem;line-height:1">🟢</span>
+          <div><span style="color:#fff;font-weight:600">${d.wau} employees</span> <span style="color:var(--muted)">used at least one Claude product this week — </span><span style="color:#00d4aa;font-weight:600">${Math.round(d.wau/d.licensedSeats*100)}% of licensed users active</span></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <span style="font-size:1.3rem;line-height:1">💻</span>
+          <div><span style="color:#fff;font-weight:600">Claude Code: ${ccActive}/${members.length} licensed</span> <span style="color:var(--muted)">users active · </span><span style="color:#a89cff;font-weight:600">${fmt(d.totalLines)} lines accepted</span><span style="color:var(--muted)"> this month (${d.acceptRate}% acceptance rate)</span></div>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-start">
+          <span style="font-size:1.3rem;line-height:1">🎯</span>
+          <div><span style="color:#ffa726;font-weight:600">Top opportunity:</span> <span style="color:var(--muted)">Claude.ai Projects used by </span><span style="color:#fff;font-weight:600">${d.projectUserPct}%</span><span style="color:var(--muted)"> of org, Artifacts by </span><span style="color:#fff;font-weight:600">${d.artifactUserPct}%</span><span style="color:var(--muted)"> — both nearly untapped. Cowork growing </span><span style="color:#00d4aa;font-weight:600">+${d.coworkSessionGrowthPct}% sessions/wk</span></div>
+        </div>
+      </div>
+    </div>`;
+
   // Overview KPIs
   set('kpi-wau', d.wau);
   set('kpi-utilization-badge', `${d.utilization}% seat utilization`);
@@ -1320,12 +1349,12 @@ function initFromData() {
   set('kpi-overview-lines-month', d.monthLabel + ' · Claude Code');
   set('kpi-accept-rate-badge', `${d.acceptRate}% accept rate`);
   set('kpi-overview-cowork-sessions', d.coworkSessionsPerDay);
-  set('kpi-overview-cowork-user-sub', `${d.coworkUserPct}% of users active`);
+  set('kpi-overview-cowork-user-sub', `${d.coworkUserPct}% active · target: 30%`);
   set('kpi-overview-cowork-growth', `+${d.coworkUserGrowthPct}% user growth`);
   set('kpi-overview-chats', d.chatsPerDay);
-  set('kpi-overview-chat-user-sub', `${d.chatUserPct}% users with 1+ chat`);
+  set('kpi-overview-chat-user-sub', `${d.chatUserPct}% active · target: 50%`);
   set('kpi-overview-projects', d.projectsCreated);
-  set('kpi-overview-projects-sub', `${d.projectUserPct}% users with 1+ project`);
+  set('kpi-overview-projects-sub', `${d.projectUserPct}% active · target: 40%`);
 
   // Donut legends
   document.getElementById('code-donut-legend').innerHTML =
@@ -1340,18 +1369,20 @@ function initFromData() {
   set('kpi-code-month', d.monthLabel);
   set('kpi-code-accept-rate', `${d.acceptRate}%`);
   set('kpi-code-active-members', `${activeCnt} / ${members.length}`);
-  set('kpi-code-active-pct', `${activePct}% of licensed seats active`);
+  set('kpi-code-active-pct', `${activePct}% of licensed seats active · target: 100%`);
+  set('kpi-code-license-util', `${activePct}%`);
+  set('kpi-code-license-sub', `${activeCnt} of ${members.length} seats used · ${members.length - activeCnt} idle`);
   set('kpi-code-avg-lines', fmt(d.avgLinesActive));
   set('code-table-title', `All ${members.length} Members — Lines This Month`);
 
   // Claude.ai tab
   set('kpi-ai-chats', d.chatsPerDay);
-  set('kpi-ai-chat-user-pct', `${d.chatUserPct}%`);
+  set('kpi-ai-chat-user-pct', `${d.chatUserPct}% · target 50%`);
   set('kpi-ai-projects', d.projectsCreated);
   set('kpi-ai-projects-month', `MTD ${d.monthLabel}`);
-  set('kpi-ai-project-user-pct', `${d.projectUserPct}%`);
+  set('kpi-ai-project-user-pct', `${d.projectUserPct}% · target 40%`);
   set('kpi-ai-artifacts', d.artifactsCreated);
-  set('kpi-ai-artifact-sub', `${d.artifactUserPct}% of users generating artifacts`);
+  set('kpi-ai-artifact-sub', `${d.artifactUserPct}% active · target 25%`);
   set('insight-chat-pct', d.chatUserPct);
   set('insight-project-pct', d.projectUserPct);
   set('insight-artifact-pct', d.artifactUserPct);
@@ -1562,8 +1593,7 @@ const WINDSURF_USERS={
 const CLICKUP_DATA = {
   asOf: '2026-05-18',
   people: [
-    // ── 638 open — Cstudio automated CDK pipeline tickets ───────────────────
-    {name:'Gaurav Sharma',       email:'gaurav.sharma@sarasanalytics.com',             dept:'Engineering',      open:33, done:3,  urgent:1,  high:640,normal:2, low:0, nextDue:null},
+    {name:'Gaurav Sharma',       email:'gaurav.sharma@sarasanalytics.com',             dept:'Engineering',      open:33, done:3,  urgent:1,  high:30, normal:2, low:0, nextDue:null},
     // ── 46+ open — DQ pulse workhorses ──────────────────────────────────────
     {name:'Sneha Gogineni',      email:'sneha.gogineni@sarasanalytics.com',            dept:'Data Engineering', open:85, done:50, urgent:8,  high:40, normal:4, low:0, nextDue:'2026-05-14'},
     {name:'Potkan Manikumar',    email:'mani.kumar@sarasanalytics.com',                dept:'Data Engineering', open:102,done:45, urgent:7,  high:37, normal:4, low:0, nextDue:'2026-05-14'},
@@ -2141,7 +2171,8 @@ function renderWeeklyTab() {
   // KPIs
   const total = DATA.orgSize || 209;
   set('wk-active-users', usersSet.size);
-  set('wk-active-pct', `of ${total} employees — ${Math.round(usersSet.size / total * 100)}% adoption rate`);
+  const licensedPct = Math.round(usersSet.size / (DATA.licensedSeats || total) * 100);
+  set('wk-active-pct', `of ~${DATA.licensedSeats} licensed users — ${licensedPct}% active this week`);
   set('wk-multitool', multiTool);
   set('wk-total-events', fmt(totalEv7));
   if (peak.date) {
@@ -2189,7 +2220,7 @@ function renderWeeklyTab() {
       <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px;font-weight:600">
         This Week vs Last Week &nbsp;<span style="font-weight:400;opacity:0.6">(prev: ${prevDateLabel})</span>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:14px">
         ${wowMetrics.map(m => {
           const δ = wowDelta(m.curr, m.prev);
           return `<div style="border-right:1px solid var(--border);padding-right:16px;last-child:border:none">
@@ -2201,6 +2232,9 @@ function renderWeeklyTab() {
             <div style="font-size:0.78rem;color:${δ.col};font-weight:600;margin-top:4px">${δ.arrow} ${δ.txt}</div>
           </div>`;
         }).join('')}
+      </div>
+      <div style="font-size:0.72rem;color:var(--muted);border-top:1px solid var(--border);padding-top:10px">
+        ⓘ <em>AI Actions counts Cursor AI requests only (per-day data available). Active Users includes Claude Code MTD + Windsurf + Cursor. Week-on-week variance is normal — sprint cycles, weekends, and data lag all affect daily counts.</em>
       </div>
     </div>`;
 
