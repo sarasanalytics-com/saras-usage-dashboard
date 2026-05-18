@@ -2102,12 +2102,13 @@ function renderWeeklyTab() {
   }
   const daysPrev = d7prev.map(date => ADOPTION_DAYS.find(d => d.date === date) || {date, c:{}, w:{}});
 
-  // Collect all users active in this window
+  // Collect all users active in this window (Cursor + Windsurf + Claude Code MTD)
   const usersSet = new Set();
   days7.forEach(day => Object.keys(day.c).forEach(e => usersSet.add(e)));
   Object.entries(WINDSURF_USERS).forEach(([email, lastDate]) => {
     if (lastDate && lastDate >= d7[0] && lastDate <= d7[6]) usersSet.add(email);
   });
+  Object.entries(ADOPTION_CC_MTD).forEach(([email, lines]) => { if (lines > 0) usersSet.add(email); });
 
   // Per-user stats
   const userStats = [...usersSet].map(email => {
@@ -2161,6 +2162,7 @@ function renderWeeklyTab() {
   Object.entries(WINDSURF_USERS).forEach(([email, lastDate]) => {
     if (lastDate && lastDate >= d7prev[0] && lastDate <= d7prev[6]) prevUsersSet.add(email);
   });
+  Object.entries(ADOPTION_CC_MTD).forEach(([email, lines]) => { if (lines > 0) prevUsersSet.add(email); });
   const totalEvPrev = daysPrev.reduce((s, d) => s + Object.values(d.c).reduce((a, v) => a + v, 0), 0);
   const powerPrev   = [...prevUsersSet].filter(email => {
     const ev   = daysPrev.reduce((s, d) => s + (d.c[email] || 0), 0);
