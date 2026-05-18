@@ -699,6 +699,7 @@ const DATA = {
   acceptRate: 98.5,
   activeMembers: 30,
   totalMembers: 38,
+  orgSize: 209,
   avgLinesActive: 7163,
   coworkSessionsPerDay: 17,
   coworkSessionGrowthPct: 21.4,
@@ -2072,7 +2073,7 @@ function renderWeeklyTab() {
   set('wk-hero-sub', `${dateLabel}, ${anchor.slice(0,4)}  ·  Cursor AI · Claude Code · Windsurf`);
 
   // KPIs
-  const total = DATA.totalMembers || 150;
+  const total = DATA.orgSize || 209;
   set('wk-active-users', usersSet.size);
   set('wk-active-pct', `of ${total} employees — ${Math.round(usersSet.size / total * 100)}% adoption rate`);
   set('wk-multitool', multiTool);
