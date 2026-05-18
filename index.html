@@ -118,6 +118,7 @@
 
 <div class="tabs">
   <div class="tab active" onclick="switchTab('overview',this)">📊 Executive Summary</div>
+  <div class="tab" onclick="switchTab('weekly',this)">📅 This Week</div>
   <span class="tab-sep">Claude</span>
   <div class="tab" onclick="switchTab('claude-code',this)">Claude Code</div>
   <div class="tab" onclick="switchTab('claudeai',this)">Claude.ai</div>
@@ -236,6 +237,66 @@
       <div style="height:220px"><canvas id="ovAllToolChart"></canvas></div>
     </div>
   </div>
+</div>
+
+<!-- THIS WEEK -->
+<div class="page" id="tab-weekly">
+
+  <!-- Hero -->
+  <div style="text-align:center;padding:28px 0 32px;border-bottom:1px solid var(--border);margin-bottom:28px">
+    <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">AI Tool Adoption · Last 7 Days</div>
+    <div id="wk-hero-headline" style="font-size:2.4rem;font-weight:800;color:#fff;line-height:1.2">–</div>
+    <div id="wk-hero-sub" style="font-size:1rem;color:var(--muted);margin-top:8px">–</div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid" style="margin-bottom:28px">
+    <div class="kpi c1">
+      <div class="kpi-label">Employees Active</div>
+      <div class="kpi-value" id="wk-active-users">–</div>
+      <div class="kpi-sub" id="wk-active-pct">this week</div>
+    </div>
+    <div class="kpi c2">
+      <div class="kpi-label">Using 2+ AI Tools</div>
+      <div class="kpi-value" id="wk-multitool">–</div>
+      <div class="kpi-sub">Claude Code + Cursor or Windsurf</div>
+    </div>
+    <div class="kpi c3">
+      <div class="kpi-label">Busiest Day</div>
+      <div class="kpi-value" id="wk-peak-day" style="font-size:1.5rem">–</div>
+      <div class="kpi-sub" id="wk-peak-day-sub"></div>
+    </div>
+    <div class="kpi c4">
+      <div class="kpi-label">Total AI Actions (7d)</div>
+      <div class="kpi-value" id="wk-total-events">–</div>
+      <div class="kpi-sub">coding requests across all tools</div>
+    </div>
+  </div>
+
+  <!-- Engagement tiers + Dept adoption -->
+  <div class="two-col" style="margin-bottom:24px">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:18px">Engagement Levels This Week</div>
+      <div id="wk-tier-bars"></div>
+    </div>
+    <div class="card">
+      <div class="section-title" style="margin-bottom:18px">Adoption by Team</div>
+      <div id="wk-dept-bars"></div>
+    </div>
+  </div>
+
+  <!-- Heatmap -->
+  <div class="card-full">
+    <div class="section-header" style="margin-bottom:6px">
+      <div>
+        <div class="section-title">Who Was Active Each Day</div>
+        <div class="section-sub" id="wk-heatmap-sub">Top active employees this week · hover any cell for details</div>
+      </div>
+      <div id="wk-heatmap-legend" style="display:flex;gap:12px;align-items:center;font-size:0.73rem;color:var(--muted);flex-wrap:wrap"></div>
+    </div>
+    <div id="wk-heatmap" style="overflow-x:auto;margin-top:16px"></div>
+  </div>
+
 </div>
 
 <!-- CLAUDE CODE -->
@@ -624,28 +685,6 @@
     </table>
   </div>
 
-  <!-- ROLLING 7-DAY SNAPSHOT -->
-  <div class="card-full" id="weekly-snapshot-card">
-    <div class="section-header" style="margin-bottom:14px">
-      <div>
-        <div class="section-title">Rolling 7-Day Activity — All Tools</div>
-        <div class="section-sub">Last 7 days per user · Cursor AI requests (daily) · Claude Code (MTD) · Windsurf</div>
-      </div>
-      <div style="display:flex;gap:10px;align-items:center">
-        <select class="dept-select" id="weeklyDeptSelect" onchange="filterWeeklyDept(this.value)">
-          <option value="all">All Teams</option>
-        </select>
-      </div>
-    </div>
-    <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--surface2);border-radius:8px;font-size:0.8rem">
-      <div><span style="color:var(--muted)">Active users (7d) </span><span style="color:#fff;font-weight:700" id="weekly-active-users">–</span></div>
-      <div><span style="color:var(--muted)">Multi-tool users </span><span style="color:#a89cff;font-weight:700" id="weekly-multitool-users">–</span></div>
-      <div><span style="color:var(--muted)">Cursor events (7d) </span><span style="color:#a89cff;font-weight:700" id="weekly-cursor-events">–</span></div>
-      <div style="color:var(--muted)">as of <span id="weekly-as-of" style="color:var(--text)">–</span></div>
-    </div>
-    <div id="weekly-activity-grid" style="overflow-x:auto;margin-bottom:12px"></div>
-    <div id="weekly-legend" style="display:flex;gap:14px;flex-wrap:wrap;font-size:0.73rem;color:var(--muted);align-items:center"></div>
-  </div>
 </div>
 
 <script>
@@ -1797,7 +1836,6 @@ function initAdoption(){
   renderDeptMetrics();
   renderAdoptHeatmap();
   renderAdoptTable(adoptUTotals,adoptUDays);
-  renderWeeklySnapshot();
 }
 
 function renderDeptMetrics() {
@@ -1984,6 +2022,174 @@ function renderAdoptTable(uTotals,uDays){
     </tr>`;
   }).join('');
 }
+
+// ==================== THIS WEEK TAB ====================
+function renderWeeklyTab() {
+  const sortedDates = ADOPTION_DAYS.map(d => d.date).sort();
+  const anchor = sortedDates.length ? sortedDates[sortedDates.length - 1] : new Date().toISOString().slice(0,10);
+
+  const d7 = [];
+  const base = new Date(anchor + 'T00:00:00Z');
+  for (let i = 6; i >= 0; i--) {
+    const dt = new Date(base); dt.setUTCDate(dt.getUTCDate() - i);
+    d7.push(dt.toISOString().slice(0,10));
+  }
+  const days7 = d7.map(date => ADOPTION_DAYS.find(d => d.date === date) || {date, c:{}, w:{}});
+
+  // Collect all users active in this window
+  const usersSet = new Set();
+  days7.forEach(day => Object.keys(day.c).forEach(e => usersSet.add(e)));
+  Object.entries(WINDSURF_USERS).forEach(([email, lastDate]) => {
+    if (lastDate && lastDate >= d7[0] && lastDate <= d7[6]) usersSet.add(email);
+  });
+
+  // Per-user stats
+  const userStats = [...usersSet].map(email => {
+    const events    = days7.reduce((s, d) => s + (d.c[email] || 0), 0);
+    const activeDays= days7.filter(d => (d.c[email] || 0) > 0).length;
+    const hasCc     = (ADOPTION_CC_MTD[email] || 0) > 0;
+    const hasWs     = !!WINDSURF_USERS[email];
+    const toolCount = [events > 0, hasCc, hasWs].filter(Boolean).length;
+    return {email, events, activeDays, hasCc, hasWs, toolCount};
+  }).sort((a, b) => b.events - a.events);
+
+  const totalEv7  = days7.reduce((s, d) => s + Object.values(d.c).reduce((a, v) => a + v, 0), 0);
+  const multiTool = userStats.filter(u => u.toolCount >= 2).length;
+
+  // Peak day by active users
+  const DOW_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const DOW      = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const dayRanked = days7.map(day => ({
+    date:  day.date,
+    users: Object.keys(day.c).length,
+    total: Object.values(day.c).reduce((a, v) => a + v, 0)
+  })).sort((a, b) => b.users - a.users);
+  const peak = dayRanked[0] || {};
+
+  // Hero
+  const dateLabel = `${d7[0].slice(5).replace('-','/')} – ${d7[6].slice(5).replace('-','/')}`;
+  set('wk-hero-headline', `${usersSet.size} employees active on AI tools this week`);
+  set('wk-hero-sub', `${dateLabel}, ${anchor.slice(0,4)}  ·  Cursor AI · Claude Code · Windsurf`);
+
+  // KPIs
+  const total = DATA.totalMembers || 150;
+  set('wk-active-users', usersSet.size);
+  set('wk-active-pct', `of ${total} employees — ${Math.round(usersSet.size / total * 100)}% adoption rate`);
+  set('wk-multitool', multiTool);
+  set('wk-total-events', fmt(totalEv7));
+  if (peak.date) {
+    set('wk-peak-day', DOW_FULL[new Date(peak.date + 'T00:00:00Z').getUTCDay()]);
+    set('wk-peak-day-sub', `${peak.date.slice(5)} · ${peak.users} employees active`);
+  }
+
+  // Engagement tiers
+  const power    = userStats.filter(u => u.events >= 100 || u.activeDays >= 5);
+  const regular  = userStats.filter(u => u.events >= 20 && u.events < 100 && u.activeDays < 5);
+  const casual   = userStats.filter(u => u.events > 0 && u.events < 20);
+  const wsOnly   = userStats.filter(u => u.events === 0 && u.hasWs);
+  const maxCount = Math.max(power.length, regular.length, casual.length, 1);
+
+  const tiers = [
+    {label:'Power Users',      desc:'100+ actions or active 5+ days',  count:power.length,   color:'#6c63ff', people:power},
+    {label:'Regular Users',    desc:'20 – 99 actions this week',        count:regular.length,  color:'#00d4aa', people:regular},
+    {label:'Occasional Users', desc:'1 – 19 actions this week',         count:casual.length,   color:'#ffa726', people:casual},
+    {label:'Windsurf Active',  desc:'Active on Windsurf this week',     count:wsOnly.length,   color:'#26c6da', people:wsOnly},
+  ];
+  document.getElementById('wk-tier-bars').innerHTML = tiers.map(t => {
+    const barW  = Math.round(t.count / maxCount * 100);
+    const names = t.people.slice(0, 5).map(u => nameFromEmail(u.email)).join(', ');
+    const more  = t.people.length > 5 ? ` +${t.people.length - 5} more` : '';
+    return `<div style="margin-bottom:18px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+        <div>
+          <span style="font-size:0.88rem;font-weight:600;color:#fff">${t.label}</span>
+          <span style="font-size:0.73rem;color:var(--muted);margin-left:8px">${t.desc}</span>
+        </div>
+        <span style="font-size:1.3rem;font-weight:800;color:${t.color};min-width:24px;text-align:right">${t.count}</span>
+      </div>
+      <div style="height:9px;background:var(--border);border-radius:5px;margin-bottom:6px">
+        <div style="height:100%;width:${barW}%;background:${t.color};border-radius:5px"></div>
+      </div>
+      <div style="font-size:0.73rem;color:var(--muted)">${t.count > 0 ? names + more : '—'}</div>
+    </div>`;
+  }).join('');
+
+  // Team adoption bars
+  const DCOL = {'Engineering':'#a89cff','Data Engineering':'#00d4aa','Consulting':'#ffa726',
+    'Growth':'#81c784','Marketing':'#ff6b6b','Customer Success':'#26c6da',
+    'IT':'#ce93d8','HR':'#ffd740','Finance':'#00bcd4','Product':'#f48fb1','Other':'#8b92b8'};
+  const deptActive = {};
+  [...usersSet].forEach(e => { const d = getDept(e); deptActive[d] = (deptActive[d] || 0) + 1; });
+  const deptRows = Object.entries(deptActive).sort((a, b) => b[1] - a[1]);
+  const maxDept  = Math.max(...deptRows.map(r => r[1]), 1);
+  document.getElementById('wk-dept-bars').innerHTML = deptRows.map(([dept, cnt]) => {
+    const col = DCOL[dept] || '#8b92b8';
+    const w   = Math.round(cnt / maxDept * 100);
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px">
+        <span style="font-size:0.85rem;color:#fff">${dept}</span>
+        <span style="font-size:0.85rem;font-weight:700;color:${col}">${cnt} active</span>
+      </div>
+      <div style="height:8px;background:var(--border);border-radius:4px">
+        <div style="height:100%;width:${w}%;background:${col};border-radius:4px"></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Heatmap — top 30, simplified (no numbers, 4 color levels only)
+  function cellColor(cnt, wsActive) {
+    if (wsActive && cnt === 0) return 'background:rgba(0,212,170,0.6)';
+    if (cnt >= 50) return 'background:#6c63ff';
+    if (cnt >= 15) return 'background:rgba(108,99,255,0.72)';
+    if (cnt >= 1)  return 'background:rgba(108,99,255,0.32)';
+    return 'background:rgba(255,255,255,0.04)';
+  }
+
+  const heatUsers = userStats.slice(0, 30);
+  set('wk-heatmap-sub', `Top ${heatUsers.length} most active employees · hover any cell for details`);
+  document.getElementById('wk-heatmap-legend').innerHTML = `
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1)"></div>No activity</div>
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.32)"></div>Light (1–14)</div>
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.72)"></div>Moderate (15–49)</div>
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#6c63ff"></div>Heavy (50+)</div>
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(0,212,170,0.6)"></div>Windsurf</div>`;
+
+  let h = `<table style="border-collapse:separate;border-spacing:4px;min-width:max-content">`;
+  h += `<tr><th style="padding:6px 20px 6px 4px;color:var(--muted);text-align:left;font-weight:500;font-size:0.78rem;min-width:170px">Employee</th>`;
+  d7.forEach(date => {
+    const dow = DOW[new Date(date + 'T00:00:00Z').getUTCDay()];
+    const dd  = date.slice(8);
+    const isAnchor = date === anchor;
+    h += `<th style="text-align:center;padding:2px 0;width:40px;${isAnchor ? 'color:#a89cff;font-weight:700' : 'color:var(--muted);font-weight:400'}">
+      <div style="font-size:0.75rem">${dow}</div><div style="font-size:0.68rem;opacity:0.7">${dd}</div></th>`;
+  });
+  h += `<th style="padding:6px 6px 6px 12px;color:var(--muted);font-weight:400;font-size:0.78rem;text-align:right;min-width:56px">Week</th>`;
+  h += `<th style="padding:6px 12px;color:var(--muted);font-weight:400;font-size:0.78rem;min-width:120px">Active Tools</th></tr>`;
+
+  heatUsers.forEach(u => {
+    const wsLast = WINDSURF_USERS[u.email] || null;
+    const label  = nameFromEmail(u.email);
+    h += `<tr><td style="padding:4px 20px 4px 4px;color:var(--text);font-size:0.82rem;font-weight:500;white-space:nowrap">${label}</td>`;
+    d7.forEach(date => {
+      const day = days7.find(x => x.date === date);
+      const cnt = day ? (day.c[u.email] || 0) : 0;
+      const wsActive = wsLast === date;
+      const style = cellColor(cnt, wsActive);
+      const tip = `${label}  ·  ${date}  ·  ${cnt > 0 ? cnt + ' AI actions' : wsActive ? 'Windsurf active' : 'no activity'}`;
+      h += `<td style="${style};width:40px;height:36px;border-radius:5px" title="${tip}"></td>`;
+    });
+    const tools = [];
+    if (u.hasCc)     tools.push(`<span style="background:rgba(0,212,170,0.15);color:#00d4aa;border-radius:4px;padding:2px 7px;font-size:0.7rem;font-weight:600">Claude Code</span>`);
+    if (u.events > 0)tools.push(`<span style="background:rgba(108,99,255,0.15);color:#a89cff;border-radius:4px;padding:2px 7px;font-size:0.7rem;font-weight:600">Cursor AI</span>`);
+    if (u.hasWs)     tools.push(`<span style="background:rgba(38,198,218,0.12);color:#26c6da;border-radius:4px;padding:2px 7px;font-size:0.7rem;font-weight:600">Windsurf</span>`);
+    h += `<td style="padding:4px 6px 4px 12px;text-align:right;font-size:0.85rem;font-weight:700;color:#fff">${u.events ? fmt(u.events) : '–'}</td>`;
+    h += `<td style="padding:4px 12px"><div style="display:flex;gap:4px;flex-wrap:wrap">${tools.join('')}</div></td>`;
+    h += `</tr>`;
+  });
+  h += `</table>`;
+  document.getElementById('wk-heatmap').innerHTML = h;
+}
+// =======================================================
 
 // ==================== ROLLING 7-DAY SNAPSHOT ====================
 let weeklyDept = 'all';
@@ -2257,6 +2463,7 @@ initFromData();
 renderProjectsTable();
 renderArtifactsTable();
 initAdoption();
+renderWeeklyTab();
 initCharts();
 renderCodeTable();
 renderPeopleTable();
