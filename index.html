@@ -623,6 +623,29 @@
       <tbody id="adopt-user-table"></tbody>
     </table>
   </div>
+
+  <!-- ROLLING 7-DAY SNAPSHOT -->
+  <div class="card-full" id="weekly-snapshot-card">
+    <div class="section-header" style="margin-bottom:14px">
+      <div>
+        <div class="section-title">Rolling 7-Day Activity — All Tools</div>
+        <div class="section-sub">Last 7 days per user · Cursor AI requests (daily) · Claude Code (MTD) · Windsurf</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <select class="dept-select" id="weeklyDeptSelect" onchange="filterWeeklyDept(this.value)">
+          <option value="all">All Teams</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--surface2);border-radius:8px;font-size:0.8rem">
+      <div><span style="color:var(--muted)">Active users (7d) </span><span style="color:#fff;font-weight:700" id="weekly-active-users">–</span></div>
+      <div><span style="color:var(--muted)">Multi-tool users </span><span style="color:#a89cff;font-weight:700" id="weekly-multitool-users">–</span></div>
+      <div><span style="color:var(--muted)">Cursor events (7d) </span><span style="color:#a89cff;font-weight:700" id="weekly-cursor-events">–</span></div>
+      <div style="color:var(--muted)">as of <span id="weekly-as-of" style="color:var(--text)">–</span></div>
+    </div>
+    <div id="weekly-activity-grid" style="overflow-x:auto;margin-bottom:12px"></div>
+    <div id="weekly-legend" style="display:flex;gap:14px;flex-wrap:wrap;font-size:0.73rem;color:var(--muted);align-items:center"></div>
+  </div>
 </div>
 
 <script>
@@ -1774,6 +1797,7 @@ function initAdoption(){
   renderDeptMetrics();
   renderAdoptHeatmap();
   renderAdoptTable(adoptUTotals,adoptUDays);
+  renderWeeklySnapshot();
 }
 
 function renderDeptMetrics() {
@@ -1961,10 +1985,110 @@ function renderAdoptTable(uTotals,uDays){
   }).join('');
 }
 
+// ==================== ROLLING 7-DAY SNAPSHOT ====================
+let weeklyDept = 'all';
+function filterWeeklyDept(val) { weeklyDept = val; renderWeeklySnapshot(); }
+
+function renderWeeklySnapshot() {
+  // Anchor: most recent date in ADOPTION_DAYS (respects data lag)
+  const sortedDates = ADOPTION_DAYS.map(d => d.date).sort();
+  const anchor = sortedDates.length ? sortedDates[sortedDates.length - 1] : new Date().toISOString().slice(0, 10);
+
+  // Last 7 calendar days ending at anchor
+  const d7 = [];
+  const base = new Date(anchor + 'T00:00:00Z');
+  for (let i = 6; i >= 0; i--) {
+    const dt = new Date(base); dt.setUTCDate(dt.getUTCDate() - i);
+    d7.push(dt.toISOString().slice(0, 10));
+  }
+  const days7 = d7.map(date => ADOPTION_DAYS.find(d => d.date === date) || {date, c:{}, w:{}});
+
+  // Collect all users active in this window (Cursor or Windsurf)
+  const usersSet = new Set();
+  days7.forEach(day => Object.keys(day.c).forEach(e => usersSet.add(e)));
+  Object.entries(WINDSURF_USERS).forEach(([email, lastDate]) => {
+    if (lastDate && lastDate >= d7[0] && lastDate <= d7[6]) usersSet.add(email);
+  });
+
+  const users = [...usersSet]
+    .filter(e => weeklyDept === 'all' || getDept(e) === weeklyDept)
+    .sort((a, b) => {
+      const sa = days7.reduce((s, d) => s + (d.c[a] || 0), 0);
+      const sb = days7.reduce((s, d) => s + (d.c[b] || 0), 0);
+      return sb - sa;
+    });
+
+  // KPI stats
+  const totalEv7 = days7.reduce((s, d) => s + Object.values(d.c).reduce((a, v) => a + v, 0), 0);
+  const multiTool = users.filter(e => {
+    const hasCursor = days7.some(d => (d.c[e] || 0) > 0);
+    const hasCc = (ADOPTION_CC_MTD[e] || 0) > 0;
+    const hasWs = !!WINDSURF_USERS[e];
+    return [hasCursor, hasCc, hasWs].filter(Boolean).length >= 2;
+  }).length;
+
+  set('weekly-as-of', anchor);
+  set('weekly-active-users', users.length);
+  set('weekly-multitool-users', multiTool);
+  set('weekly-cursor-events', fmt(totalEv7));
+
+  const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  let h = `<table style="border-collapse:separate;border-spacing:3px;font-size:0.72rem;min-width:max-content">`;
+  h += `<tr><th style="padding:4px 12px 4px 4px;color:var(--muted);text-align:left;font-weight:400;min-width:150px">User</th>`;
+  d7.forEach(date => {
+    const dd = date.slice(8), dow = DOW[new Date(date + 'T00:00:00Z').getUTCDay()];
+    const isAnchor = date === anchor;
+    h += `<th style="padding:2px 0;text-align:center;width:28px;${isAnchor ? 'color:#a89cff;font-weight:600' : 'color:var(--muted);font-weight:400'}">
+      <div style="font-size:0.7rem">${dd}</div><div style="font-size:0.62rem;opacity:0.7">${dow}</div>
+    </th>`;
+  });
+  h += `<th style="padding:4px 8px;color:var(--muted);font-weight:400;text-align:right;min-width:48px">7d</th>`;
+  h += `<th style="padding:4px 10px;color:var(--muted);font-weight:400;text-align:left;min-width:110px">Tools Active</th></tr>`;
+
+  users.forEach(email => {
+    const label = nameFromEmail(email);
+    const weeklyTotal = days7.reduce((s, d) => s + (d.c[email] || 0), 0);
+    const wsLast = WINDSURF_USERS[email] || null;
+    const ccLines = ADOPTION_CC_MTD[email] || 0;
+    const toolParts = [];
+    if (ccLines > 0)     toolParts.push(`<span style="background:rgba(0,212,170,0.18);color:#00d4aa;border-radius:3px;padding:1px 5px;font-size:0.65rem;font-weight:600">CC</span>`);
+    if (weeklyTotal > 0) toolParts.push(`<span style="background:rgba(108,99,255,0.18);color:#a89cff;border-radius:3px;padding:1px 5px;font-size:0.65rem;font-weight:600">Cursor</span>`);
+    if (wsLast)          toolParts.push(`<span style="background:rgba(38,198,218,0.15);color:#26c6da;border-radius:3px;padding:1px 5px;font-size:0.65rem;font-weight:600">WS</span>`);
+
+    h += `<tr><td style="padding:3px 12px 3px 4px;color:var(--text);white-space:nowrap">${label}</td>`;
+    d7.forEach(date => {
+      const day = days7.find(x => x.date === date);
+      const cnt = day ? (day.c[email] || 0) : 0;
+      const wsActive = wsLast === date;
+      const style = overallCellClr(cnt, wsActive);
+      const tip = `${label} · ${date} · ${cnt > 0 ? cnt + ' Cursor events' : wsActive ? 'Windsurf active' : 'no activity'}`;
+      const num = cnt >= 10 ? `<div style="font-size:0.6rem;color:#fff;text-align:center;line-height:28px">${cnt > 99 ? '99+' : cnt}</div>` : '';
+      h += `<td style="${style};width:28px;height:28px;border-radius:4px;vertical-align:middle" title="${tip}">${num}</td>`;
+    });
+    h += `<td style="padding:3px 8px;text-align:right;${weeklyTotal > 0 ? 'color:#fff;font-weight:700' : 'color:var(--muted)'}">${weeklyTotal || '–'}</td>`;
+    h += `<td style="padding:3px 10px"><div style="display:flex;gap:3px;align-items:center">${toolParts.join('')}</div></td>`;
+    h += `</tr>`;
+  });
+  h += `</table>`;
+  document.getElementById('weekly-activity-grid').innerHTML = h;
+
+  document.getElementById('weekly-legend').innerHTML = `
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#1a1d27;border:1px solid rgba(255,255,255,0.08)"></div>No activity</div>
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.22)"></div>Cursor 1–4</div>
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.4)"></div>5–9</div>
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.6)"></div>10–19</div>
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.85)"></div>20–49</div>
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#6c63ff"></div>50+</div>
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(0,212,170,0.75)"></div>Windsurf</div>
+    <span style="color:var(--muted);margin-left:6px">Numbers shown for 10+ event days · <span style="color:#00d4aa">CC</span> = Claude Code active MTD · <span style="color:#26c6da">WS</span> = Windsurf enrolled</span>
+  `;
+}
+// ================================================================
+
 // Populate dept selects dynamically from DEPT_OPTIONS
 (function populateDeptSelects(){
   const optHTML = DEPT_OPTIONS.map(d=>`<option value="${d}">${d}</option>`).join('');
-  ['codeDeptSelect','peopleDeptSelect','adoptDeptSelect'].forEach(id=>{
+  ['codeDeptSelect','peopleDeptSelect','adoptDeptSelect','weeklyDeptSelect'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.insertAdjacentHTML('beforeend', optHTML);
   });
