@@ -295,7 +295,11 @@
         <div class="section-title">Who Was Active Each Day</div>
         <div class="section-sub" id="wk-heatmap-sub">Top active employees this week · hover any cell for details</div>
       </div>
-      <div id="wk-heatmap-legend" style="display:flex;gap:12px;align-items:center;font-size:0.73rem;color:var(--muted);flex-wrap:wrap"></div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div id="wk-heatmap-legend" style="display:flex;gap:12px;align-items:center;font-size:0.73rem;color:var(--muted);flex-wrap:wrap"></div>
+        <input class="search-input" placeholder="Search employee…" style="width:190px;margin-left:auto"
+          oninput="filterWeekSearch(this.value)">
+      </div>
     </div>
     <div id="wk-heatmap" style="overflow-x:auto;margin-top:16px"></div>
   </div>
@@ -343,6 +347,8 @@
         <select class="dept-select" id="codeDeptSelect" onchange="filterCodeDept(this.value)">
           <option value="all">All Teams</option>
         </select>
+        <input class="search-input" placeholder="Search name or email…" style="width:200px"
+          oninput="codeSearch=this.value.toLowerCase();searchRows('codeTableBody',this.value)">
       </div>
     </div>
     <table class="data-table">
@@ -508,6 +514,10 @@
     <div class="insight-title" style="color:#ff7070">Summary of gaps as of <span id="attention-date"></span></div>
     <ul id="attention-gap-list" style="color:var(--muted);padding-left:18px;display:flex;flex-direction:column;gap:5px;margin-top:6px"></ul>
   </div>
+  <div style="margin-bottom:16px">
+    <input class="search-input" placeholder="Search name or email…" style="width:260px"
+      oninput="searchRows('zero-liners-table',this.value);searchRows('very-low-table',this.value)">
+  </div>
   <div class="two-col">
     <div>
       <div class="card-full">
@@ -598,6 +608,8 @@
         <div class="section-sub" id="cu-table-sub"></div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <input class="search-input" placeholder="Search name or email…" style="width:220px"
+          oninput="cuSearch=this.value.toLowerCase();searchRows('cuTableBody',this.value)">
         <div class="filter-bar" id="cu-filter">
           <button class="filter-btn active" onclick="filterCU('all',this)">All</button>
           <button class="filter-btn" onclick="filterCU('open',this)">Has Open</button>
@@ -672,6 +684,8 @@
         <select class="dept-select" id="adoptDeptSelect" onchange="filterAdoptDept(this.value)">
           <option value="all">All Teams</option>
         </select>
+        <input class="search-input" placeholder="Search name or email…" style="width:200px"
+          oninput="filterAdoptSearch(this.value)">
       </div>
     </div>
     <div id="adopt-heatmap" style="overflow-x:auto;margin-bottom:12px;"></div>
@@ -1126,7 +1140,13 @@ function switchTab(id, el) {
   el.classList.add('active');
 }
 
-let codeFilter = 'all', codeDept = 'all';
+let codeFilter = 'all', codeDept = 'all', codeSearch = '';
+function searchRows(tbodyId, q) {
+  const term = q.toLowerCase();
+  document.querySelectorAll('#' + tbodyId + ' tr').forEach(tr => {
+    tr.style.display = tr.textContent.toLowerCase().includes(term) ? '' : 'none';
+  });
+}
 function renderCodeTable() {
   let rows = members;
   if (codeFilter === 'high') rows = rows.filter(m => m.lines >= 5000);
@@ -1147,6 +1167,7 @@ function renderCodeTable() {
       <td><span class="tier ${t.cls}">${t.label}</span></td>
     </tr>`;
   }).join('');
+  if (codeSearch) searchRows('codeTableBody', codeSearch);
 }
 function updateDistChart() {
   let filtered = members;
@@ -1666,6 +1687,7 @@ const WEEKLY_SNAPSHOTS = (function() {
 
 let cuFilter = 'all';
 let cuDeptFilter = 'all';
+let cuSearch = '';
 
 function filterCU(f, btn) {
   cuFilter = f;
@@ -1804,10 +1826,11 @@ function renderCUTable() {
       <td>${dueCell}</td>
     </tr>`;
   }).join('');
+  if (cuSearch) searchRows('cuTableBody', cuSearch);
 }
 // ======================================================
 
-let adoptView='overall', adoptDept='all';
+let adoptView='overall', adoptDept='all', adoptSearch='';
 let adoptUTotals={}, adoptUDays={};
 function setAdoptView(v,btn){
   adoptView=v;
@@ -1953,7 +1976,7 @@ function renderAdoptHeatmap(){
   } else {
     days.forEach(day=>Object.keys(day.c).forEach(e=>usersSet.add(e)));
   }
-  const users=[...usersSet].filter(e=>adoptDept==='all'||getDept(e)===adoptDept).sort((a,b)=>{
+  const users=[...usersSet].filter(e=>adoptDept==='all'||getDept(e)===adoptDept).filter(e=>!adoptSearch||(nameFromEmail(e)+' '+e).toLowerCase().includes(adoptSearch)).sort((a,b)=>{
     if(adoptView==='overall'){
       // Sort by: total cursor events + bonus for windsurf
       const scoreA=days.reduce((s,d)=>s+(d.c[a]||0),0)+(WINDSURF_USERS[a]?200:0);
@@ -2030,6 +2053,7 @@ function renderAdoptTable(uTotals,uDays){
   const dash='<span style="color:var(--muted)">—</span>';
   const rows=[...allEmails]
     .filter(e=>adoptDept==='all'||getDept(e)===adoptDept)
+    .filter(e=>!adoptSearch||(nameFromEmail(e)+' '+e).toLowerCase().includes(adoptSearch))
     .sort((a,b)=>{
       // Primary: cursor events desc; secondary: windsurf active
       const ca=uTotals[a]||0, cb=uTotals[b]||0;
@@ -2053,7 +2077,11 @@ function renderAdoptTable(uTotals,uDays){
   }).join('');
 }
 
+function filterAdoptSearch(val) { adoptSearch = val.toLowerCase(); renderAdoptHeatmap(); renderAdoptTable(adoptUTotals, adoptUDays); }
+
 // ==================== THIS WEEK TAB ====================
+let wkSearch = '';
+function filterWeekSearch(val) { wkSearch = val.toLowerCase(); renderWeeklyTab(); }
 function renderWeeklyTab() {
   const sortedDates = ADOPTION_DAYS.map(d => d.date).sort();
   const anchor = sortedDates.length ? sortedDates[sortedDates.length - 1] : new Date().toISOString().slice(0,10);
@@ -2230,8 +2258,10 @@ function renderWeeklyTab() {
     return 'background:rgba(255,255,255,0.04)';
   }
 
-  const heatUsers = userStats;
-  set('wk-heatmap-sub', `All ${heatUsers.length} active employees this week · hover any cell for details`);
+  const heatUsers = wkSearch
+    ? userStats.filter(u => (nameFromEmail(u.email)+' '+u.email).toLowerCase().includes(wkSearch))
+    : userStats;
+  set('wk-heatmap-sub', `${heatUsers.length} active employees this week · hover any cell for details`);
   document.getElementById('wk-heatmap-legend').innerHTML = `
     <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1)"></div>No activity</div>
     <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.32)"></div>Light (1–14)</div>
