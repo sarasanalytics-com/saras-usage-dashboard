@@ -204,7 +204,7 @@
       <div class="kpi-value" id="kpi-wau"></div>
       <div class="kpi-sub">Claude.ai · Claude Code · Cowork (from Claude admin)</div>
       <span class="kpi-badge badge-green" id="kpi-utilization-badge"></span>
-      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> Last 7 days &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>All Claude products combined, de-duplicated (Claude.ai + Code + Cowork)</em></div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> Last 7 days &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>All Claude products combined, de-duplicated (Claude.ai + Code + Cowork) · WAU is org-level from Claude Admin and will exceed the sum of per-product monthly actives, which use different time windows and denominators</em></div>
     </div>
     <div class="kpi c2">
       <div class="kpi-label">Code Lines Accepted (MTD)</div>
@@ -435,7 +435,7 @@
       <div class="kpi-label">Accept Rate</div>
       <div class="kpi-value" id="kpi-code-accept-rate"></div>
       <div class="kpi-sub">Suggestions accepted vs shown</div>
-      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days<br><strong>Type:</strong> Quality metric</div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days<br><strong>Type:</strong> Quality metric &nbsp;·&nbsp; <em>Claude Code measures accepted vs rejected explicit requests — higher than Cursor's show/accept model because engineers invoke Claude Code intentionally rather than receiving passive completions</em></div>
     </div>
     <div class="kpi c3">
       <div class="kpi-label">Active Members</div>
@@ -526,16 +526,16 @@
   <div class="section-divider"><span>Output Volume <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
   <div class="kpi-grid">
     <div class="kpi c3">
-      <div class="kpi-label">Projects Created</div>
+      <div class="kpi-label">New Projects Created</div>
       <div class="kpi-value" id="kpi-ai-projects"></div>
       <div class="kpi-sub" id="kpi-ai-projects-month"></div>
-      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Company-wide only</em></div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Projects created new this month — not the same as projects used</em></div>
     </div>
     <div class="kpi c4">
-      <div class="kpi-label">Users with 1+ Project</div>
+      <div class="kpi-label">Users who Created a Project</div>
       <div class="kpi-value" id="kpi-ai-project-user-pct"></div>
       <div class="kpi-sub" id="kpi-ai-project-user-sub"></div>
-      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Company-wide only</em></div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Only counts users who created a project this month — not those using existing ones</em></div>
     </div>
     <div class="kpi c5">
       <div class="kpi-label">Artifacts Created</div>
@@ -567,8 +567,8 @@
   <div class="card-full">
     <div class="section-header" style="margin-bottom:16px">
       <div>
-        <div class="section-title">Top Users by Projects</div>
-        <div class="section-sub">Projects used MTD · as of <span id="projects-as-of"></span></div>
+        <div class="section-title">Top Users by Projects Used</div>
+        <div class="section-sub">Projects accessed MTD (includes projects created in prior months) · as of <span id="projects-as-of"></span></div>
       </div>
     </div>
     <table class="data-table">
@@ -1499,7 +1499,7 @@ function renderPeopleTable() {
     return b.cursorEvents - a.cursorEvents;
   });
 
-  set('people-subtitle', `${DATA.monthLabel} MTD · ${rows.length} people shown`);
+  set('people-subtitle', `${DATA.monthLabel} MTD · ${rows.length} people shown · 1 employee excluded (no @sarasanalytics.com address in HR system — fix in Keka)`);
   const dash = '<span style="color:var(--muted)">—</span>';
 
   document.getElementById('peopleTableBody').innerHTML = rows.map((r, i) => {
@@ -1566,7 +1566,7 @@ function initFromData() {
   const d = DATA;
   const activeCnt   = members.filter(m => m.lines > 0).length;
   const inactiveCnt = members.filter(m => m.lines === 0).length;
-  const zeroLiners  = members.filter(m => m.lines === 0);
+  const zeroLiners  = members.filter(m => m.lines === 0 && m.email !== 'anudeep.kolla@sarasanalytics.com');
   const veryLow     = members.filter(m => m.lines > 0 && m.lines < 100);
   const activePct   = Math.round(activeCnt / members.length * 100);
 
@@ -1591,7 +1591,7 @@ function initFromData() {
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start">
           <span style="font-size:1.3rem;line-height:1">🎯</span>
-          <div><span style="color:#ffa726;font-weight:600">Top opportunity:</span> <span style="color:var(--muted)">Claude.ai Projects used by </span><span style="color:#fff;font-weight:600">${d.projectUserPct}%</span><span style="color:var(--muted)"> of org, Artifacts by </span><span style="color:#fff;font-weight:600">${d.artifactUserPct}%</span><span style="color:var(--muted)"> — both nearly untapped. Cowork growing </span><span style="color:#00d4aa;font-weight:600">+${d.coworkSessionGrowthPct}% sessions/wk</span></div>
+          <div><span style="color:#ffa726;font-weight:600">Top opportunity:</span> <span style="color:var(--muted)">Claude.ai Projects used by </span><span style="color:#fff;font-weight:600">${d.projectUserPct}%</span><span style="color:var(--muted)"> of org, Artifacts by </span><span style="color:#fff;font-weight:600">${d.artifactUserPct}%</span><span style="color:var(--muted)"> — both nearly untapped.</span></div>
         </div>
       </div>
     </div>`;
@@ -1858,20 +1858,20 @@ const CLICKUP_DATA = {
     {name:'Rakesh Varma',        email:'rakesh.varma@sarasanalytics.com',              dept:'Marketing',        open:271,done:12, urgent:0,  high:9,  normal:2, low:0, nextDue:'2026-06-29'},
     {name:'Rahul Chauhan',       email:'rahul.chauhan@sarasanalytics.com',             dept:'Consulting',       open:36, done:0,  urgent:2,  high:8,  normal:0, low:0, nextDue:'2026-06-29'},
     {name:'Om Prakash Mahto',    email:'omprakash@sarasanalytics.com',                 dept:'Data Engineering', open:139,done:0,  urgent:2,  high:5,  normal:2, low:0, nextDue:'2026-05-18'},
-    {name:'Sai Varun',           email:'sai.varun@sarasanalytics.com',                 dept:'Data Engineering', open:8,  done:0,  urgent:4,  high:3,  normal:1, low:0, nextDue:'2026-04-30'},
+    {name:'Sai Varun Pathi',      email:'saivarun.pathi@sarasanalytics.com',            dept:'Data Engineering', open:8,  done:0,  urgent:4,  high:3,  normal:1, low:0, nextDue:'2026-04-30'},
     {name:'Chai',                email:'chai@sarasanalytics.com',                      dept:'Customer Success', open:5,  done:0,  urgent:0,  high:0,  normal:5, low:0, nextDue:'2026-07-16'},
     {name:'Jatin Kumar Sahu',    email:'jatin.sahu@sarasanalytics.com',                dept:'Data Engineering', open:27, done:5,  urgent:4,  high:1,  normal:0, low:0, nextDue:'2026-05-22'},
     {name:'Deekshitha Vatnala',  email:'deekshitha.vatnala@sarasanalytics.com',        dept:'Data Engineering', open:11, done:6,  urgent:1,  high:3,  normal:1, low:0, nextDue:'2026-05-14'},
     {name:'Susmitha Peeka',      email:'susmitha.peeka@sarasanalytics.com',            dept:'Data Engineering', open:68, done:5,  urgent:0,  high:4,  normal:1, low:0, nextDue:'2026-04-30'},
-    {name:'Pinnoju Abhignya',    email:'pinnoju.abhignya@sarasanalytics.com',          dept:'Data Engineering', open:4,  done:3,  urgent:0,  high:2,  normal:2, low:0, nextDue:'2026-05-23'},
+    {name:'Pinnoju Abhignya',    email:'abhignya.pinnoju@sarasanalytics.com',          dept:'Data Engineering', open:4,  done:3,  urgent:0,  high:2,  normal:2, low:0, nextDue:'2026-05-23'},
     {name:'Abhishek Baruah',     email:'abhishek.baruah@sarasanalytics.com',           dept:'Data Engineering', open:85, done:0,  urgent:1,  high:3,  normal:0, low:0, nextDue:'2026-06-29'},
-    {name:'S Thanoj Rahul',      email:'s.thanoj.rahul@sarasanalytics.com',            dept:'Marketing',        open:4,  done:1,  urgent:0,  high:2,  normal:2, low:0, nextDue:'2026-06-29'},
+    {name:'S Thanoj Rahul',      email:'thanoj.rahul@sarasanalytics.com',              dept:'Marketing',        open:4,  done:1,  urgent:0,  high:2,  normal:2, low:0, nextDue:'2026-06-29'},
     {name:'Sahil Chhimpa',       email:'sahil.chhimpa@sarasanalytics.com',             dept:'Data Engineering', open:138,done:0,  urgent:2,  high:2,  normal:0, low:0, nextDue:'2026-04-21'},
     {name:'Bheem',               email:'bheem@sarasanalytics.com',                     dept:'Engineering',      open:84, done:0,  urgent:0,  high:4,  normal:0, low:0, nextDue:null},
     {name:'Eswar',               email:'eswar@sarasanalytics.com',                     dept:'Data Engineering', open:4,  done:0,  urgent:1,  high:3,  normal:0, low:0, nextDue:'2026-05-15'},
     {name:'Maninder Singh',      email:'maninder.singh@sarasanalytics.com',            dept:'Engineering',      open:57, done:0,  urgent:0,  high:3,  normal:1, low:0, nextDue:'2026-05-19'},
-    {name:'Anusha Danda',        email:'anusha.danda@sarasanalytics.com',              dept:'Engineering',      open:4,  done:0,  urgent:0,  high:0,  normal:4, low:0, nextDue:null},
-    {name:'Bhargavi',            email:'bhargavi@sarasanalytics.com',                  dept:'Data Engineering', open:3,  done:2,  urgent:2,  high:1,  normal:0, low:0, nextDue:'2026-05-23'},
+    {name:'Anusha Danda',        email:'anusha@sarasanalytics.com',                    dept:'Engineering',      open:4,  done:0,  urgent:0,  high:0,  normal:4, low:0, nextDue:null},
+    {name:'Krishna Bhargavi',    email:'krishna.bhargavi@sarasanalytics.com',          dept:'Data Engineering', open:3,  done:2,  urgent:2,  high:1,  normal:0, low:0, nextDue:'2026-05-23'},
     {name:'Mohammed Mushtaq',    email:'mohammed.mushtaq@sarasanalytics.com',          dept:'Data Engineering', open:3,  done:0,  urgent:0,  high:3,  normal:0, low:0, nextDue:null},
     {name:'Kakul Verma',         email:'kakul.verma@sarasanalytics.com',               dept:'Data Engineering', open:11, done:0,  urgent:0,  high:2,  normal:1, low:0, nextDue:'2026-05-23'},
     {name:'Katharin Benson',     email:'katharin.benson@sarasanalytics.com',           dept:'Data Engineering', open:64, done:1,  urgent:0,  high:1,  normal:2, low:0, nextDue:'2026-05-23'},
@@ -1994,7 +1994,7 @@ function initClickUp() {
 }
 
 function renderCUTable() {
-  let rows = CLICKUP_DATA.people;
+  let rows = CLICKUP_DATA.people.filter(p => p.email.endsWith('@sarasanalytics.com'));
   if      (cuFilter === 'open')   rows = rows.filter(p => p.open > 0);
   else if (cuFilter === 'done')   rows = rows.filter(p => p.done > 0);
   else if (cuFilter === 'urgent') rows = rows.filter(p => p.open > 0 && p.urgent > 0);
@@ -2065,6 +2065,7 @@ function renderCUTable() {
 
   set('cu-table-sub', `${CLICKUP_DATA.asOf} snapshot · ${rows.length} people shown`);
   const dash = '<span style="color:var(--muted)">—</span>';
+  const cuToday = (()=>{ const d=new Date(DATA.asOf); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
 
   document.getElementById('cuTableBody').innerHTML = rows.map((p, i) => {
     // Priority pills (open tasks only)
@@ -2083,8 +2084,9 @@ function renderCUTable() {
     const doneCell = p.done > 0
       ? `<span style="font-weight:600;color:var(--accent2)">${p.done}</span>`
       : dash;
+    const isOverdue = p.nextDue && p.nextDue < cuToday && p.open > 0;
     const dueCell = p.nextDue
-      ? `<span style="font-size:0.74rem;color:var(--muted)">${p.nextDue}</span>`
+      ? `<span style="font-size:0.74rem;font-weight:${isOverdue?'700':'400'};color:${isOverdue?'#ff5252':'var(--muted)'}">${isOverdue?'⚠ ':''}${p.nextDue}</span>`
       : (p.done > 0 ? `<span style="font-size:0.72rem;color:var(--accent2)">✓ all closed</span>` : dash);
 
     return `<tr class="clickable-row" onclick="openPersonPanel('${p.email}')">
@@ -2122,7 +2124,7 @@ function cellClr(cnt,isWs){
 function nameFromEmail(e){return e.split('@')[0].split('.').map(p=>p[0].toUpperCase()+p.slice(1)).join(' ');}
 function initAdoption(){
   const mayDays=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01');
-  const today='2026-05-18';
+  const today=(()=>{ const d=new Date(DATA.asOf); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
   let totalEv=0;
   mayDays.forEach(day=>{
     Object.entries(day.c).forEach(([em,cnt])=>{
