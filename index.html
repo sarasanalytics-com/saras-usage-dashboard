@@ -1585,7 +1585,7 @@ function initFromData() {
   const inactiveCnt = members.filter(m => m.lines === 0).length;
   const zeroLiners  = members.filter(m => m.lines === 0 && m.email !== 'anudeep.kolla@sarasanalytics.com');
   const veryLow     = members.filter(m => m.lines > 0 && m.lines < 100);
-  const activePct   = Math.round(activeCnt / members.length * 100);
+  const activePct   = Math.round(activeCnt / DATA.totalMembers * 100);
 
   // Header
   set('header-date', d.asOf);
@@ -1604,7 +1604,7 @@ function initFromData() {
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start">
           <span style="font-size:1.3rem;line-height:1">💻</span>
-          <div><span style="color:#fff;font-weight:600">Claude Code: ${ccActive}/${members.length} licensed</span> <span style="color:var(--muted)">users active · </span><span style="color:#a89cff;font-weight:600">${fmt(d.totalLines)} lines accepted</span><span style="color:var(--muted)"> this month (${d.acceptRate}% acceptance rate)</span></div>
+          <div><span style="color:#fff;font-weight:600">Claude Code: ${ccActive}/${d.totalMembers} licensed</span> <span style="color:var(--muted)">users active · </span><span style="color:#a89cff;font-weight:600">${fmt(d.totalLines)} lines accepted</span><span style="color:var(--muted)"> this month (${d.acceptRate}% acceptance rate)</span></div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start">
           <span style="font-size:1.3rem;line-height:1">🎯</span>
@@ -1637,10 +1637,10 @@ function initFromData() {
   set('kpi-code-total-lines', fmt(d.totalLines));
   set('kpi-code-month', d.monthLabel);
   set('kpi-code-accept-rate', `${d.acceptRate}%`);
-  set('kpi-code-active-members', `${activeCnt} / ${members.length}`);
+  set('kpi-code-active-members', `${activeCnt} / ${DATA.totalMembers}`);
   set('kpi-code-active-pct', `${activePct}% of licensed seats active · target: 100%`);
   set('kpi-code-license-util', `${activePct}%`);
-  set('kpi-code-license-sub', `${activeCnt} of ${members.length} seats used · ${members.length - activeCnt} idle`);
+  set('kpi-code-license-sub', `${activeCnt} of ${DATA.totalMembers} seats used · ${DATA.totalMembers - activeCnt} idle`);
   set('kpi-code-avg-lines', fmt(d.avgLinesActive));
   set('code-table-title', `All ${members.length} Members — Lines This Month`);
 
@@ -1727,7 +1727,7 @@ function initCharts() {
   const d = DATA;
   const activeCnt   = members.filter(m => m.lines > 0).length;
   const inactiveCnt = members.filter(m => m.lines === 0).length;
-  const codeActivePct = Math.round(activeCnt / members.length * 100);
+  const codeActivePct = Math.round(activeCnt / DATA.totalMembers * 100);
 
   new Chart(document.getElementById('adoptionChart'), {
     type:'bar', data:{
@@ -1811,7 +1811,7 @@ function initCharts() {
 
   // Exec summary — All-tool adoption comparison
   (function(){
-    const ccActivePct=Math.round(members.filter(m=>m.lines>0).length/members.length*100);
+    const ccActivePct=Math.round(members.filter(m=>m.lines>0).length/DATA.totalMembers*100);
     const wsTracked=Object.values(WINDSURF_USERS).filter(v=>v!==null).length;
     const mayDays=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01');
     const cursorUsers=new Set(); mayDays.forEach(day=>Object.keys(day.c).filter(e=>e.endsWith('@sarasanalytics.com')).forEach(e=>cursorUsers.add(e)));
