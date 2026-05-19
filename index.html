@@ -977,7 +977,6 @@ const TEAM_TOOLS = {
 const DATA = {
   asOf: 'May 19, 2026',
   monthLabel: 'May 2026',
-  wau: 141,
   utilization: 94,
   licensedSeats: 150, // Claude licenses (all products — web, CLI, Cowork)
   totalLines: 245362,
@@ -986,11 +985,27 @@ const DATA = {
   totalMembers: 38,
   orgSize: 209,
   avgLinesActive: 8179,
-  coworkSessionsPerDay: 8,
-  coworkSessionGrowthPct: -42.9,
+  // Cowork — from daily active users graph (weekdays only); data as of May 17
+  coworkDailyUsers: 20,          // weekday avg DAU from graph
+  coworkDailyData: [             // weekday-only, from graph (May 12–15)
+    {date:'2026-05-12', users:15},
+    {date:'2026-05-13', users:21},
+    {date:'2026-05-14', users:21},
+    {date:'2026-05-15', users:22},
+  ],
+  coworkDataAsOf: 'May 17, 2026',
+  coworkSessionsPerDay: 8,       // sessions/day card value (kept for other views)
   coworkUserPct: 4,
-  coworkUserGrowthPct: -14.3,
-  chatsPerDay: 25,
+  // Claude.ai — chats from usage graph (weekdays only); data as of May 18
+  chatsPerDay: 135,              // weekday avg from graph
+  chatsDataAsOf: 'May 18, 2026',
+  chatsDailyData: [              // weekday-only, from graph
+    {date:'2026-05-12', chats:151},
+    {date:'2026-05-13', chats:145},
+    {date:'2026-05-14', chats:138},
+    {date:'2026-05-15', chats:105},
+    {date:'2026-05-18', chats:134},
+  ],
   chatUserPct: 9,
   projectsCreated: 1,
   projectUserPct: 1,
