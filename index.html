@@ -206,13 +206,6 @@
   <div class="section-divider"><span>🤖 Claude Tools</span></div>
   <div class="kpi-grid">
     <div class="kpi c1">
-      <div class="kpi-label">Weekly Active Users</div>
-      <div class="kpi-value" id="kpi-wau"></div>
-      <div class="kpi-sub">Claude.ai · Claude Code · Cowork (from Claude admin)</div>
-      <span class="kpi-badge badge-green" id="kpi-utilization-badge"></span>
-      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> Last 7 days &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Denominator: 150 licensed seats · Any Claude product (Claude.ai + Code + Cowork) · Per-product "% users" are MTD counts — a different time window, so WAU and per-product active counts are not directly additive</em></div>
-    </div>
-    <div class="kpi c2">
       <div class="kpi-label">Code Lines Accepted (MTD)</div>
       <div class="kpi-value" id="kpi-overview-total-lines"></div>
       <div class="kpi-sub" id="kpi-overview-lines-month"></div>
@@ -1607,7 +1600,7 @@ function initFromData() {
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
         <div style="display:flex;gap:12px;align-items:flex-start">
           <span style="font-size:1.3rem;line-height:1">🟢</span>
-          <div><span style="color:#fff;font-weight:600">${d.wau} employees</span> <span style="color:var(--muted)">used at least one Claude product this week — </span><span style="color:#00d4aa;font-weight:600">${Math.round(d.wau/d.licensedSeats*100)}% of licensed users active</span></div>
+          <div><span style="color:#fff;font-weight:600">${d.activeMembers} of ${d.totalMembers} CC members active</span> <span style="color:var(--muted)">this month · </span><span style="color:#a89cff;font-weight:600">${d.utilization}% seat utilization</span></div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start">
           <span style="font-size:1.3rem;line-height:1">💻</span>
@@ -1621,8 +1614,7 @@ function initFromData() {
     </div>`;
 
   // Overview KPIs
-  set('kpi-wau', d.wau);
-  set('kpi-utilization-badge', `${d.utilization}% seat utilization`);
+  // kpi-wau removed
   set('kpi-overview-total-lines', fmt(d.totalLines));
   set('kpi-overview-lines-month', d.monthLabel + ' · Claude Code');
   set('kpi-accept-rate-badge', `${d.acceptRate}% accept rate`);
@@ -2169,9 +2161,8 @@ function initAdoption(){
   const wsToday=Object.values(WINDSURF_USERS).filter(d=>d===today).length;
   const activeU=Object.keys(adoptUTotals).length;
   const avgD=activeU>0?(Object.values(adoptUDays).reduce((a,b)=>a+b,0)/activeU).toFixed(1):0;
-  // Claude.ai active users: chatUserPct% of estimated total seats
-  const totalSeats=Math.round(DATA.wau/DATA.utilization*100);
-  const claudeAiUsers=Math.round(DATA.chatUserPct/100*totalSeats);
+  // Claude.ai active users: chatUserPct% of org size
+  const claudeAiUsers=Math.round(DATA.chatUserPct/100*DATA.orgSize);
   const cursorUtilPct = cursorLatest>0 ? Math.round(cursorLatest/CURSOR_SEATS*100) : 0;
   set('adopt-cursor-latest',(cursorLatest||'–')+' / '+CURSOR_SEATS);
   set('adopt-cursor-latest-sub',cursorLatestDate+' · '+cursorUtilPct+'% of licenses active');
@@ -2856,7 +2847,6 @@ function openPersonPanel(email) {
 function renderOverviewKPIs() {
   const dept = GF.dept;
   if (dept === 'all') {
-    set('kpi-wau', DATA.wau);
     set('kpi-overview-total-lines', fmt(DATA.totalLines));
     set('kpi-overview-lines-month', DATA.monthLabel + ' · Claude Code');
     set('kpi-overview-cowork-sessions', DATA.coworkSessionsPerDay);
@@ -2867,7 +2857,6 @@ function renderOverviewKPIs() {
     const deptLines = deptMembers.reduce((s,m)=>s+m.lines,0);
     set('kpi-overview-total-lines', fmt(deptLines));
     set('kpi-overview-lines-month', dept + ' · ' + DATA.monthLabel + ' MTD');
-    set('kpi-wau', DATA.wau);
     set('kpi-overview-cowork-sessions', DATA.coworkSessionsPerDay);
     set('kpi-overview-chats', DATA.chatsPerDay);
     set('kpi-overview-projects', DATA.projectsCreated);
