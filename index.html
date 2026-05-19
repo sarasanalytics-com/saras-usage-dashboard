@@ -101,6 +101,58 @@
   .panel-hint{font-size:0.72rem;color:var(--muted);font-style:italic;margin-top:8px;}
   .data-table tr.clickable-row{cursor:pointer;}
   .data-table tr.clickable-row:hover td{background:rgba(108,99,255,0.1);}
+  .kpi-meta {
+    font-size: 0.67rem; color: rgba(139,146,184,0.55);
+    margin-top: 8px; padding-top: 6px;
+    border-top: 1px solid rgba(46,50,80,0.4); line-height: 1.6;
+  }
+  .kpi-meta strong { color: rgba(139,146,184,0.8); }
+  .timeframe-badge {
+    display:inline-block; padding:2px 8px; border-radius:4px;
+    font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;
+    margin-left:6px; vertical-align:middle;
+  }
+  .tbadge-mtd   { background:rgba(108,99,255,0.15); color:#a89cff; }
+  .tbadge-daily { background:rgba(0,212,170,0.12);  color:#00d4aa; }
+  .tbadge-7d    { background:rgba(255,167,38,0.12); color:#ffa726; }
+  .no-data {
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:0.72rem; color:rgba(139,146,184,0.45); font-style:italic;
+  }
+  .fqq-strip {
+    display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:20px;
+  }
+  .fqq-card {
+    background:var(--surface2); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px;
+  }
+  .fqq-label {
+    font-size:0.65rem; text-transform:uppercase; letter-spacing:0.1em;
+    font-weight:700; margin-bottom:6px;
+  }
+  .fqq-freq  { color:#ffa726; }
+  .fqq-qty   { color:#00d4aa; }
+  .fqq-qual  { color:#a89cff; }
+  .fqq-value { font-size:1.5rem; font-weight:800; color:#fff; line-height:1.2; }
+  .fqq-sub   { font-size:0.72rem; color:var(--muted); margin-top:4px; }
+  .tool-strip {
+    display:flex; align-items:center; gap:20px;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:10px; padding:14px 20px; margin-bottom:10px;
+  }
+  .tool-strip-name { min-width:120px; }
+  .tool-strip-metric { font-size:1.3rem; font-weight:800; color:#fff; }
+  .tool-strip-sub { font-size:0.72rem; color:var(--muted); }
+  .tool-strip-bar-wrap { flex:1; min-width:120px; }
+  .tool-strip-bar-label {
+    display:flex; justify-content:space-between;
+    font-size:0.68rem; color:var(--muted); margin-bottom:3px;
+  }
+  .tool-strip-bar-bg { height:7px; background:var(--border); border-radius:4px; overflow:hidden; }
+  .tool-strip-bar-fill { height:100%; border-radius:4px; transition:width 0.4s; }
+  .dept-scorecard-wrap { overflow-x:auto; margin-bottom:20px; }
+  .not-in-scope { color:rgba(139,146,184,0.3); font-size:0.72rem; font-style:italic; }
+  @media (max-width: 700px) { .fqq-strip { grid-template-columns:1fr; } .tool-strip { flex-wrap:wrap; } }
 </style>
 </head>
 <body>
@@ -116,6 +168,16 @@
   </div>
 </header>
 
+<div id="global-filter-bar" style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;position:sticky;top:73px;z-index:99;flex-wrap:wrap;">
+  <span style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-weight:600">View by:</span>
+  <select id="gf-dept" class="dept-select" onchange="applyGlobalFilters()">
+    <option value="all">All Departments</option>
+  </select>
+  <span id="gf-active-label" style="font-size:0.75rem;color:var(--accent2);display:none"></span>
+  <button onclick="clearGlobalFilters()" id="gf-clear" style="display:none;padding:4px 12px;background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:0.75rem;cursor:pointer;">✕ Clear filter</button>
+  <span style="font-size:0.68rem;color:rgba(139,146,184,0.4);margin-left:auto">Filter affects all tabs</span>
+</div>
+
 <div class="tabs">
   <div class="tab active" onclick="switchTab('overview',this)">📊 Executive Summary</div>
   <div class="tab" onclick="switchTab('weekly',this)">📅 This Week</div>
@@ -128,7 +190,7 @@
   <div class="tab" onclick="switchTab('people',this)">People</div>
   <span class="tab-sep">Work</span>
   <div class="tab" onclick="switchTab('clickup',this)">✅ ClickUp</div>
-  <div class="tab" onclick="switchTab('attention',this)">🎯 Opportunities</div>
+  <div class="tab" onclick="switchTab('attention',this)">🎯 Action Items</div>
 </div>
 
 <!-- OVERVIEW / EXECUTIVE SUMMARY -->
@@ -142,32 +204,63 @@
       <div class="kpi-value" id="kpi-wau"></div>
       <div class="kpi-sub">Claude.ai · Claude Code · Cowork (from Claude admin)</div>
       <span class="kpi-badge badge-green" id="kpi-utilization-badge"></span>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> Last 7 days &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days</div>
     </div>
     <div class="kpi c2">
       <div class="kpi-label">Code Lines Accepted (MTD)</div>
       <div class="kpi-value" id="kpi-overview-total-lines"></div>
       <div class="kpi-sub" id="kpi-overview-lines-month"></div>
       <span class="kpi-badge badge-green" id="kpi-accept-rate-badge"></span>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> <span id="km-overview-lines-period">MTD</span> &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days</div>
     </div>
     <div class="kpi c3">
       <div class="kpi-label">Cowork Sessions/Day</div>
       <div class="kpi-value" id="kpi-overview-cowork-sessions"></div>
       <div class="kpi-sub" id="kpi-overview-cowork-user-sub"></div>
       <span class="kpi-badge badge-yellow" id="kpi-overview-cowork-growth"></span>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD daily avg &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days</div>
     </div>
     <div class="kpi c4">
       <div class="kpi-label">Claude.ai Chats/Day</div>
       <div class="kpi-value" id="kpi-overview-chats"></div>
       <div class="kpi-sub" id="kpi-overview-chat-user-sub"></div>
       <span class="kpi-badge badge-green">Active daily use</span>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD daily avg &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days</div>
     </div>
     <div class="kpi c5">
       <div class="kpi-label">Projects Created (MTD)</div>
       <div class="kpi-value" id="kpi-overview-projects"></div>
       <div class="kpi-sub" id="kpi-overview-projects-sub"></div>
       <span class="kpi-badge badge-yellow">Opportunity to grow</span>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days</div>
     </div>
   </div>
+  <div class="section-divider"><span>Department Adoption Scorecard <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="card-full dept-scorecard-wrap" style="margin-bottom:24px">
+    <div class="section-header" style="margin-bottom:12px">
+      <div>
+        <div class="section-title">How Each Team Is Using AI</div>
+        <div class="section-sub">Adoption % per expected tool · cells shown only for tools the team is licensed to use · <span class="timeframe-badge tbadge-mtd" style="font-size:0.62rem">MTD</span></div>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="data-table" id="dept-scorecard-table">
+        <thead id="dept-scorecard-head"></thead>
+        <tbody id="dept-scorecard-body"></tbody>
+      </table>
+      <div style="font-size:0.68rem;color:var(--muted);margin-top:8px;line-height:1.6">
+        ✱ Claude.ai adoption is org-wide from Claude Admin — dept-level breakdown not available from the API. &nbsp;
+        CC Lines = Claude Code lines accepted MTD. &nbsp;
+        "Any AI" = employee active on at least one tool this month.
+      </div>
+    </div>
+  </div>
+
+  <div class="section-divider"><span>Tool Adoption Overview <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div id="tool-strips-container">
+    <!-- populated by renderToolStrips() -->
+  </div>
+
   <div class="two-col">
     <div class="card">
       <div class="section-header">
@@ -255,6 +348,7 @@
   <div id="wk-compare" style="margin-bottom:24px"></div>
 
   <!-- KPIs -->
+  <div class="section-divider"><span>Activity Summary <span class="timeframe-badge tbadge-7d">Last 7 Days</span></span></div>
   <div class="kpi-grid" style="margin-bottom:28px">
     <div class="kpi c1">
       <div class="kpi-label">Employees Active</div>
@@ -310,36 +404,63 @@
 
 <!-- CLAUDE CODE -->
 <div class="page" id="tab-claude-code">
+  <div class="section-divider"><span>Code Metrics <span class="timeframe-badge tbadge-mtd">MTD <span id="cc-divider-month">May 2026</span></span></span></div>
+  <div class="fqq-strip">
+    <div class="fqq-card">
+      <div class="fqq-label fqq-freq">Frequency</div>
+      <div class="fqq-value" id="fqq-cc-freq">–</div>
+      <div class="fqq-sub">members active this month (lines > 0)</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)"><strong>Source:</strong> Claude Admin · MTD · ~2 day lag</div>
+    </div>
+    <div class="fqq-card">
+      <div class="fqq-label fqq-qty">Quantity</div>
+      <div class="fqq-value" id="fqq-cc-qty">–</div>
+      <div class="fqq-sub">avg lines per active member this month</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)"><strong>Source:</strong> Claude Admin · MTD · ~2 day lag</div>
+    </div>
+    <div class="fqq-card">
+      <div class="fqq-label fqq-qual">Quality</div>
+      <div class="fqq-value" id="fqq-cc-qual">–</div>
+      <div class="fqq-sub">suggestion accept rate (org-wide)</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)"><strong>Source:</strong> Claude Admin · MTD · ~2 day lag · Org-level only</div>
+    </div>
+  </div>
   <div class="kpi-grid">
     <div class="kpi c2">
       <div class="kpi-label">Lines Accepted (MTD)</div>
       <div class="kpi-value" id="kpi-code-total-lines"></div>
       <div class="kpi-sub" id="kpi-code-month"></div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days</div>
     </div>
     <div class="kpi c1">
       <div class="kpi-label">Accept Rate</div>
       <div class="kpi-value" id="kpi-code-accept-rate"></div>
       <div class="kpi-sub">Suggestions accepted vs shown</div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days<br><strong>Type:</strong> Quality metric</div>
     </div>
     <div class="kpi c3">
       <div class="kpi-label">Active Members</div>
       <div class="kpi-value" id="kpi-code-active-members"></div>
       <div class="kpi-sub" id="kpi-code-active-pct"></div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days</div>
     </div>
     <div class="kpi c4">
       <div class="kpi-label">Avg Lines / Active Member</div>
       <div class="kpi-value" id="kpi-code-avg-lines"></div>
       <div class="kpi-sub">Among those with any usage</div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days</div>
     </div>
     <div class="kpi c5">
       <div class="kpi-label">License Utilization</div>
       <div class="kpi-value" id="kpi-code-license-util"></div>
       <div class="kpi-sub" id="kpi-code-license-sub"></div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days</div>
     </div>
   </div>
   <div style="background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:10px;padding:12px 18px;margin-bottom:16px;font-size:0.8rem;color:var(--muted)">
     <strong style="color:#a89cff">ℹ️ Claude Code only tracks the CLI tool.</strong> A member with 0 lines may still be active on Claude.ai or Cowork daily — check the People tab for the full picture.
   </div>
+  <div class="section-divider"><span>Member Leaderboard <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
   <div class="card-full">
     <div class="section-header">
       <div><div class="section-title" id="code-table-title"></div><div class="section-sub">Full roster · sorted by contribution · Claude Code CLI only</div></div>
@@ -351,9 +472,6 @@
           <button class="filter-btn" onclick="filterCode('low',this)">Light (&lt;500)</button>
           <button class="filter-btn" onclick="filterCode('zero',this)">Inactive</button>
         </div>
-        <select class="dept-select" id="codeDeptSelect" onchange="filterCodeDept(this.value)">
-          <option value="all">All Teams</option>
-        </select>
         <input class="search-input" placeholder="Search name or email…" style="width:200px"
           oninput="codeSearch=this.value.toLowerCase();searchRows('codeTableBody',this.value)">
       </div>
@@ -371,31 +489,60 @@
 
 <!-- CLAUDE.AI -->
 <div class="page" id="tab-claudeai">
+  <div class="fqq-strip">
+    <div class="fqq-card">
+      <div class="fqq-label fqq-freq">Frequency</div>
+      <div class="fqq-value" id="fqq-ai-freq">–</div>
+      <div class="fqq-sub">avg chats per day across the org</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)"><strong>Source:</strong> Claude Admin · MTD daily avg · ~2 day lag · Company-wide only</div>
+    </div>
+    <div class="fqq-card">
+      <div class="fqq-label fqq-qty">Quantity</div>
+      <div class="fqq-value" id="fqq-ai-qty">–</div>
+      <div class="fqq-sub">projects + artifacts created this month</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)"><strong>Source:</strong> Claude Admin · MTD · ~2 day lag · Top-10 users only</div>
+    </div>
+    <div class="fqq-card">
+      <div class="fqq-label fqq-qual">Quality</div>
+      <div class="fqq-value no-data" style="font-size:0.85rem">Not available</div>
+      <div class="fqq-sub">Response ratings not collected by Claude Admin API</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)">Quality metrics not available from Claude Admin API</div>
+    </div>
+  </div>
+  <div class="section-divider"><span>Engagement Rate <span class="timeframe-badge tbadge-daily">Daily Average</span></span></div>
   <div class="kpi-grid">
     <div class="kpi c1">
       <div class="kpi-label">Chats per Day</div>
       <div class="kpi-value" id="kpi-ai-chats"></div>
       <div class="kpi-sub" id="kpi-ai-chats-sub"></div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD daily avg &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Company-wide only</em></div>
     </div>
     <div class="kpi c2">
       <div class="kpi-label">Users with 1+ Chat</div>
       <div class="kpi-value" id="kpi-ai-chat-user-pct"></div>
       <div class="kpi-sub" id="kpi-ai-chat-user-sub"></div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD daily avg &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Company-wide only</em></div>
     </div>
+  </div>
+  <div class="section-divider"><span>Output Volume <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="kpi-grid">
     <div class="kpi c3">
       <div class="kpi-label">Projects Created</div>
       <div class="kpi-value" id="kpi-ai-projects"></div>
       <div class="kpi-sub" id="kpi-ai-projects-month"></div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Company-wide only</em></div>
     </div>
     <div class="kpi c4">
       <div class="kpi-label">Users with 1+ Project</div>
       <div class="kpi-value" id="kpi-ai-project-user-pct"></div>
       <div class="kpi-sub" id="kpi-ai-project-user-sub"></div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Company-wide only</em></div>
     </div>
     <div class="kpi c5">
       <div class="kpi-label">Artifacts Created</div>
       <div class="kpi-value" id="kpi-ai-artifacts"></div>
       <div class="kpi-sub" id="kpi-ai-artifact-sub"></div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Company-wide only</em></div>
     </div>
   </div>
   <div class="two-col">
@@ -448,12 +595,33 @@
 
 <!-- COWORK -->
 <div class="page" id="tab-cowork">
+  <div class="fqq-strip">
+    <div class="fqq-card">
+      <div class="fqq-label fqq-freq">Frequency</div>
+      <div class="fqq-value" id="fqq-cw-freq">–</div>
+      <div class="fqq-sub">avg sessions per day this month</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)"><strong>Source:</strong> Claude Admin · MTD daily avg · ~2 day lag · Company-wide only</div>
+    </div>
+    <div class="fqq-card">
+      <div class="fqq-label fqq-qty">Quantity</div>
+      <div class="fqq-value" id="fqq-cw-qty">–</div>
+      <div class="fqq-sub">est. total sessions this month</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)"><strong>Source:</strong> Claude Admin · MTD · ~2 day lag · Estimated from daily avg × working days</div>
+    </div>
+    <div class="fqq-card">
+      <div class="fqq-label fqq-qual">Quality</div>
+      <div class="fqq-value no-data" style="font-size:0.85rem">Not available</div>
+      <div class="fqq-sub">Session quality not collected by Claude Admin API</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)">Quality metrics not available from Claude Admin API</div>
+    </div>
+  </div>
   <div class="kpi-grid">
     <div class="kpi c3">
       <div class="kpi-label">Sessions per Day</div>
       <div class="kpi-value" id="kpi-cowork-sessions"></div>
       <div class="kpi-sub">Avg daily Cowork sessions</div>
       <span class="kpi-badge badge-green" id="kpi-cowork-session-growth"></span>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD daily avg &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Company-wide only</em></div>
     </div>
     <div class="kpi c1">
       <div class="kpi-label">Users with 1+ Session</div>
@@ -494,9 +662,6 @@
       <button class="filter-btn" onclick="filterPeopleTier('art',this)">Artifacts</button>
       <button class="filter-btn" onclick="filterPeopleTier('none',this)">No Activity</button>
     </div>
-    <select class="dept-select" id="peopleDeptSelect" onchange="filterPeopleDept(this.value)">
-      <option value="all">All Depts</option>
-    </select>
   </div>
   <div class="card-full">
     <div class="section-header">
@@ -518,7 +683,7 @@
     <strong style="color:#a89cff">ℹ️ Note:</strong> "Claude Code lines = 0" only means the person isn't using the <strong style="color:#fff">Claude Code CLI</strong>. They may be active on <strong style="color:#fff">Claude.ai</strong> or <strong style="color:#fff">Cowork</strong> daily — check the People tab for the full picture.
   </div>
   <div class="insight-box yellow" style="margin-bottom:24px">
-    <div class="insight-title" style="color:#ffd740">🎯 Adoption Opportunities — as of <span id="attention-date"></span></div>
+    <div class="insight-title" style="color:#ffd740">🎯 Action Items — as of <span id="attention-date"></span></div>
     <ul id="attention-gap-list" style="color:var(--muted);padding-left:18px;display:flex;flex-direction:column;gap:5px;margin-top:6px"></ul>
   </div>
   <div style="margin-bottom:16px">
@@ -573,26 +738,50 @@
 
 <!-- CLICKUP -->
 <div class="page" id="tab-clickup">
+  <div class="fqq-strip">
+    <div class="fqq-card">
+      <div class="fqq-label fqq-freq">Frequency</div>
+      <div class="fqq-value no-data" id="fqq-cu-freq" style="font-size:0.85rem">Collecting from next run</div>
+      <div class="fqq-sub">daily active ClickUp users — data collection in progress</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)"><strong>Source:</strong> ClickUp API · Daily · Will be available after next scheduled run</div>
+    </div>
+    <div class="fqq-card">
+      <div class="fqq-label fqq-qty">Quantity</div>
+      <div class="fqq-value" id="fqq-cu-qty">–</div>
+      <div class="fqq-sub">tasks closed this month across all assignees</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)"><strong>Source:</strong> ClickUp API · MTD · Real-time</div>
+    </div>
+    <div class="fqq-card">
+      <div class="fqq-label fqq-qual">Quality</div>
+      <div class="fqq-value no-data" style="font-size:0.85rem">Not available</div>
+      <div class="fqq-sub">On-time completion rate requires due-date tracking not in current data</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)">Quality metrics not available — due-date vs completion-date data not collected</div>
+    </div>
+  </div>
   <div class="kpi-grid">
     <div class="kpi c1">
       <div class="kpi-label">Total Open Tickets</div>
       <div class="kpi-value" id="cu-kpi-open">–</div>
       <div class="kpi-sub" id="cu-kpi-open-sub">across all assignees</div>
+      <div class="kpi-meta"><strong>Source:</strong> ClickUp API &nbsp;·&nbsp; <strong>Period:</strong> Current snapshot &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div>
     </div>
     <div class="kpi c2">
       <div class="kpi-label">Closed May MTD</div>
       <div class="kpi-value" id="cu-kpi-done">–</div>
       <div class="kpi-sub">tickets completed this month</div>
+      <div class="kpi-meta"><strong>Source:</strong> ClickUp API &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div>
     </div>
     <div class="kpi c3">
       <div class="kpi-label">Urgent / High Open</div>
       <div class="kpi-value" id="cu-kpi-urgent">–</div>
       <div class="kpi-sub">need immediate attention</div>
+      <div class="kpi-meta"><strong>Source:</strong> ClickUp API &nbsp;·&nbsp; <strong>Period:</strong> Current snapshot &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div>
     </div>
     <div class="kpi c4">
       <div class="kpi-label">Top Closer (May)</div>
       <div class="kpi-value" id="cu-kpi-top-closer" style="font-size:1.3rem">–</div>
       <div class="kpi-sub" id="cu-kpi-top-closer-sub"></div>
+      <div class="kpi-meta"><strong>Source:</strong> ClickUp API &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div>
     </div>
   </div>
   <div class="two-col">
@@ -623,15 +812,6 @@
           <button class="filter-btn" onclick="filterCU('done',this)">Closed MTD</button>
           <button class="filter-btn" onclick="filterCU('urgent',this)">Urgent</button>
         </div>
-        <div class="filter-bar" id="cu-dept-filter">
-          <button class="filter-btn active" onclick="filterCUDept('all',this)">All Teams</button>
-          <button class="filter-btn" onclick="filterCUDept('Data Engineering',this)">Data Eng</button>
-          <button class="filter-btn" onclick="filterCUDept('Engineering',this)">Engineering</button>
-          <button class="filter-btn" onclick="filterCUDept('Consulting',this)">Consulting</button>
-          <button class="filter-btn" onclick="filterCUDept('Growth',this)">Growth</button>
-          <button class="filter-btn" onclick="filterCUDept('Marketing',this)">Marketing</button>
-          <button class="filter-btn" onclick="filterCUDept('Customer Success',this)">Cust Success</button>
-        </div>
       </div>
     </div>
     <table class="data-table">
@@ -653,11 +833,32 @@
 
 <!-- DAILY ADOPTION -->
 <div class="page" id="tab-adoption">
+  <div class="fqq-strip">
+    <div class="fqq-card">
+      <div class="fqq-label fqq-freq">Frequency</div>
+      <div class="fqq-value" id="fqq-cur-freq">–</div>
+      <div class="fqq-sub">avg active days per Cursor user this month</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)"><strong>Source:</strong> Cursor Admin API · MTD · Real-time</div>
+    </div>
+    <div class="fqq-card">
+      <div class="fqq-label fqq-qty">Quantity</div>
+      <div class="fqq-value" id="fqq-cur-qty">–</div>
+      <div class="fqq-sub">total Cursor events this month</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)"><strong>Source:</strong> Cursor Admin API · MTD · Real-time</div>
+    </div>
+    <div class="fqq-card">
+      <div class="fqq-label fqq-qual">Quality</div>
+      <div class="fqq-value no-data" style="font-size:0.85rem">Not available</div>
+      <div class="fqq-sub">Accept rate not available from Cursor Admin API</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)">Quality metrics not available from Cursor API</div>
+    </div>
+  </div>
+  <div class="section-divider"><span>Usage Overview <span class="timeframe-badge tbadge-mtd">MTD May 2026</span></span></div>
   <div class="kpi-grid">
-    <div class="kpi c1"><div class="kpi-label">Cursor Active / Licensed</div><div class="kpi-value" id="adopt-cursor-latest" style="font-size:1.5rem">–</div><div class="kpi-sub" id="adopt-cursor-latest-sub">most recent day with data</div></div>
-    <div class="kpi c2"><div class="kpi-label">Windsurf Active Today</div><div class="kpi-value" id="adopt-ws-today">–</div><div class="kpi-sub">from last-active timestamp</div></div>
-    <div class="kpi c3"><div class="kpi-label">Cursor Events (May MTD)</div><div class="kpi-value" id="adopt-cursor-mtd">–</div><div class="kpi-sub" id="adopt-cursor-users">across all users</div></div>
-    <div class="kpi c4"><div class="kpi-label">Avg Active Days</div><div class="kpi-value" id="adopt-avg-days">–</div><div class="kpi-sub">avg per active Cursor user</div></div>
+    <div class="kpi c1"><div class="kpi-label">Cursor Active / Licensed</div><div class="kpi-value" id="adopt-cursor-latest" style="font-size:1.5rem">–</div><div class="kpi-sub" id="adopt-cursor-latest-sub">most recent day with data</div><div class="kpi-meta"><strong>Source:</strong> Cursor Admin API &nbsp;·&nbsp; <strong>Period:</strong> Most recent day &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div></div>
+    <div class="kpi c2"><div class="kpi-label">Windsurf Active Today</div><div class="kpi-value" id="adopt-ws-today">–</div><div class="kpi-sub">from last-active timestamp</div><div class="kpi-meta"><strong>Source:</strong> Windsurf API &nbsp;·&nbsp; <strong>Period:</strong> Last-active timestamp &nbsp;·&nbsp; <strong>Lag:</strong> Per-feature</div></div>
+    <div class="kpi c3"><div class="kpi-label">Cursor Events (May MTD)</div><div class="kpi-value" id="adopt-cursor-mtd">–</div><div class="kpi-sub" id="adopt-cursor-users">across all users</div><div class="kpi-meta"><strong>Source:</strong> Cursor Admin API &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div></div>
+    <div class="kpi c4"><div class="kpi-label">Avg Active Days</div><div class="kpi-value" id="adopt-avg-days">–</div><div class="kpi-sub">avg per active Cursor user</div><div class="kpi-meta"><strong>Source:</strong> Cursor Admin API &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div></div>
   </div>
   <!-- DEPT METRICS -->
   <div class="two-col">
@@ -688,9 +889,6 @@
           <button class="filter-btn" onclick="setAdoptView('cursor',this)">Cursor</button>
           <button class="filter-btn" onclick="setAdoptView('windsurf',this)">Windsurf</button>
         </div>
-        <select class="dept-select" id="adoptDeptSelect" onchange="filterAdoptDept(this.value)">
-          <option value="all">All Teams</option>
-        </select>
         <input class="search-input" placeholder="Search name or email…" style="width:200px"
           oninput="filterAdoptSearch(this.value)">
       </div>
@@ -714,18 +912,71 @@
 <script>
 // ==================== UPDATE THESE TWO BLOCKS DAILY ====================
 
+// ── Global filter state ──────────────────────────────────────────────────────
+const GF = { dept: 'all' };
+
+function applyGlobalFilters() {
+  GF.dept = document.getElementById('gf-dept').value;
+  const active = GF.dept !== 'all';
+  document.getElementById('gf-active-label').style.display = active ? '' : 'none';
+  document.getElementById('gf-clear').style.display = active ? '' : 'none';
+  if (active) {
+    const hc = ALL_EMPLOYEES.filter(e => e.dept === GF.dept).length;
+    document.getElementById('gf-active-label').textContent =
+      `Filtered: ${GF.dept} · ${hc} employees`;
+  }
+  renderOverviewKPIs();
+  renderDeptScorecardTable();
+  renderCodeTable();
+  renderPeopleTable();
+  renderAdoptHeatmap();
+  renderAdoptTable(adoptUTotals, adoptUDays);
+  renderCUTable();
+  renderWeeklyTab();
+  renderToolStrips();
+}
+function clearGlobalFilters() {
+  document.getElementById('gf-dept').value = 'all';
+  applyGlobalFilters();
+}
+
+// ── No-data constants ────────────────────────────────────────────────────────
+const NO_DATA = '<span class="no-data">No data available</span>';
+const NO_DATA_SHORT = '<span class="no-data" style="font-size:0.9rem">—</span>';
+
+// ── KPI metadata helper ──────────────────────────────────────────────────────
+function kpiMeta(source, period, lag) {
+  return `<div class="kpi-meta"><strong>Source:</strong> ${source} &nbsp;·&nbsp; <strong>Period:</strong> ${period} &nbsp;·&nbsp; <strong>Lag:</strong> ${lag}</div>`;
+}
+
+// ── Team-tool expected usage mapping ────────────────────────────────────────
+const TEAM_TOOLS = {
+  'Data Engineering':  ['Claude Code', 'Cursor', 'Claude.ai'],
+  'Engineering':       ['Claude Code', 'Windsurf', 'Cowork', 'Claude.ai'],
+  'Consulting':        ['Claude Code', 'Cowork', 'Claude.ai'],
+  'Marketing':         ['Claude.ai'],
+  'Growth':            ['Claude.ai'],
+  'Customer Success':  ['Claude.ai'],
+  'Finance':           ['Claude.ai'],
+  'HR':                ['Claude.ai'],
+  'IT':                ['Claude.ai'],
+  'Product':           ['Claude.ai'],
+  'CEO Office':        ['Claude.ai'],
+};
+// All teams use ClickUp
+
 const DATA = {
   asOf: 'May 18, 2026',
   monthLabel: 'May 2026',
   wau: 141,
   utilization: 94,
   licensedSeats: 150, // Claude licenses (all products — web, CLI, Cowork)
-  totalLines: 214875,
+  totalLines: 214916,
   acceptRate: 98.5,
   activeMembers: 30,
   totalMembers: 38,
   orgSize: 209,
-  avgLinesActive: 7163,
+  avgLinesActive: 7164,
   coworkSessionsPerDay: 17,
   coworkSessionGrowthPct: 21.4,
   coworkUserPct: 5,
@@ -1161,7 +1412,8 @@ function renderCodeTable() {
   else if (codeFilter === 'mid') rows = rows.filter(m => m.lines >= 500 && m.lines < 5000);
   else if (codeFilter === 'low') rows = rows.filter(m => m.lines > 0 && m.lines < 500);
   else if (codeFilter === 'zero') rows = rows.filter(m => m.lines === 0);
-  if (codeDept !== 'all') rows = rows.filter(m => m.dept === codeDept);
+  const activeDept = GF.dept !== 'all' ? GF.dept : codeDept;
+  if (activeDept !== 'all') rows = rows.filter(m => m.dept === activeDept);
   document.getElementById('codeTableBody').innerHTML = rows.map((m,i) => {
     const pct = DATA.totalLines > 0 ? (m.lines/DATA.totalLines*100).toFixed(1) : '0.0';
     const bw  = maxLines > 0 ? (m.lines/maxLines*100) : 0;
@@ -1231,7 +1483,8 @@ function renderPeopleTable() {
   else if (peopleTier === 'art')    rows = rows.filter(r => r.artCount > 0);
   else if (peopleTier === 'none')   rows = rows.filter(r => r.toolCount === 0);
 
-  if (peopleDept !== 'all') rows = rows.filter(r => r.dept === peopleDept);
+  const activeDept = GF.dept !== 'all' ? GF.dept : peopleDept;
+  if (activeDept !== 'all') rows = rows.filter(r => r.dept === activeDept);
   if (peopleQ) rows = rows.filter(r =>
     r.name.toLowerCase().includes(peopleQ) ||
     r.email.toLowerCase().includes(peopleQ) ||
@@ -1415,6 +1668,41 @@ function initFromData() {
   set('action-cowork-body', `${100-d.coworkUserPct}% haven't tried it. A 30-min live demo with a real use case could push adoption above 30%.`);
   set('action-inactive-title', `1:1 onboarding for ${zeroLiners.length + veryLow.length} inactive/low members`);
   set('action-inactive-body', `${zeroLiners.length} at zero + ${veryLow.length} very low. Understand blockers, assign a buddy from the top-10 list.`);
+
+  // FQQ values for Claude Code
+  const fqqCCFreqEl = document.getElementById('fqq-cc-freq');
+  if(fqqCCFreqEl) fqqCCFreqEl.textContent = d.activeMembers + ' of ' + d.totalMembers;
+  const fqqCCQtyEl = document.getElementById('fqq-cc-qty');
+  if(fqqCCQtyEl) fqqCCQtyEl.textContent = fmt(d.avgLinesActive);
+  const fqqCCQualEl = document.getElementById('fqq-cc-qual');
+  if(fqqCCQualEl) fqqCCQualEl.textContent = d.acceptRate + '%';
+
+  // FQQ values for Claude.ai
+  const fqqAIFreqEl = document.getElementById('fqq-ai-freq');
+  if(fqqAIFreqEl) fqqAIFreqEl.textContent = d.chatsPerDay + '/day';
+  const fqqAIQtyEl = document.getElementById('fqq-ai-qty');
+  if(fqqAIQtyEl) fqqAIQtyEl.textContent = (d.projectsCreated + d.artifactsCreated) + ' total';
+
+  // FQQ values for Cowork
+  const fqqCWFreqEl = document.getElementById('fqq-cw-freq');
+  if(fqqCWFreqEl) fqqCWFreqEl.textContent = d.coworkSessionsPerDay + '/day';
+  const today2 = new Date(d.asOf);
+  const firstOfMonth = new Date(today2.getFullYear(), today2.getMonth(), 1);
+  let bizDays = 0;
+  for(let dd = new Date(firstOfMonth); dd <= today2; dd.setDate(dd.getDate()+1)) {
+    const dow = dd.getDay(); if(dow!==0&&dow!==6) bizDays++;
+  }
+  const fqqCWQtyEl = document.getElementById('fqq-cw-qty');
+  if(fqqCWQtyEl) fqqCWQtyEl.textContent = '~' + (d.coworkSessionsPerDay * bizDays);
+
+  // FQQ values for ClickUp
+  const cuTotalDone = (CLICKUP_DATA.people||[]).reduce((s,p)=>s+p.done,0);
+  const fqqCUQtyEl = document.getElementById('fqq-cu-qty');
+  if(fqqCUQtyEl) fqqCUQtyEl.textContent = fmt(cuTotalDone);
+
+  // cc-divider-month
+  const ccDivEl = document.getElementById('cc-divider-month');
+  if(ccDivEl) ccDivEl.textContent = d.monthLabel;
 }
 
 function initCharts() {
@@ -1561,34 +1849,7 @@ const WINDSURF_USERS={
   "anudeep.kolla@sarasanalytics.com":null
 };
 
-// ── Daily auto-growth for manually-managed members ──────────────────────────
-// Lines = base (set on 2026-05-15) + days_elapsed × daily_rate
-// Runs on every page load so numbers update automatically without any manual edits
-(function applyDailyGrowth() {
-  const BASE_DATE = new Date('2026-05-15T00:00:00Z');
-  const today     = new Date();
-  today.setUTCHours(0,0,0,0);
-  const daysSince = Math.max(0, Math.round((today - BASE_DATE) / 86400000));
-
-  const SIMULATED = [
-    { name:'Subha Kumar',   email:'subha.kumar@sarasanalytics.com',  base:7841, rate:190, dept:'HR'  },
-    { name:'Dilip',         email:'dilip@sarasanalytics.com',         base:2391, rate:84,  dept:'HR'  },
-    { name:'Swati Sharma',  email:'swati.sharma@sarasanalytics.com',  base:1632, rate:71,  dept:'HR'  },
-    { name:'Anudeep Kolla', email:'anudeep.kolla@sarasanalytics.com', base:4218, rate:128, dept:'IT'  },
-  ];
-
-  SIMULATED.forEach(sim => {
-    const computed = sim.base + daysSince * sim.rate;
-    const existing = members.find(m => m.email === sim.email);
-    if (existing) { existing.lines = computed; }
-    else           { members.push({ name:sim.name, email:sim.email, lines:computed, dept:sim.dept }); }
-    ADOPTION_CC_MTD[sim.email] = computed;
-  });
-
-  // Re-sort members descending by lines so leaderboard ranks stay correct
-  members.sort((a, b) => b.lines - a.lines);
-})();
-// ────────────────────────────────────────────────────────────────────────────
+members.sort((a, b) => b.lines - a.lines);
 
 // ==================== CLICKUP DATA ====================
 // Snapshot from ClickUp workspace — open tasks + May MTD closed tasks
@@ -1751,7 +2012,8 @@ function renderCUTable() {
   else if (cuFilter === 'done')   rows = rows.filter(p => p.done > 0);
   else if (cuFilter === 'urgent') rows = rows.filter(p => p.open > 0 && p.urgent > 0);
 
-  if (cuDeptFilter !== 'all') rows = rows.filter(p => p.dept === cuDeptFilter);
+  const activeDept = GF.dept !== 'all' ? GF.dept : cuDeptFilter;
+  if (activeDept !== 'all') rows = rows.filter(p => p.dept === activeDept);
 
   // --- KPIs (update with every filter change) ---
   const totalOpen    = rows.reduce((s, p) => s + p.open, 0);
@@ -1912,6 +2174,12 @@ function initAdoption(){
   renderDeptMetrics();
   renderAdoptHeatmap();
   renderAdoptTable(adoptUTotals,adoptUDays);
+
+  // FQQ Cursor values
+  const fqqCurFreqEl = document.getElementById('fqq-cur-freq');
+  if(fqqCurFreqEl) fqqCurFreqEl.textContent = avgD + ' days';
+  const fqqCurQtyEl = document.getElementById('fqq-cur-qty');
+  if(fqqCurQtyEl) fqqCurQtyEl.textContent = fmt(totalEv);
 }
 
 function renderDeptMetrics() {
@@ -1999,7 +2267,8 @@ function renderAdoptHeatmap(){
   } else {
     days.forEach(day=>Object.keys(day.c).forEach(e=>usersSet.add(e)));
   }
-  const users=[...usersSet].filter(e=>adoptDept==='all'||getDept(e)===adoptDept).filter(e=>!adoptSearch||(nameFromEmail(e)+' '+e).toLowerCase().includes(adoptSearch)).sort((a,b)=>{
+  const _adoptActiveDept = GF.dept !== 'all' ? GF.dept : adoptDept;
+  const users=[...usersSet].filter(e=>_adoptActiveDept==='all'||getDept(e)===_adoptActiveDept).filter(e=>!adoptSearch||(nameFromEmail(e)+' '+e).toLowerCase().includes(adoptSearch)).sort((a,b)=>{
     if(adoptView==='overall'){
       // Sort by: total cursor events + bonus for windsurf
       const scoreA=days.reduce((s,d)=>s+(d.c[a]||0),0)+(WINDSURF_USERS[a]?200:0);
@@ -2075,7 +2344,7 @@ function renderAdoptTable(uTotals,uDays){
   ]);
   const dash='<span style="color:var(--muted)">—</span>';
   const rows=[...allEmails]
-    .filter(e=>adoptDept==='all'||getDept(e)===adoptDept)
+    .filter(e=>{ const _d = GF.dept !== 'all' ? GF.dept : adoptDept; return _d==='all'||getDept(e)===_d; })
     .filter(e=>!adoptSearch||(nameFromEmail(e)+' '+e).toLowerCase().includes(adoptSearch))
     .sort((a,b)=>{
       // Primary: cursor events desc; secondary: windsurf active
@@ -2335,110 +2604,12 @@ function renderWeeklyTab() {
 }
 // =======================================================
 
-// ==================== ROLLING 7-DAY SNAPSHOT ====================
-let weeklyDept = 'all';
-function filterWeeklyDept(val) { weeklyDept = val; renderWeeklySnapshot(); }
-
-function renderWeeklySnapshot() {
-  // Anchor: most recent date in ADOPTION_DAYS (respects data lag)
-  const sortedDates = ADOPTION_DAYS.map(d => d.date).sort();
-  const anchor = sortedDates.length ? sortedDates[sortedDates.length - 1] : new Date().toISOString().slice(0, 10);
-
-  // Last 7 calendar days ending at anchor
-  const d7 = [];
-  const base = new Date(anchor + 'T00:00:00Z');
-  for (let i = 6; i >= 0; i--) {
-    const dt = new Date(base); dt.setUTCDate(dt.getUTCDate() - i);
-    d7.push(dt.toISOString().slice(0, 10));
-  }
-  const days7 = d7.map(date => ADOPTION_DAYS.find(d => d.date === date) || {date, c:{}, w:{}});
-
-  // Collect all users active in this window (Cursor or Windsurf)
-  const usersSet = new Set();
-  days7.forEach(day => Object.keys(day.c).forEach(e => usersSet.add(e)));
-  Object.entries(WINDSURF_USERS).forEach(([email, lastDate]) => {
-    if (lastDate && lastDate >= d7[0] && lastDate <= d7[6]) usersSet.add(email);
-  });
-
-  const users = [...usersSet]
-    .filter(e => weeklyDept === 'all' || getDept(e) === weeklyDept)
-    .sort((a, b) => {
-      const sa = days7.reduce((s, d) => s + (d.c[a] || 0), 0);
-      const sb = days7.reduce((s, d) => s + (d.c[b] || 0), 0);
-      return sb - sa;
-    });
-
-  // KPI stats
-  const totalEv7 = days7.reduce((s, d) => s + Object.values(d.c).reduce((a, v) => a + v, 0), 0);
-  const multiTool = users.filter(e => {
-    const hasCursor = days7.some(d => (d.c[e] || 0) > 0);
-    const hasCc = (ADOPTION_CC_MTD[e] || 0) > 0;
-    const hasWs = !!WINDSURF_USERS[e];
-    return [hasCursor, hasCc, hasWs].filter(Boolean).length >= 2;
-  }).length;
-
-  set('weekly-as-of', anchor);
-  set('weekly-active-users', users.length);
-  set('weekly-multitool-users', multiTool);
-  set('weekly-cursor-events', fmt(totalEv7));
-
-  const DOW = ['Su','Mo','Tu','We','Th','Fr','Sa'];
-  let h = `<table style="border-collapse:separate;border-spacing:3px;font-size:0.72rem;min-width:max-content">`;
-  h += `<tr><th style="padding:4px 12px 4px 4px;color:var(--muted);text-align:left;font-weight:400;min-width:150px">User</th>`;
-  d7.forEach(date => {
-    const dd = date.slice(8), dow = DOW[new Date(date + 'T00:00:00Z').getUTCDay()];
-    const isAnchor = date === anchor;
-    h += `<th style="padding:2px 0;text-align:center;width:28px;${isAnchor ? 'color:#a89cff;font-weight:600' : 'color:var(--muted);font-weight:400'}">
-      <div style="font-size:0.7rem">${dd}</div><div style="font-size:0.62rem;opacity:0.7">${dow}</div>
-    </th>`;
-  });
-  h += `<th style="padding:4px 8px;color:var(--muted);font-weight:400;text-align:right;min-width:48px">7d</th>`;
-  h += `<th style="padding:4px 10px;color:var(--muted);font-weight:400;text-align:left;min-width:110px">Tools Active</th></tr>`;
-
-  users.forEach(email => {
-    const label = nameFromEmail(email);
-    const weeklyTotal = days7.reduce((s, d) => s + (d.c[email] || 0), 0);
-    const wsLast = WINDSURF_USERS[email] || null;
-    const ccLines = ADOPTION_CC_MTD[email] || 0;
-    const toolParts = [];
-    if (ccLines > 0)     toolParts.push(`<span style="background:rgba(0,212,170,0.18);color:#00d4aa;border-radius:3px;padding:1px 5px;font-size:0.65rem;font-weight:600">CC</span>`);
-    if (weeklyTotal > 0) toolParts.push(`<span style="background:rgba(108,99,255,0.18);color:#a89cff;border-radius:3px;padding:1px 5px;font-size:0.65rem;font-weight:600">Cursor</span>`);
-    if (wsLast)          toolParts.push(`<span style="background:rgba(38,198,218,0.15);color:#26c6da;border-radius:3px;padding:1px 5px;font-size:0.65rem;font-weight:600">WS</span>`);
-
-    h += `<tr><td style="padding:3px 12px 3px 4px;color:var(--text);white-space:nowrap">${label}</td>`;
-    d7.forEach(date => {
-      const day = days7.find(x => x.date === date);
-      const cnt = day ? (day.c[email] || 0) : 0;
-      const wsActive = wsLast === date;
-      const style = overallCellClr(cnt, wsActive);
-      const tip = `${label} · ${date} · ${cnt > 0 ? cnt + ' Cursor events' : wsActive ? 'Windsurf active' : 'no activity'}`;
-      const num = cnt >= 10 ? `<div style="font-size:0.6rem;color:#fff;text-align:center;line-height:28px">${cnt > 99 ? '99+' : cnt}</div>` : '';
-      h += `<td style="${style};width:28px;height:28px;border-radius:4px;vertical-align:middle" title="${tip}">${num}</td>`;
-    });
-    h += `<td style="padding:3px 8px;text-align:right;${weeklyTotal > 0 ? 'color:#fff;font-weight:700' : 'color:var(--muted)'}">${weeklyTotal || '–'}</td>`;
-    h += `<td style="padding:3px 10px"><div style="display:flex;gap:3px;align-items:center">${toolParts.join('')}</div></td>`;
-    h += `</tr>`;
-  });
-  h += `</table>`;
-  document.getElementById('weekly-activity-grid').innerHTML = h;
-
-  document.getElementById('weekly-legend').innerHTML = `
-    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#1a1d27;border:1px solid rgba(255,255,255,0.08)"></div>No activity</div>
-    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.22)"></div>Cursor 1–4</div>
-    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.4)"></div>5–9</div>
-    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.6)"></div>10–19</div>
-    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.85)"></div>20–49</div>
-    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#6c63ff"></div>50+</div>
-    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(0,212,170,0.75)"></div>Windsurf</div>
-    <span style="color:var(--muted);margin-left:6px">Numbers shown for 10+ event days · <span style="color:#00d4aa">CC</span> = Claude Code active MTD · <span style="color:#26c6da">WS</span> = Windsurf enrolled</span>
-  `;
-}
 // ================================================================
 
 // Populate dept selects dynamically from DEPT_OPTIONS
 (function populateDeptSelects(){
   const optHTML = DEPT_OPTIONS.map(d=>`<option value="${d}">${d}</option>`).join('');
-  ['codeDeptSelect','peopleDeptSelect','adoptDeptSelect','weeklyDeptSelect'].forEach(id=>{
+  ['gf-dept'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.insertAdjacentHTML('beforeend', optHTML);
   });
@@ -2603,6 +2774,167 @@ function openPersonPanel(email) {
   });
 }
 
+function renderOverviewKPIs() {
+  const dept = GF.dept;
+  if (dept === 'all') {
+    set('kpi-wau', DATA.wau);
+    set('kpi-overview-total-lines', fmt(DATA.totalLines));
+    set('kpi-overview-lines-month', DATA.monthLabel + ' · Claude Code');
+    set('kpi-overview-cowork-sessions', DATA.coworkSessionsPerDay);
+    set('kpi-overview-chats', DATA.chatsPerDay);
+    set('kpi-overview-projects', DATA.projectsCreated);
+  } else {
+    const deptMembers = members.filter(m => m.dept === dept);
+    const deptLines = deptMembers.reduce((s,m)=>s+m.lines,0);
+    set('kpi-overview-total-lines', fmt(deptLines));
+    set('kpi-overview-lines-month', dept + ' · ' + DATA.monthLabel + ' MTD');
+    set('kpi-wau', DATA.wau);
+    set('kpi-overview-cowork-sessions', DATA.coworkSessionsPerDay);
+    set('kpi-overview-chats', DATA.chatsPerDay);
+    set('kpi-overview-projects', DATA.projectsCreated);
+  }
+}
+
+function renderDeptScorecardTable() {
+  const activeDept = GF.dept;
+  const depts = activeDept !== 'all' ? [activeDept] : Object.keys(TEAM_TOOLS);
+
+  const allMayDays = ADOPTION_DAYS.filter(d => d.date.startsWith('2026-05'));
+  const cursorByDept = {};
+  allMayDays.forEach(day => {
+    Object.keys(day.c||{}).forEach(email => {
+      const d = getDept(email);
+      if(!cursorByDept[d]) cursorByDept[d] = new Set();
+      cursorByDept[d].add(email);
+    });
+  });
+
+  const wsActiveEmails = new Set();
+  allMayDays.forEach(day => { Object.keys(day.w||{}).forEach(e => wsActiveEmails.add(e)); });
+  Object.entries(WINDSURF_USERS||{}).forEach(([email,date]) => {
+    if(date && date.startsWith('2026-05')) wsActiveEmails.add(email);
+  });
+  const wsByDept = {};
+  wsActiveEmails.forEach(email => {
+    const d = getDept(email);
+    if(!wsByDept[d]) wsByDept[d] = new Set();
+    wsByDept[d].add(email);
+  });
+
+  const allTools = ['Claude Code','Cursor','Windsurf','Cowork','Claude.ai'];
+  const activeCols = allTools.filter(t => depts.some(d => (TEAM_TOOLS[d]||[]).includes(t)));
+  activeCols.push('ClickUp');
+
+  const headCols = ['Department','Headcount',...activeCols,'Any AI','CC Lines Avg'];
+  document.getElementById('dept-scorecard-head').innerHTML = '<tr>' + headCols.map(c => `<th style="text-align:${c==='Department'?'left':'right'}">${c}</th>`).join('') + '</tr>';
+
+  function cell(count, total, inScope) {
+    if(!inScope) return '<td class="num-cell"><span class="not-in-scope">–</span></td>';
+    if(!total) return '<td class="num-cell">—</td>';
+    const pct = Math.round(count/total*100);
+    const col = pct>=70?'var(--green)':pct>=40?'var(--yellow)':pct>0?'var(--accent3)':'var(--muted)';
+    return `<td class="num-cell"><span style="color:${col};font-weight:700">${count}</span> <span style="color:var(--muted);font-size:0.7rem">(${pct}%)</span></td>`;
+  }
+
+  const rows = depts.map(dept => {
+    const employees = ALL_EMPLOYEES.filter(e => e.dept === dept);
+    const hc = employees.length;
+    if(!hc) return null;
+    const expected = TEAM_TOOLS[dept]||[];
+    const ccActive = members.filter(m=>m.dept===dept&&m.lines>0).length;
+    const ccLines  = members.filter(m=>m.dept===dept).reduce((s,m)=>s+m.lines,0);
+    const ccAvg    = ccActive>0 ? Math.round(ccLines/ccActive) : 0;
+    const cursorCt = (cursorByDept[dept]||new Set()).size;
+    const wsCt     = (wsByDept[dept]||new Set()).size;
+    const cuActive = (CLICKUP_DATA.people||[]).filter(p=>p.dept===dept&&(p.open>0||p.done>0)).length;
+    const anySet = new Set([
+      ...members.filter(m=>m.dept===dept&&m.lines>0).map(m=>m.email),
+      ...(cursorByDept[dept]||new Set()),
+      ...(wsByDept[dept]||new Set()),
+    ]);
+    const anyCt = anySet.size;
+    let html = `<tr><td>${deptBadge(dept)}</td><td class="num-cell">${hc}</td>`;
+    activeCols.forEach(tool => {
+      const inScope = expected.includes(tool) || tool==='ClickUp';
+      if(tool==='Claude Code') { html+=cell(ccActive,hc,inScope); }
+      else if(tool==='Cursor')  { html+=cell(cursorCt,hc,inScope); }
+      else if(tool==='Windsurf'){ html+=cell(wsCt,hc,inScope); }
+      else if(tool==='Cowork')  { html+=inScope ? `<td class="num-cell" style="font-size:0.7rem;color:var(--muted)">org-wide only</td>` : `<td class="num-cell"><span class="not-in-scope">–</span></td>`; }
+      else if(tool==='Claude.ai'){ html+=inScope ? `<td class="num-cell" style="font-size:0.7rem;color:var(--muted)">org-wide only✱</td>` : `<td class="num-cell"><span class="not-in-scope">–</span></td>`; }
+      else if(tool==='ClickUp') { html+=cell(cuActive,hc,true); }
+    });
+    html+=`<td class="num-cell">${cell(anyCt,hc,true).replace(/<\/?td[^>]*>/g,'')}</td>`;
+    html+=`<td class="num-cell">${ccActive>0?fmt(ccAvg):'<span class="not-in-scope">–</span>'}</td>`;
+    html+='</tr>';
+    return html;
+  }).filter(Boolean);
+
+  document.getElementById('dept-scorecard-body').innerHTML = rows.join('');
+}
+
+function renderToolStrips() {
+  const dept = GF.dept;
+  const allMayDays = ADOPTION_DAYS.filter(d => d.date.startsWith('2026-05'));
+
+  const ccActive = dept==='all' ? DATA.activeMembers : members.filter(m=>m.dept===dept&&m.lines>0).length;
+  const ccTotal  = dept==='all' ? DATA.totalMembers  : members.filter(m=>m.dept===dept).length;
+  const ccLines  = dept==='all' ? DATA.totalLines     : members.filter(m=>m.dept===dept).reduce((s,m)=>s+m.lines,0);
+  const ccPct    = ccTotal>0 ? Math.round(ccActive/ccTotal*100) : 0;
+
+  const cursorUsers = new Set();
+  allMayDays.forEach(d=>Object.keys(d.c||{}).forEach(e=>{
+    if(dept==='all'||getDept(e)===dept) cursorUsers.add(e);
+  }));
+  const cursorEvents = allMayDays.reduce((s,d)=>s+Object.entries(d.c||{}).filter(([e])=>dept==='all'||getDept(e)===dept).reduce((ss,[,v])=>ss+v,0),0);
+  const cursorPct = Math.round(cursorUsers.size/CURSOR_SEATS*100);
+
+  const wsUsers = new Set();
+  allMayDays.forEach(d=>Object.keys(d.w||{}).forEach(e=>{
+    if(dept==='all'||getDept(e)===dept) wsUsers.add(e);
+  }));
+  Object.entries(WINDSURF_USERS||{}).forEach(([e,dt])=>{
+    if(dt&&dt.startsWith('2026-05')&&(dept==='all'||getDept(e)===dept)) wsUsers.add(e);
+  });
+  const wsTotal = typeof WINDSURF_SEATS!=='undefined' ? WINDSURF_SEATS : 6;
+  const wsPct = wsTotal>0 ? Math.round(wsUsers.size/wsTotal*100) : 0;
+
+  function strip(icon, name, metric, sub, pct, target, color, meta, inScopeForDept) {
+    if(!inScopeForDept) return '';
+    const barW = Math.min(100,pct);
+    const barColor = pct>=target?'var(--green)':pct>=target*0.6?'var(--yellow)':'var(--accent3)';
+    return `<div class="tool-strip">
+      <div class="tool-strip-name">
+        <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">${icon} ${name}</div>
+        <div class="tool-strip-metric">${metric}</div>
+        <div class="tool-strip-sub">${sub}</div>
+      </div>
+      <div class="tool-strip-bar-wrap">
+        <div class="tool-strip-bar-label">
+          <span style="color:${barColor}">${pct}% adoption</span>
+          <span>Target: ${target}%</span>
+        </div>
+        <div class="tool-strip-bar-bg">
+          <div class="tool-strip-bar-fill" style="width:${barW}%;background:${barColor}"></div>
+        </div>
+      </div>
+      <div class="kpi-meta" style="min-width:160px;border-top:none;padding-top:0;margin-top:0">${meta}</div>
+    </div>`;
+  }
+
+  const expectedTools = dept==='all' ? Object.keys(TEAM_TOOLS).flatMap(d=>TEAM_TOOLS[d]) : (TEAM_TOOLS[dept]||[]);
+  const inScope = t => dept==='all' || expectedTools.includes(t);
+
+  const html = [
+    strip('💻','Claude Code', fmt(ccLines)+' lines', ccActive+' of '+ccTotal+' licensed active', ccPct, 70, '#00d4aa', 'Claude Admin · MTD · ~2d lag', inScope('Claude Code')),
+    strip('💬','Claude.ai Chat', DATA.chatsPerDay+'/day', DATA.chatUserPct+'% users with 1+ chat', DATA.chatUserPct, 50, '#6c63ff', 'Claude Admin · MTD daily avg · ~2d lag · Org-wide only', inScope('Claude.ai')),
+    strip('🤝','Cowork', DATA.coworkSessionsPerDay+'/day', DATA.coworkUserPct+'% users with 1+ session', DATA.coworkUserPct, 50, '#ffa726', 'Claude Admin · MTD daily avg · ~2d lag · Org-wide only', inScope('Cowork')),
+    strip('⚡','Cursor', fmt(cursorEvents)+' events', cursorUsers.size+' of '+CURSOR_SEATS+' licensed active', cursorPct, 70, '#00d4aa', 'Cursor Admin API · MTD · Real-time', inScope('Cursor')),
+    strip('🌊','Windsurf', wsUsers.size+' active users', 'of '+wsTotal+' licensed seats', wsPct, 70, '#26c6da', 'Windsurf API · MTD · Per-feature lag', inScope('Windsurf')),
+  ].join('');
+
+  document.getElementById('tool-strips-container').innerHTML = html || '<div style="color:var(--muted);font-size:0.85rem;padding:12px">No tools expected for this department filter.</div>';
+}
+
 initFromData();
 renderProjectsTable();
 renderArtifactsTable();
@@ -2612,6 +2944,9 @@ initCharts();
 renderCodeTable();
 renderPeopleTable();
 initClickUp();
+renderOverviewKPIs();
+renderDeptScorecardTable();
+renderToolStrips();
 </script>
 
 <!-- Person detail slide-in panel -->
