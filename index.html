@@ -170,7 +170,7 @@
   </div>
   <div class="header-meta">
     <div>As of <strong id="header-date"></strong></div>
-    <div style="margin-top:2px;">Source: Claude Admin · Cursor Admin · ClickUp API · Updated daily</div>
+    <div style="margin-top:2px;">Source: Claude Admin · Cursor Admin · ClickUp API · Updated daily &nbsp;·&nbsp; <span style="color:#ffa726">Claude Admin data reflects ~2 days prior</span></div>
   </div>
 </header>
 
@@ -498,6 +498,10 @@
   <div class="card-full">
     <div class="section-title" id="distChartTitle" style="margin-bottom:16px">Lines Distribution — Full Team</div>
     <div style="height:300px"><canvas id="allCodeChart"></canvas></div>
+  </div>
+  <div class="insight-box" style="background:rgba(255,167,38,0.06);border-color:rgba(255,167,38,0.3)">
+    <div class="insight-title" style="color:#ffa726">⚠️ Concentration Risk</div>
+    <div style="color:var(--muted)" id="cc-concentration-note">Loading…</div>
   </div>
 </div>
 
@@ -1597,21 +1601,44 @@ function initFromData() {
 
   // Key Takeaways box
   const ccActive = members.filter(m => m.lines > 0).length;
+  const top2Lines = members[0].lines + members[1].lines;
+  const top2Pct = Math.round(top2Lines / d.totalLines * 100);
+  const idleMembers = members.filter(m => m.lines === 0 && m.email !== 'anudeep.kolla@sarasanalytics.com');
+  const veryLowMembers = members.filter(m => m.lines > 0 && m.lines < 100);
+  // Mon-on-Mon delta for Claude.ai
+  const monData = d.chatsDailyData.filter(x => { const day = new Date(x.date).getDay(); return day === 1; });
+  const chatMomDelta = monData.length >= 2 ? Math.round((monData[monData.length-1].chats - monData[0].chats) / monData[0].chats * 100) : null;
+  // Cowork weekly trend
+  const cwFirst = d.coworkDailyData[0], cwLast = d.coworkDailyData[d.coworkDailyData.length-1];
+  const cwTrend = cwFirst && cwLast ? Math.round((cwLast.users - cwFirst.users) / cwFirst.users * 100) : null;
+
   document.getElementById('key-takeaways').innerHTML = `
-    <div style="background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(0,212,170,0.06));border:1px solid rgba(108,99,255,0.25);border-radius:12px;padding:20px 24px">
-      <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;font-weight:600">📌 Key Takeaways — ${d.asOf}</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">
+    <div style="background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(0,212,170,0.06));border:1px solid rgba(108,99,255,0.25);border-radius:12px;padding:20px 24px;margin-bottom:16px">
+      <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;font-weight:600">📌 Leadership Briefing — ${d.asOf}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
         <div style="display:flex;gap:12px;align-items:flex-start">
-          <span style="font-size:1.3rem;line-height:1">🟢</span>
-          <div><span style="color:#fff;font-weight:600">Claude.ai: ${d.chatsPerDay} chats/day avg</span> <span style="color:var(--muted)">this month · </span><span style="color:#a89cff;font-weight:600">${d.chatUserPct}% of org actively chatting</span></div>
+          <span style="font-size:1.4rem;line-height:1">🟢</span>
+          <div>
+            <div style="color:#00d4aa;font-weight:700;font-size:0.85rem;margin-bottom:3px">CLAUDE CODE — STRONG</div>
+            <div style="color:var(--text);font-size:0.82rem">${ccActive}/${d.totalMembers} engineers active (${Math.round(ccActive/d.totalMembers*100)}%) · <strong style="color:#fff">${fmt(d.totalLines)} lines accepted</strong> · ${d.acceptRate}% accept rate</div>
+            <div style="color:#ffa726;font-size:0.75rem;margin-top:4px">⚠️ ${members[0].name.split(' ')[0]} + ${members[1].name.split(' ')[0]} = ${top2Pct}% of all lines — adoption depth is the priority</div>
+          </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start">
-          <span style="font-size:1.3rem;line-height:1">💻</span>
-          <div><span style="color:#fff;font-weight:600">Claude Code: ${ccActive}/${d.totalMembers} licensed</span> <span style="color:var(--muted)">users active · </span><span style="color:#a89cff;font-weight:600">${fmt(d.totalLines)} lines accepted</span><span style="color:var(--muted)"> this month (${d.acceptRate}% acceptance rate)</span></div>
+          <span style="font-size:1.4rem;line-height:1">🟡</span>
+          <div>
+            <div style="color:#ffa726;font-weight:700;font-size:0.85rem;margin-bottom:3px">CLAUDE.AI — UNDERUTILIZED</div>
+            <div style="color:var(--text);font-size:0.82rem"><strong style="color:#fff">${d.chatsPerDay} chats/day</strong> avg · only <strong style="color:#fff">${d.chatUserPct}%</strong> of org engaged${chatMomDelta !== null ? ` · <span style="color:${chatMomDelta<0?'#ff6b6b':'#00d4aa'}">${chatMomDelta>0?'↑':'↓'}${Math.abs(chatMomDelta)}% Mon-on-Mon</span>` : ''}</div>
+            <div style="color:var(--muted);font-size:0.75rem;margin-top:4px">0 artifacts · 1 project created MTD — advanced features untapped</div>
+          </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start">
-          <span style="font-size:1.3rem;line-height:1">🎯</span>
-          <div><span style="color:#ffa726;font-weight:600">Top opportunity:</span> <span style="color:var(--muted)">Claude.ai Projects used by </span><span style="color:#fff;font-weight:600">${d.projectUserPct}%</span><span style="color:var(--muted)"> of org, Artifacts by </span><span style="color:#fff;font-weight:600">${d.artifactUserPct}%</span><span style="color:var(--muted)"> — both nearly untapped.</span></div>
+          <span style="font-size:1.4rem;line-height:1">🔴</span>
+          <div>
+            <div style="color:#ff6b6b;font-weight:700;font-size:0.85rem;margin-bottom:3px">ACTION NEEDED THIS WEEK</div>
+            <div style="color:var(--text);font-size:0.82rem"><strong style="color:#fff">${idleMembers.length} CC seats idle</strong> · ${veryLowMembers.length} members &lt;100 lines — needs 1:1 onboarding</div>
+            <div style="color:#00d4aa;font-size:0.75rem;margin-top:4px">Cowork trending ↑${cwTrend !== null ? ' +'+cwTrend+'% Mon→Thu' : ''} · ${d.coworkDailyUsers} daily active users</div>
+          </div>
         </div>
       </div>
     </div>`;
@@ -1624,9 +1651,11 @@ function initFromData() {
   set('kpi-overview-cowork-sessions', d.coworkDailyUsers);
   set('kpi-overview-cowork-user-sub', `Weekday avg · graph data as of ${d.coworkDataAsOf}`);
   set('kpi-overview-chats', d.chatsPerDay);
-  set('kpi-overview-chat-user-sub', `${d.chatUserPct}% active · target: 50%`);
+  const chatMon1 = d.chatsDailyData.filter(x=>new Date(x.date).getDay()===1);
+  const chatDelta = chatMon1.length>=2 ? Math.round((chatMon1[chatMon1.length-1].chats-chatMon1[0].chats)/chatMon1[0].chats*100) : null;
+  set('kpi-overview-chat-user-sub', `${d.chatUserPct}% of org engaged${chatDelta!==null?' · '+(chatDelta>=0?'↑':'↓')+Math.abs(chatDelta)+'% Mon-on-Mon':''} · data as of ${d.chatsDataAsOf}`);
   set('kpi-overview-projects', d.projectsCreated);
-  set('kpi-overview-projects-sub', `${d.projectUserPct}% active · target: 40%`);
+  set('kpi-overview-projects-sub', `${d.projectUserPct}% of org active · ${d.monthLabel} MTD`);
 
   // Donut legends
   document.getElementById('code-donut-legend').innerHTML =
@@ -1636,12 +1665,27 @@ function initFromData() {
   document.getElementById('cowork-donut-legend').innerHTML =
     `<div class="legend-item"><div class="legend-dot" style="background:var(--accent4)"></div>Using ${d.coworkUserPct}%</div><div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>Not yet ${100-d.coworkUserPct}%</div>`;
 
+  // Concentration risk note
+  const concEl = document.getElementById('cc-concentration-note');
+  if (concEl) {
+    const top2 = members[0].lines + members[1].lines;
+    const top2pct = Math.round(top2/d.totalLines*100);
+    const top5 = members.slice(0,5).reduce((s,m)=>s+m.lines,0);
+    const top5pct = Math.round(top5/d.totalLines*100);
+    concEl.innerHTML = `<strong style="color:#fff">${members[0].name}</strong> (${fmt(members[0].lines)} lines) and <strong style="color:#fff">${members[1].name}</strong> (${fmt(members[1].lines)} lines) together account for <strong style="color:#ffa726">${top2pct}% of all CC lines</strong> this month. Top 5 = ${top5pct}%. If either is unavailable next month, the headline number drops significantly. <strong style="color:#fff">Priority: grow depth across the remaining ${activeCnt-5} active members.</strong>`;
+  }
+
+  // Cowork overview delta
+  const cwD = d.coworkDailyData;
+  const cwDelta = cwD.length>=2 ? Math.round((cwD[cwD.length-1].users - cwD[0].users)/cwD[0].users*100) : null;
+  set('kpi-overview-cowork-user-sub', `Weekday avg · ${cwDelta!==null?'↑'+cwDelta+'% Mon→Thu · ':''} data as of ${d.coworkDataAsOf}`);
+
   // Claude Code tab
   set('kpi-code-total-lines', fmt(d.totalLines));
   set('kpi-code-month', d.monthLabel);
   set('kpi-code-accept-rate', `${d.acceptRate}%`);
   set('kpi-code-active-members', `${activeCnt} / ${DATA.totalMembers}`);
-  set('kpi-code-active-pct', `${activePct}% of licensed seats active · target: 100%`);
+  set('kpi-code-active-pct', `${activePct}% of licensed seats active · ${DATA.totalMembers - activeCnt} seats idle`);
   set('kpi-code-license-util', `${activePct}%`);
   set('kpi-code-license-sub', `${activeCnt} of ${DATA.totalMembers} seats used · ${DATA.totalMembers - activeCnt} idle`);
   set('kpi-code-avg-lines', fmt(d.avgLinesActive));
