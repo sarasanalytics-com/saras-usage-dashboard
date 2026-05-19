@@ -2725,19 +2725,17 @@ function openPersonPanel(email) {
     const priLabel = {urgent:'U', high:'H', normal:'N', low:'L'};
     let taskListHtml = '';
     if (tasks.length > 0) {
-      const shown = tasks.slice(0, 10);
-      const more  = tasks.length > 10 ? tasks.length - 10 : 0;
       taskListHtml = `
         <div style="margin-top:10px">
           <div style="font-size:0.69rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">
-            Open Tasks${cuPerson.open > tasks.length ? ` · showing top ${shown.length} of ${cuPerson.open}` : ` · ${shown.length} shown`}
+            Open Tasks · ${tasks.length} shown${cuPerson.open > tasks.length ? ` of ${cuPerson.open} total` : ''}
           </div>
           <div class="cu-task-list">
-            ${shown.map(t => {
+            ${tasks.map(t => {
               const color = priColor[t.priority] || priColor.normal;
               const label = priLabel[t.priority] || '·';
-              const title = t.title.length > 52 ? t.title.slice(0,50)+'…' : t.title;
-              const dueStr = t.due ? `<span style="font-size:0.67rem;color:${t.due < CLICKUP_DATA.asOf ? '#ff5252' : 'var(--muted)';}">${t.due < CLICKUP_DATA.asOf ? '⚠ ' : ''}${t.due}</span>` : '';
+              const title = t.title.length > 72 ? t.title.slice(0,70)+'…' : t.title;
+              const dueStr = t.due ? `<span style="font-size:0.67rem;color:${t.due < CLICKUP_DATA.asOf ? '#ff5252' : 'var(--muted)'}">${t.due < CLICKUP_DATA.asOf ? '⚠ ' : ''}${t.due}</span>` : '';
               const linkOpen  = t.url ? `<a href="${t.url}" target="_blank" style="color:inherit;text-decoration:none">` : '';
               const linkClose = t.url ? `</a>` : '';
               return `<div class="cu-task-row">
@@ -2746,7 +2744,6 @@ function openPersonPanel(email) {
                 ${dueStr}
               </div>`;
             }).join('')}
-            ${more > 0 ? `<div style="font-size:0.7rem;color:var(--muted);padding:5px 2px">+ ${more} more open tasks</div>` : ''}
           </div>
         </div>`;
     } else if (cuPerson.open > 0) {
