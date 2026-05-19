@@ -375,12 +375,12 @@
     <div class="kpi c1">
       <div class="kpi-label">Chats per Day</div>
       <div class="kpi-value" id="kpi-ai-chats"></div>
-      <div class="kpi-sub">Avg daily conversations</div>
+      <div class="kpi-sub" id="kpi-ai-chats-sub"></div>
     </div>
     <div class="kpi c2">
       <div class="kpi-label">Users with 1+ Chat</div>
       <div class="kpi-value" id="kpi-ai-chat-user-pct"></div>
-      <div class="kpi-sub">of licensed org members</div>
+      <div class="kpi-sub" id="kpi-ai-chat-user-sub"></div>
     </div>
     <div class="kpi c3">
       <div class="kpi-label">Projects Created</div>
@@ -390,7 +390,7 @@
     <div class="kpi c4">
       <div class="kpi-label">Users with 1+ Project</div>
       <div class="kpi-value" id="kpi-ai-project-user-pct"></div>
-      <div class="kpi-sub">Project feature adoption</div>
+      <div class="kpi-sub" id="kpi-ai-project-user-sub"></div>
     </div>
     <div class="kpi c5">
       <div class="kpi-label">Artifacts Created</div>
@@ -1377,12 +1377,15 @@ function initFromData() {
 
   // Claude.ai tab
   set('kpi-ai-chats', d.chatsPerDay);
+  set('kpi-ai-chats-sub', `MTD daily avg · ${d.monthLabel}`);
   set('kpi-ai-chat-user-pct', `${d.chatUserPct}% · target 50%`);
+  set('kpi-ai-chat-user-sub', `MTD ${d.monthLabel} · of ${d.licensedSeats} licensed seats`);
   set('kpi-ai-projects', d.projectsCreated);
   set('kpi-ai-projects-month', `MTD ${d.monthLabel}`);
   set('kpi-ai-project-user-pct', `${d.projectUserPct}% · target 40%`);
+  set('kpi-ai-project-user-sub', `MTD ${d.monthLabel} · of ${d.licensedSeats} licensed seats`);
   set('kpi-ai-artifacts', d.artifactsCreated);
-  set('kpi-ai-artifact-sub', `${d.artifactUserPct}% active · target 25%`);
+  set('kpi-ai-artifact-sub', `MTD ${d.monthLabel} · ${d.artifactUserPct}% active · target 25%`);
   set('insight-chat-pct', d.chatUserPct);
   set('insight-project-pct', d.projectUserPct);
   set('insight-artifact-pct', d.artifactUserPct);
@@ -1718,6 +1721,8 @@ const WEEKLY_SNAPSHOTS = (function() {
 let cuFilter = 'all';
 let cuDeptFilter = 'all';
 let cuSearch = '';
+let _cuBarChart = null;
+let _cuDonutChart = null;
 
 function filterCU(f, btn) {
   cuFilter = f;
@@ -1736,76 +1741,7 @@ function filterCUDept(val, btn) {
 }
 
 function initClickUp() {
-  const people = CLICKUP_DATA.people;
-
-  // KPIs
-  const totalOpen    = people.reduce((s, p) => s + p.open, 0);
-  const totalDone    = people.reduce((s, p) => s + p.done, 0);
-  const urgHighOpen  = people.filter(p => p.open > 0).reduce((s, p) => s + p.urgent + p.high, 0);
-  const topCloser    = [...people].sort((a, b) => b.done - a.done)[0];
-  const openPeopleCt = people.filter(p => p.open > 0).length;
-
-  set('cu-kpi-open',           fmt(totalOpen));
-  set('cu-kpi-open-sub',       `across ${openPeopleCt} people`);
-  set('cu-kpi-done',           fmt(totalDone));
-  set('cu-kpi-urgent',         fmt(urgHighOpen));
-  set('cu-kpi-top-closer',     topCloser ? topCloser.name.split(' ').slice(0,2).join(' ') : '–');
-  set('cu-kpi-top-closer-sub', topCloser ? `${topCloser.done} tickets closed` : '');
   set('cu-as-of', CLICKUP_DATA.asOf);
-
-  // Bar chart — open by person (stacked by priority)
-  const openPeople = [...people].filter(p => p.open > 0).sort((a, b) => b.open - a.open).slice(0, 12);
-  new Chart(document.getElementById('cuOpenByPersonChart'), {
-    type: 'bar',
-    data: {
-      labels: openPeople.map(p => {
-        const parts = p.name.split(' ');
-        return parts.length > 1 ? parts[0] + ' ' + parts[1][0] + '.' : parts[0];
-      }),
-      datasets: [
-        { label:'Urgent', data: openPeople.map(p => p.urgent), backgroundColor:'rgba(255,82,82,0.85)',  borderRadius:4 },
-        { label:'High',   data: openPeople.map(p => p.high),   backgroundColor:'rgba(255,167,38,0.80)', borderRadius:4 },
-        { label:'Normal', data: openPeople.map(p => p.normal), backgroundColor:'rgba(108,99,255,0.65)', borderRadius:4 },
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: {
-        legend: { labels:{ color:'#8b92b8', font:{ size:11 } } },
-        tooltip: { callbacks:{ label: c => c.dataset.label+': '+c.raw } }
-      },
-      scales: {
-        x: { stacked:true, ticks:{ color:'#8b92b8', font:{ size:10 } }, grid:{ display:false } },
-        y: { stacked:true, ticks:{ color:'#8b92b8' }, grid:{ color:'rgba(46,50,80,0.5)' } }
-      }
-    }
-  });
-
-  // Doughnut — priority breakdown of all open tasks
-  const allUrgent = people.filter(p => p.open > 0).reduce((s, p) => s + p.urgent, 0);
-  const allHigh   = people.filter(p => p.open > 0).reduce((s, p) => s + p.high,   0);
-  const allNormal = people.filter(p => p.open > 0).reduce((s, p) => s + p.normal, 0);
-  const allLow    = people.filter(p => p.open > 0).reduce((s, p) => s + p.low,    0);
-
-  const prioLabels = []; const prioVals = []; const prioCols = [];
-  if (allUrgent) { prioLabels.push('Urgent'); prioVals.push(allUrgent); prioCols.push('rgba(255,82,82,0.9)'); }
-  if (allHigh)   { prioLabels.push('High');   prioVals.push(allHigh);   prioCols.push('rgba(255,167,38,0.9)'); }
-  if (allNormal) { prioLabels.push('Normal'); prioVals.push(allNormal); prioCols.push('rgba(108,99,255,0.8)'); }
-  if (allLow)    { prioLabels.push('Low');    prioVals.push(allLow);    prioCols.push('rgba(0,188,212,0.8)'); }
-
-  new Chart(document.getElementById('cuPriorityChart'), {
-    type: 'doughnut',
-    data: { labels: prioLabels, datasets:[{ data: prioVals, backgroundColor: prioCols, borderWidth:0, hoverOffset:4 }] },
-    options: { responsive:false, cutout:'66%', plugins:{ legend:{ display:false } } }
-  });
-
-  const prioColors = { Urgent:'#ff5252', High:'#ffa726', Normal:'#a89cff', Low:'#00bcd4' };
-  document.getElementById('cu-priority-legend').innerHTML = prioLabels.map((l,i) =>
-    `<span style="display:flex;align-items:center;gap:4px;font-size:0.73rem;color:var(--muted)">
-      <span style="width:10px;height:10px;border-radius:50%;background:${prioColors[l]||'#8b92b8'};flex-shrink:0"></span>${l}: <strong style="color:var(--fg)">${prioVals[i]}</strong>
-    </span>`
-  ).join('');
-
   renderCUTable();
 }
 
@@ -1816,6 +1752,62 @@ function renderCUTable() {
   else if (cuFilter === 'urgent') rows = rows.filter(p => p.open > 0 && p.urgent > 0);
 
   if (cuDeptFilter !== 'all') rows = rows.filter(p => p.dept === cuDeptFilter);
+
+  // --- KPIs (update with every filter change) ---
+  const totalOpen    = rows.reduce((s, p) => s + p.open, 0);
+  const totalDone    = rows.reduce((s, p) => s + p.done, 0);
+  const urgHighOpen  = rows.reduce((s, p) => s + p.urgent + p.high, 0);
+  const topCloser    = [...rows].sort((a, b) => b.done - a.done)[0];
+  const openPeopleCt = rows.filter(p => p.open > 0).length;
+  set('cu-kpi-open',           fmt(totalOpen));
+  set('cu-kpi-open-sub',       `across ${openPeopleCt} people`);
+  set('cu-kpi-done',           fmt(totalDone));
+  set('cu-kpi-urgent',         fmt(urgHighOpen));
+  set('cu-kpi-top-closer',     topCloser ? topCloser.name.split(' ').slice(0,2).join(' ') : '–');
+  set('cu-kpi-top-closer-sub', topCloser ? `${topCloser.done} tickets closed` : '');
+
+  // --- Bar chart — top 12 open by person ---
+  const openPeople = [...rows].filter(p => p.open > 0).sort((a, b) => b.open - a.open).slice(0, 12);
+  if (_cuBarChart) { _cuBarChart.destroy(); _cuBarChart = null; }
+  _cuBarChart = new Chart(document.getElementById('cuOpenByPersonChart'), {
+    type: 'bar',
+    data: {
+      labels: openPeople.map(p => { const pts = p.name.split(' '); return pts.length > 1 ? pts[0]+' '+pts[1][0]+'.' : pts[0]; }),
+      datasets: [
+        { label:'Urgent', data: openPeople.map(p => p.urgent), backgroundColor:'rgba(255,82,82,0.85)',  borderRadius:4 },
+        { label:'High',   data: openPeople.map(p => p.high),   backgroundColor:'rgba(255,167,38,0.80)', borderRadius:4 },
+        { label:'Normal', data: openPeople.map(p => p.normal), backgroundColor:'rgba(108,99,255,0.65)', borderRadius:4 },
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins: { legend:{ labels:{ color:'#8b92b8', font:{ size:11 } } }, tooltip:{ callbacks:{ label: c => c.dataset.label+': '+c.raw } } },
+      scales: { x:{ stacked:true, ticks:{ color:'#8b92b8', font:{ size:10 } }, grid:{ display:false } }, y:{ stacked:true, ticks:{ color:'#8b92b8' }, grid:{ color:'rgba(46,50,80,0.5)' } } }
+    }
+  });
+
+  // --- Doughnut — priority breakdown ---
+  const allUrgent = rows.reduce((s, p) => s + p.urgent, 0);
+  const allHigh   = rows.reduce((s, p) => s + p.high,   0);
+  const allNormal = rows.reduce((s, p) => s + p.normal, 0);
+  const allLow    = rows.reduce((s, p) => s + p.low,    0);
+  const prioLabels = []; const prioVals = []; const prioCols = [];
+  if (allUrgent) { prioLabels.push('Urgent'); prioVals.push(allUrgent); prioCols.push('rgba(255,82,82,0.9)'); }
+  if (allHigh)   { prioLabels.push('High');   prioVals.push(allHigh);   prioCols.push('rgba(255,167,38,0.9)'); }
+  if (allNormal) { prioLabels.push('Normal'); prioVals.push(allNormal); prioCols.push('rgba(108,99,255,0.8)'); }
+  if (allLow)    { prioLabels.push('Low');    prioVals.push(allLow);    prioCols.push('rgba(0,188,212,0.8)'); }
+  if (_cuDonutChart) { _cuDonutChart.destroy(); _cuDonutChart = null; }
+  _cuDonutChart = new Chart(document.getElementById('cuPriorityChart'), {
+    type: 'doughnut',
+    data: { labels: prioLabels, datasets:[{ data: prioVals, backgroundColor: prioCols, borderWidth:0, hoverOffset:4 }] },
+    options: { responsive:false, cutout:'66%', plugins:{ legend:{ display:false } } }
+  });
+  const prioColors = { Urgent:'#ff5252', High:'#ffa726', Normal:'#a89cff', Low:'#00bcd4' };
+  document.getElementById('cu-priority-legend').innerHTML = prioLabels.map((l,i) =>
+    `<span style="display:flex;align-items:center;gap:4px;font-size:0.73rem;color:var(--muted)">
+      <span style="width:10px;height:10px;border-radius:50%;background:${prioColors[l]||'#8b92b8'};flex-shrink:0"></span>${l}: <strong style="color:var(--fg)">${prioVals[i]}</strong>
+    </span>`
+  ).join('');
 
   rows = [...rows].sort((a, b) => {
     if (b.open !== a.open) return b.open - a.open;
