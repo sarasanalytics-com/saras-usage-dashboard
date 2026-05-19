@@ -204,7 +204,7 @@
       <div class="kpi-value" id="kpi-wau"></div>
       <div class="kpi-sub">Claude.ai · Claude Code · Cowork (from Claude admin)</div>
       <span class="kpi-badge badge-green" id="kpi-utilization-badge"></span>
-      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> Last 7 days &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days</div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> Last 7 days &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>All Claude products combined, de-duplicated (Claude.ai + Code + Cowork)</em></div>
     </div>
     <div class="kpi c2">
       <div class="kpi-label">Code Lines Accepted (MTD)</div>
@@ -217,7 +217,6 @@
       <div class="kpi-label">Cowork Sessions/Day</div>
       <div class="kpi-value" id="kpi-overview-cowork-sessions"></div>
       <div class="kpi-sub" id="kpi-overview-cowork-user-sub"></div>
-      <span class="kpi-badge badge-yellow" id="kpi-overview-cowork-growth"></span>
       <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD daily avg &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days</div>
     </div>
     <div class="kpi c4">
@@ -477,7 +476,7 @@
       </div>
     </div>
     <table class="data-table">
-      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Lines MTD</th><th>Share of Total</th><th>Contribution</th><th>Tier</th></tr></thead>
+      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Lines MTD</th><th>Share of Total</th><th>Tier</th></tr></thead>
       <tbody id="codeTableBody"></tbody>
     </table>
   </div>
@@ -619,15 +618,13 @@
     <div class="kpi c3">
       <div class="kpi-label">Sessions per Day</div>
       <div class="kpi-value" id="kpi-cowork-sessions"></div>
-      <div class="kpi-sub">Avg daily Cowork sessions</div>
-      <span class="kpi-badge badge-green" id="kpi-cowork-session-growth"></span>
+      <div class="kpi-sub">Avg daily Cowork sessions · MTD</div>
       <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD daily avg &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Company-wide only</em></div>
     </div>
     <div class="kpi c1">
       <div class="kpi-label">Users with 1+ Session</div>
       <div class="kpi-value" id="kpi-cowork-user-pct"></div>
-      <div class="kpi-sub">of org members</div>
-      <span class="kpi-badge badge-green" id="kpi-cowork-user-growth"></span>
+      <div class="kpi-sub">of 150 licensed seats</div>
     </div>
     <div class="kpi c2">
       <div class="kpi-label">Not Yet Using Cowork</div>
@@ -635,14 +632,17 @@
       <div class="kpi-sub">Largest adoption opportunity</div>
     </div>
   </div>
-  <div class="card-full">
-    <div class="section-title" style="margin-bottom:16px">Session Volume Trend</div>
-    <div style="height:280px"><canvas id="coworkTrendChart"></canvas></div>
+  <div class="card-full" style="background:rgba(255,193,7,0.04);border-color:rgba(255,193,7,0.2)">
+    <div class="section-title" style="margin-bottom:8px;color:var(--accent4)">Session Volume Trend</div>
+    <div style="font-size:0.82rem;color:var(--muted);line-height:1.7">
+      Historical daily session data is not collected by the scheduled task — only the current MTD daily average is available from the Claude Admin analytics page.<br>
+      <strong style="color:var(--text)">Current MTD average: <span id="cowork-trend-note-val"></span> sessions/day</strong> &nbsp;·&nbsp; <span style="font-size:0.75rem">Source: Claude Admin · ~2 day lag · Company-wide only</span>
+    </div>
   </div>
   <div class="insight-box yellow">
     <div class="insight-title" style="color:#ffd740">Cowork context</div>
     <div style="color:var(--muted)">
-      Cowork was separated from Claude Code metrics after <strong style="color:#fff">March 27, 2026</strong> — previously its usage was counted under Claude Code. The <span id="insight-cowork-user-pct"></span>% adoption and strong growth rate (+<span id="insight-cowork-user-growth"></span>% users) for a newly-tracked product is promising. The <span id="insight-cowork-not-using"></span>% who haven't tried it yet represents the biggest single adoption opportunity across all Claude products.
+      Cowork was separated from Claude Code metrics after <strong style="color:#fff">March 27, 2026</strong> — previously its usage was counted under Claude Code. <strong style="color:#fff"><span id="insight-cowork-user-pct"></span>% of licensed seats</strong> have had at least one session. The <span id="insight-cowork-not-using"></span>% who haven't tried it yet represents the biggest single adoption opportunity across all Claude products.
     </div>
   </div>
 </div>
@@ -951,17 +951,18 @@ function kpiMeta(source, period, lag) {
 
 // ── Team-tool expected usage mapping ────────────────────────────────────────
 const TEAM_TOOLS = {
-  'Data Engineering':  ['Claude Code', 'Cursor', 'Claude.ai'],
-  'Engineering':       ['Claude Code', 'Windsurf', 'Cowork', 'Claude.ai'],
-  'Consulting':        ['Claude Code', 'Cowork', 'Claude.ai'],
-  'Marketing':         ['Claude.ai'],
-  'Growth':            ['Claude.ai'],
-  'Customer Success':  ['Claude.ai'],
-  'Finance':           ['Claude.ai'],
-  'HR':                ['Claude.ai'],
-  'IT':                ['Claude.ai'],
-  'Product':           ['Claude.ai'],
-  'CEO Office':        ['Claude.ai'],
+  'Data Engineering':    ['Claude Code', 'Cursor', 'Claude.ai'],
+  'Engineering':         ['Claude Code', 'Windsurf', 'Cowork', 'Claude.ai'],
+  'Consulting':          ['Claude Code', 'Cowork', 'Claude.ai'],
+  'Marketing':           ['Claude.ai'],
+  'Growth':              ['Claude.ai'],
+  'Customer Success':    ['Claude.ai'],
+  'Finance':             ['Claude.ai'],
+  'HR':                  ['Claude.ai'],
+  'IT':                  ['Claude.ai'],
+  'Product':             ['Claude.ai'],
+  'Product Engineering': ['Claude.ai'],
+  'CEO Office':          ['Claude.ai'],
 };
 // All teams use ClickUp
 
@@ -985,8 +986,8 @@ const DATA = {
   chatUserPct: 6,
   projectsCreated: 1,
   projectUserPct: 1,
-  artifactsCreated: 0,
-  artifactUserPct: 0,
+  artifactsCreated: 29,
+  artifactUserPct: 6,
 };
 
 // ── Claude.ai Artifacts per user (Top 10, MTD) ───────────────────────────
@@ -997,7 +998,6 @@ const ARTIFACTS_DATA = {
     {email:'rahul.chauhan@sarasanalytics.com',        artifacts:4},
     {email:'pravalika.g@sarasanalytics.com',          artifacts:4},
     {email:'sumeet.bose@sarasanalytics.com',          artifacts:3},
-    {email:'consulting.claude@sarasanalytics.com',    artifacts:3},
     {email:'sarath.buchi@sarasanalytics.com',         artifacts:2},
     {email:'sayeeda.afreen@sarasanalytics.com',       artifacts:2},
     {email:'nischala.agnihotri@sarasanalytics.com',   artifacts:2},
@@ -1033,7 +1033,7 @@ const members = [
   {name:'Venkateshwaran S',      email:'venkateshwaran.s@sarasanalytics.com',      lines:10234, dept:'Engineering'},
   {name:'Sai Teja Katrapati',    email:'saiteja.katrapati@sarasanalytics.com',     lines:9534,  dept:'Data Engineering'},
   {name:'Harsh Sharma',          email:'harsh.sharma@sarasanalytics.com',          lines:7356,  dept:'Consulting'},
-  {name:'Moiz Essaji',           email:'moiz.essaji@sarasanalytics.com',           lines:6097,  dept:'Growth'},
+  {name:'Moiz Essaji',           email:'moiz.essaji@sarasanalytics.com',           lines:6097,  dept:'Consulting'},
   {name:'Anusha Danda',          email:'anusha@sarasanalytics.com',                lines:5575,  dept:'Engineering'},
   {name:'Rohit Pandey',          email:'rohit.pandey@sarasanalytics.com',          lines:4976,  dept:'Consulting'},
   {name:'Katharin Benson',       email:'katharin.benson@sarasanalytics.com',       lines:3178,  dept:'Data Engineering'},
@@ -1360,14 +1360,15 @@ function deptBadge(dept) {
     'HR':               'rgba(255,193,7,0.18);color:#ffd740',
     'Finance':          'rgba(0,188,212,0.18);color:#00bcd4',
     'Product':          'rgba(240,98,146,0.18);color:#f48fb1',
-    'CEO Office':       'rgba(255,215,0,0.18);color:#ffd700',
+    'CEO Office':          'rgba(255,215,0,0.18);color:#ffd700',
+    'Product Engineering': 'rgba(240,98,146,0.18);color:#f48fb1',
   };
   const s = styles[dept] || 'rgba(139,146,184,0.12);color:#8b92b8';
   const [bg, clr] = s.split(';color:');
   return `<span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:600;background:${bg};color:${clr};white-space:nowrap">${dept||'–'}</span>`;
 }
 
-const DEPT_OPTIONS = ['Consulting','Customer Success','Data Engineering','Engineering','Finance','Growth','HR','IT','Marketing','Product','CEO Office'];
+const DEPT_OPTIONS = ['CEO Office','Consulting','Customer Success','Data Engineering','Engineering','Finance','Growth','HR','IT','Marketing','Product','Product Engineering'];
 function deptSelectHTML(onchangeFn) {
   return `<select class="dept-select" onchange="${onchangeFn}(this.value)">
     <option value="all">All Depts</option>
@@ -1457,7 +1458,7 @@ function filterCodeDept(val) { codeDept = val; renderCodeTable(); updateDistChar
 let peopleTier = 'all', peopleQ = '', peopleDept = 'all';
 function renderPeopleTable() {
   // Base roster: all 209 employees from Employee Data.xlsx
-  let rows = ALL_EMPLOYEES.map(emp => {
+  let rows = ALL_EMPLOYEES.filter(emp => emp.email.endsWith('@sarasanalytics.com')).map(emp => {
     const email        = emp.email;
     const member       = members.find(m => m.email === email);
     const ccLines      = member ? member.lines : (ADOPTION_CC_MTD[email] || 0);
@@ -1602,8 +1603,7 @@ function initFromData() {
   set('kpi-overview-lines-month', d.monthLabel + ' · Claude Code');
   set('kpi-accept-rate-badge', `${d.acceptRate}% accept rate`);
   set('kpi-overview-cowork-sessions', d.coworkSessionsPerDay);
-  set('kpi-overview-cowork-user-sub', `${d.coworkUserPct}% active · target: 30%`);
-  set('kpi-overview-cowork-growth', `+${d.coworkUserGrowthPct}% user growth`);
+  set('kpi-overview-cowork-user-sub', `${d.coworkUserPct}% of licensed seats active · target: 30%`);
   set('kpi-overview-chats', d.chatsPerDay);
   set('kpi-overview-chat-user-sub', `${d.chatUserPct}% active · target: 50%`);
   set('kpi-overview-projects', d.projectsCreated);
@@ -1645,9 +1645,7 @@ function initFromData() {
 
   // Cowork tab
   set('kpi-cowork-sessions', d.coworkSessionsPerDay);
-  set('kpi-cowork-session-growth', `+${d.coworkSessionGrowthPct}% sessions growth`);
   set('kpi-cowork-user-pct', `${d.coworkUserPct}%`);
-  set('kpi-cowork-user-growth', `+${d.coworkUserGrowthPct}% user growth`);
   set('kpi-cowork-not-using', `${100-d.coworkUserPct}%`);
   set('insight-cowork-user-pct', d.coworkUserPct);
   set('insight-cowork-user-growth', d.coworkUserGrowthPct);
@@ -1658,9 +1656,9 @@ function initFromData() {
   document.getElementById('attention-gap-list').innerHTML = `
     <li>${zeroLiners.length} members have <strong style="color:#fff">zero Claude Code lines</strong> this month</li>
     <li>${veryLow.length} members have <strong style="color:#ffa726">&lt;100 lines</strong> — barely engaging with Claude Code</li>
-    <li><strong style="color:#fff">${100-d.chatUserPct}% of org</strong> has not had a single Claude.ai chat this month</li>
-    <li><strong style="color:#fff">${100-d.projectUserPct}% of org</strong> has not created a Project — biggest untapped lever</li>
-    <li><strong style="color:#fff">${100-d.coworkUserPct}% of org</strong> hasn't tried Cowork yet</li>`;
+    <li><strong style="color:#fff">${100-d.chatUserPct}% of licensed seats</strong> have not had a single Claude.ai chat this month</li>
+    <li><strong style="color:#fff">${100-d.projectUserPct}% of licensed seats</strong> have not used a Project — biggest untapped lever</li>
+    <li><strong style="color:#fff">${100-d.coworkUserPct}% of licensed seats</strong> haven't tried Cowork yet</li>`;
   document.getElementById('zero-liners-table').innerHTML = zeroLiners.map(m =>
     `<tr><td class="name-cell">${m.name}</td><td class="email-muted">${m.email}</td><td><span class="tier tier-none">Onboard to Code</span></td></tr>`).join('');
   document.getElementById('very-low-table').innerHTML = veryLow.map(m =>
@@ -1775,26 +1773,15 @@ function initCharts() {
       scales:{r:{ticks:{color:'#8b92b8',backdropColor:'transparent',callback:v=>v+'%'},grid:{color:'rgba(46,50,80,0.6)'},pointLabels:{color:'#8b92b8',font:{size:10}}}}}
   });
 
-  new Chart(document.getElementById('coworkTrendChart'), {
-    type:'line', data:{
-      labels:['Apr 1','Apr 7','Apr 14','Apr 21','Apr 28','May 5','Today'],
-      datasets:[
-        {label:'Sessions/Day',data:[28,32,35,38,40,43,d.coworkSessionsPerDay],borderColor:'#ffa726',backgroundColor:'rgba(255,167,38,0.1)',tension:0.4,fill:true,pointRadius:4,yAxisID:'y'},
-        {label:'% Users Active',data:[6,7,8,9,11,12,d.coworkUserPct],borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,0.07)',tension:0.4,fill:true,pointRadius:4,yAxisID:'y1'}
-      ]
-    },
-    options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'#8b92b8'}}},
-      scales:{x:{ticks:{color:'#8b92b8'},grid:{color:'rgba(46,50,80,0.5)'}},
-        y:{ticks:{color:'#8b92b8'},grid:{color:'rgba(46,50,80,0.5)'},title:{display:true,text:'Sessions/Day',color:'#8b92b8'}},
-        y1:{position:'right',ticks:{color:'#8b92b8',callback:v=>v+'%'},grid:{display:false},title:{display:true,text:'% Users Active',color:'#8b92b8'}}}}
-  });
+  // Cowork trend chart removed — historical daily data not collected; only MTD avg available
+  set('cowork-trend-note-val', d.coworkSessionsPerDay);
 
   // Exec summary — Cursor events by dept (mini version)
   (function(){
     const mayDays=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01');
     const deptEv={};
     mayDays.forEach(day=>Object.entries(day.c).forEach(([e,cnt])=>{
+      if(!e.endsWith('@sarasanalytics.com')) return;
       const dep=getDept(e); deptEv[dep]=(deptEv[dep]||0)+cnt;
     }));
     const DCOL={'Engineering':'#a89cff','Data Engineering':'#00d4aa','Consulting':'#ffa726','Growth':'#81c784','Marketing':'#ff6b6b','Customer Success':'#26c6da','IT':'#ce93d8','HR':'#ffd740','Finance':'#00bcd4','Product':'#f48fb1','CEO Office':'#ffd700'};
@@ -1807,7 +1794,7 @@ function initCharts() {
     const ccActivePct=Math.round(members.filter(m=>m.lines>0).length/members.length*100);
     const wsTracked=Object.values(WINDSURF_USERS).filter(v=>v!==null).length;
     const mayDays=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01');
-    const cursorUsers=new Set(); mayDays.forEach(day=>Object.keys(day.c).forEach(e=>cursorUsers.add(e)));
+    const cursorUsers=new Set(); mayDays.forEach(day=>Object.keys(day.c).filter(e=>e.endsWith('@sarasanalytics.com')).forEach(e=>cursorUsers.add(e)));
     const cursorPct=Math.round(cursorUsers.size/CURSOR_SEATS*100);
     const wsPct=Math.round(wsTracked/WINDSURF_SEATS*100);
     new Chart(document.getElementById('ovAllToolChart'),{type:'bar',data:{
@@ -1933,7 +1920,7 @@ const CLICKUP_DATA = {
     {name:'Srinivas Janipalli',  email:'srinivas.janipalli@sarasanalytics.com',        dept:'Data Engineering', open:102,done:0,  urgent:0,  high:0,  normal:1, low:0, nextDue:null},
     {name:'Ashyam Zubair',       email:'ashyam.zubair@sarasanalytics.com',             dept:'Data Engineering', open:90, done:0,  urgent:1,  high:0,  normal:0, low:0, nextDue:'2026-05-23'},
     // ── Additional task holders ──────────────────────────────────────────────
-    {name:'Anudeep Kolla',       email:'anudeep.kolla@sarasanalytics.com',             dept:'Operations',       open:43, done:0,  urgent:0,  high:0,  normal:0, low:0, nextDue:null},
+    {name:'Anudeep Kolla',       email:'anudeep.kolla@sarasanalytics.com',             dept:'IT',               open:43, done:0,  urgent:0,  high:0,  normal:0, low:0, nextDue:null},
     {name:'Arpit Jain',          email:'arpit.jain@sarasanalytics.com',               dept:'Engineering',      open:191,done:0,  urgent:0,  high:2,  normal:0, low:0, nextDue:null},
     {name:'Waheed',              email:'waheed@sarasanalytics.com',                   dept:'Data Engineering', open:4,  done:0,  urgent:0,  high:0,  normal:0, low:0, nextDue:null},
     {name:'Ajay Kottapally',     email:'ajay.kottapally@sarasanalytics.com',          dept:'Engineering',      open:1,  done:0,  urgent:1,  high:0,  normal:0, low:0, nextDue:null},
@@ -2139,6 +2126,7 @@ function initAdoption(){
   let totalEv=0;
   mayDays.forEach(day=>{
     Object.entries(day.c).forEach(([em,cnt])=>{
+      if(!em.endsWith('@sarasanalytics.com')) return; // skip external/vendor accounts
       adoptUTotals[em]=(adoptUTotals[em]||0)+cnt;
       adoptUDays[em]=(adoptUDays[em]||0)+1;
       totalEv+=cnt;
@@ -2218,6 +2206,7 @@ function renderDeptMetrics() {
   // Aggregate Cursor events by dept
   mayDays.forEach(day => {
     Object.entries(day.c).forEach(([email, cnt]) => {
+      if (!email.endsWith('@sarasanalytics.com')) return;
       const dept = getDept(email);
       deptCursorEv[dept] = (deptCursorEv[dept] || 0) + cnt;
       if (!deptCursorUserSet[dept]) deptCursorUserSet[dept] = new Set();
