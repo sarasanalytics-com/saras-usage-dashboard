@@ -259,6 +259,22 @@
     <!-- populated by renderToolStrips() -->
   </div>
 
+  <div class="section-divider"><span>Daily Usage Trend <span class="timeframe-badge tbadge-daily">May 2026 Weekdays</span></span></div>
+  <div class="two-col" style="margin-bottom:4px">
+    <div class="card">
+      <div class="section-header">
+        <div><div class="section-title">Claude.ai Chats per Day</div><div class="section-sub">Weekday daily counts · Source: Claude Admin · ~2 day lag</div></div>
+      </div>
+      <div style="height:200px"><canvas id="chatsTrendChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-header">
+        <div><div class="section-title">Cowork Daily Active Users</div><div class="section-sub">Weekday daily counts · Source: Claude Admin daily graph · ~2 day lag</div></div>
+      </div>
+      <div style="height:200px"><canvas id="coworkTrendChart"></canvas></div>
+    </div>
+  </div>
+
   <div class="two-col">
     <div class="card">
       <div class="section-header">
@@ -622,28 +638,15 @@
       <div class="kpi-sub">Avg daily active users · MTD weekdays</div>
       <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD daily avg &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Company-wide only</em></div>
     </div>
-    <div class="kpi c1">
-      <div class="kpi-label">Users with 1+ Session</div>
-      <div class="kpi-value" id="kpi-cowork-user-pct"></div>
-      <div class="kpi-sub">of 150 licensed seats</div>
-    </div>
-    <div class="kpi c2">
-      <div class="kpi-label">Not Yet Using Cowork</div>
-      <div class="kpi-value" id="kpi-cowork-not-using"></div>
-      <div class="kpi-sub">Largest adoption opportunity</div>
-    </div>
   </div>
   <div class="card-full" style="background:rgba(255,193,7,0.04);border-color:rgba(255,193,7,0.2)">
-    <div class="section-title" style="margin-bottom:8px;color:var(--accent4)">Session Volume Trend</div>
-    <div style="font-size:0.82rem;color:var(--muted);line-height:1.7">
-      Historical daily session data is not collected by the scheduled task — only the current MTD daily average is available from the Claude Admin analytics page.<br>
-      <strong style="color:var(--text)">Weekday avg daily active users: <span id="cowork-trend-note-val"></span></strong> &nbsp;·&nbsp; <span style="font-size:0.75rem">Source: Claude Admin · ~2 day lag · Company-wide only</span>
-    </div>
+    <div class="section-title" style="margin-bottom:12px;color:var(--accent4)">Daily Active Users — May 2026 <span style="font-size:0.72rem;color:var(--muted);font-weight:400;margin-left:8px">Source: Claude Admin daily graph · Weekdays only · ~2 day lag</span></div>
+    <div id="cowork-daily-table"></div>
   </div>
   <div class="insight-box yellow">
     <div class="insight-title" style="color:#ffd740">Cowork context</div>
     <div style="color:var(--muted)">
-      Cowork was separated from Claude Code metrics after <strong style="color:#fff">March 27, 2026</strong> — previously its usage was counted under Claude Code. <strong style="color:#fff"><span id="insight-cowork-user-pct"></span>% of licensed seats</strong> have had at least one session. The <span id="insight-cowork-not-using"></span>% who haven't tried it yet represents the biggest single adoption opportunity across all Claude products.
+      Cowork was separated from Claude Code metrics after <strong style="color:#fff">March 27, 2026</strong> — previously its usage was counted under Claude Code. Averaging <strong style="color:#fff"><span id="cowork-trend-note-val"></span> daily active users</strong> this month. Dept-level breakdown is not available from the Claude Admin API — figures are company-wide only.
     </div>
   </div>
 </div>
@@ -1665,11 +1668,17 @@ function initFromData() {
 
   // Cowork tab
   set('kpi-cowork-sessions', d.coworkDailyUsers);
-  set('kpi-cowork-user-pct', `${d.coworkUserPct}%`);
-  set('kpi-cowork-not-using', `${100-d.coworkUserPct}%`);
-  set('insight-cowork-user-pct', d.coworkUserPct);
-  set('insight-cowork-user-growth', d.coworkUserGrowthPct);
-  set('insight-cowork-not-using', 100-d.coworkUserPct);
+  // Render cowork daily table
+  const cwTbl = document.getElementById('cowork-daily-table');
+  if (cwTbl && d.coworkDailyData && d.coworkDailyData.length) {
+    const avg = Math.round(d.coworkDailyData.reduce((s,x)=>s+x.users,0)/d.coworkDailyData.length);
+    cwTbl.innerHTML = `<table class="data-table" style="max-width:400px">
+      <thead><tr><th>Date</th><th style="text-align:right">Daily Active Users</th></tr></thead>
+      <tbody>${d.coworkDailyData.map(x=>`<tr><td>${x.date}</td><td style="text-align:right;color:#ffa726;font-weight:600">${x.users}</td></tr>`).join('')}
+      <tr style="border-top:1px solid rgba(108,99,255,0.3)"><td style="color:var(--muted)">Weekday avg</td><td style="text-align:right;color:#fff;font-weight:700">${avg}</td></tr>
+      </tbody></table>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:8px">Data as of ${d.coworkDataAsOf} · Weekdays only · Dept breakdown unavailable from Claude Admin</div>`;}
+
 
   // Attention tab
   set('attention-date', d.asOf);
@@ -1728,6 +1737,30 @@ function initCharts() {
   const activeCnt   = members.filter(m => m.lines > 0).length;
   const inactiveCnt = members.filter(m => m.lines === 0).length;
   const codeActivePct = Math.round(activeCnt / DATA.totalMembers * 100);
+
+  // Claude.ai chats trend
+  const chatLabels = d.chatsDailyData.map(x => x.date.slice(5).replace('-','/'));
+  const chatValues = d.chatsDailyData.map(x => x.chats);
+  new Chart(document.getElementById('chatsTrendChart'), {
+    type:'bar',
+    data:{ labels:chatLabels, datasets:[{data:chatValues, backgroundColor:'rgba(108,99,255,0.7)', borderRadius:6, label:'Chats'}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' chats'}}},
+      scales:{x:{ticks:{color:'#8b92b8'},grid:{display:false}},
+              y:{ticks:{color:'#8b92b8'},grid:{color:'rgba(46,50,80,0.5)'},beginAtZero:true}}}
+  });
+
+  // Cowork daily users trend
+  const cwLabels = d.coworkDailyData.map(x => x.date.slice(5).replace('-','/'));
+  const cwValues = d.coworkDailyData.map(x => x.users);
+  new Chart(document.getElementById('coworkTrendChart'), {
+    type:'bar',
+    data:{ labels:cwLabels, datasets:[{data:cwValues, backgroundColor:'rgba(255,167,38,0.7)', borderRadius:6, label:'Users'}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>c.raw+' users'}}},
+      scales:{x:{ticks:{color:'#8b92b8'},grid:{display:false}},
+              y:{ticks:{color:'#8b92b8'},grid:{color:'rgba(46,50,80,0.5)'},beginAtZero:true,suggestedMax:30}}}
+  });
 
   new Chart(document.getElementById('adoptionChart'), {
     type:'bar', data:{
