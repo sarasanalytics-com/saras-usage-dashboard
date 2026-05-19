@@ -848,9 +848,9 @@
     </div>
     <div class="fqq-card">
       <div class="fqq-label fqq-qual">Quality</div>
-      <div class="fqq-value no-data" style="font-size:0.85rem">Not available</div>
-      <div class="fqq-sub">Accept rate not available from Cursor Admin API</div>
-      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)">Quality metrics not available from Cursor API</div>
+      <div class="fqq-value no-data" id="fqq-cur-qual" style="font-size:0.85rem">Not yet collected</div>
+      <div class="fqq-sub" id="fqq-cur-qual-sub">Will populate after next scheduled run</div>
+      <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)"><strong>Source:</strong> cursor.com/cn/teams · Scraped by scheduled task</div>
     </div>
   </div>
   <div class="section-divider"><span>Usage Overview <span class="timeframe-badge tbadge-mtd">MTD May 2026</span></span></div>
@@ -2180,6 +2180,35 @@ function initAdoption(){
   if(fqqCurFreqEl) fqqCurFreqEl.textContent = avgD + ' days';
   const fqqCurQtyEl = document.getElementById('fqq-cur-qty');
   if(fqqCurQtyEl) fqqCurQtyEl.textContent = fmt(totalEv);
+
+  // Cursor accept rate (from DATA, populated by scheduled task scraping cursor.com/cn/teams)
+  const fqqCurQualEl = document.getElementById('fqq-cur-qual');
+  if(fqqCurQualEl) {
+    if(DATA.cursorAcceptRate != null) {
+      fqqCurQualEl.className = 'fqq-value';
+      fqqCurQualEl.style.fontSize = '';
+      fqqCurQualEl.textContent = DATA.cursorAcceptRate + '%';
+      const subEl = document.getElementById('fqq-cur-qual-sub');
+      if(subEl) subEl.textContent = 'suggestions accepted · Source: cursor.com/cn/teams';
+    }
+  }
+
+  // ClickUp daily active users (from latest ADOPTION_DAYS entry with cu field)
+  const fqqCuFreqEl = document.getElementById('fqq-cu-freq');
+  if(fqqCuFreqEl) {
+    const latestWithCu = [...ADOPTION_DAYS].sort((a,b) => b.date.localeCompare(a.date))
+      .find(d => d.cu && Object.keys(d.cu).length > 0);
+    if(latestWithCu) {
+      const cuCount = Object.keys(latestWithCu.cu).length;
+      fqqCuFreqEl.className = 'fqq-value';
+      fqqCuFreqEl.style.fontSize = '';
+      fqqCuFreqEl.textContent = cuCount + ' users';
+      const cuSubEl = fqqCuFreqEl.nextElementSibling;
+      if(cuSubEl && cuSubEl.classList.contains('fqq-sub')) {
+        cuSubEl.textContent = 'touched a ClickUp task on ' + latestWithCu.date + ' · Source: ClickUp API';
+      }
+    }
+  }
 }
 
 function renderDeptMetrics() {
