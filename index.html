@@ -529,6 +529,7 @@
       <div class="kpi-label">New Projects Created</div>
       <div class="kpi-value" id="kpi-ai-projects"></div>
       <div class="kpi-sub" id="kpi-ai-projects-month"></div>
+      <div class="kpi-sub" id="kpi-ai-projects-total" style="margin-top:4px;font-size:0.75rem;color:var(--accent2)"></div>
       <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Projects created new this month — not the same as projects used</em></div>
     </div>
     <div class="kpi c4">
@@ -541,6 +542,7 @@
       <div class="kpi-label">New Artifacts Created</div>
       <div class="kpi-value" id="kpi-ai-artifacts"></div>
       <div class="kpi-sub" id="kpi-ai-artifact-sub"></div>
+      <div class="kpi-sub" id="kpi-ai-artifacts-total" style="margin-top:4px;font-size:0.75rem;color:var(--accent2)"></div>
       <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Artifacts created new this month — the table below shows top users by artifacts generated (may include prior months)</em></div>
     </div>
   </div>
@@ -1637,8 +1639,12 @@ function initFromData() {
   set('kpi-ai-projects-month', `MTD ${d.monthLabel}`);
   set('kpi-ai-project-user-pct', `${d.projectUserPct}% · target 40%`);
   set('kpi-ai-project-user-sub', `MTD ${d.monthLabel} · of ${d.licensedSeats} licensed seats`);
+  const projTotal = PROJECTS_DATA.topUsers.reduce((s,p) => s+p.projects, 0);
+  set('kpi-ai-projects-total', `${projTotal} existing across top ${PROJECTS_DATA.topUsers.length} users (cumulative)`);
   set('kpi-ai-artifacts', d.artifactsCreated);
   set('kpi-ai-artifact-sub', `MTD ${d.monthLabel} · ${d.artifactUserPct}% active · target 25%`);
+  const artTotal = ARTIFACTS_DATA.topUsers.reduce((s,p) => s+p.artifacts, 0);
+  set('kpi-ai-artifacts-total', `${artTotal} existing across top ${ARTIFACTS_DATA.topUsers.length} users (cumulative)`);
   set('insight-chat-pct', d.chatUserPct);
   set('insight-project-pct', d.projectUserPct);
   set('insight-artifact-pct', d.artifactUserPct);
