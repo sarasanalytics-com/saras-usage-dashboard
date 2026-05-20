@@ -491,7 +491,7 @@
       </div>
     </div>
     <table class="data-table">
-      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Lines MTD</th><th>Share of Total</th><th>Tier</th></tr></thead>
+      <thead><tr id="codeTableHead"><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Lines MTD</th><th>Share of Total</th><th>Tier</th></tr></thead>
       <tbody id="codeTableBody"></tbody>
     </table>
   </div>
@@ -605,7 +605,7 @@
       </div>
     </div>
     <table class="data-table">
-      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Projects Used</th><th style="text-align:right;width:200px">Usage Bar</th></tr></thead>
+      <thead><tr id="projTableHead"><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Projects Used</th><th style="text-align:right;width:200px">Usage Bar</th></tr></thead>
       <tbody id="projectsTableBody"></tbody>
     </table>
   </div>
@@ -619,7 +619,7 @@
       </div>
     </div>
     <table class="data-table">
-      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Artifacts</th><th style="text-align:right;width:200px">Usage Bar</th></tr></thead>
+      <thead><tr id="artTableHead"><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Artifacts</th><th style="text-align:right;width:200px">Usage Bar</th></tr></thead>
       <tbody id="artifactsTableBody"></tbody>
     </table>
   </div>
@@ -822,7 +822,7 @@
       </div>
     </div>
     <table class="data-table">
-      <thead><tr>
+      <thead><tr id="cuTableHead">
         <th>#</th><th>Member</th><th>Team</th>
         <th style="text-align:right">Open</th>
         <th style="text-align:right">Closed (<span id="month-lbl-cu-short">May</span>)</th>
@@ -909,7 +909,7 @@
       <div class="section-sub">Cursor requests · active days · Windsurf last active</div>
     </div>
     <table class="data-table">
-      <thead><tr><th>#</th><th>User</th><th>Dept</th><th style="text-align:right">Cursor Events MTD</th><th style="text-align:right">Active Days</th><th style="text-align:right">Avg/Day</th><th>Windsurf Last Active</th></tr></thead>
+      <thead><tr id="adoptUserHead"><th>#</th><th>User</th><th>Dept</th><th style="text-align:right">Cursor Events MTD</th><th style="text-align:right">Active Days</th><th style="text-align:right">Avg/Day</th><th>Windsurf Last Active</th></tr></thead>
       <tbody id="adopt-user-table"></tbody>
     </table>
   </div>
@@ -1544,14 +1544,37 @@ function searchRows(tbodyId, q) {
     tr.style.display = tr.textContent.toLowerCase().includes(term) ? '' : 'none';
   });
 }
+function _thSort(label, col, activeCol, dir, fn, align) {
+  const active = activeCol === col;
+  const arrow  = active ? (dir === -1 ? ' ▼' : ' ▲') : ' ⇅';
+  const aStyle = align ? `text-align:${align};` : '';
+  const color  = active ? 'color:var(--accent);' : '';
+  return `<th style="${aStyle}${color}cursor:pointer;user-select:none" onclick="${fn}('${col}')">${label}${arrow}</th>`;
+}
+let codeSortCol = 'lines', codeSortDir = -1;
 function renderCodeTable() {
-  let rows = members;
+  let rows = [...members];
   if (codeFilter === 'high') rows = rows.filter(m => m.lines >= 5000);
   else if (codeFilter === 'mid') rows = rows.filter(m => m.lines >= 500 && m.lines < 5000);
   else if (codeFilter === 'low') rows = rows.filter(m => m.lines > 0 && m.lines < 500);
   else if (codeFilter === 'zero') rows = rows.filter(m => m.lines === 0);
   const activeDept = GF.dept !== 'all' ? GF.dept : codeDept;
   if (activeDept !== 'all') rows = rows.filter(m => m.dept === activeDept);
+  rows.sort((a,b) => {
+    const d = codeSortDir;
+    if (codeSortCol==='name')  return d*a.name.localeCompare(b.name);
+    if (codeSortCol==='dept')  return d*(a.dept||'').localeCompare(b.dept||'');
+    if (codeSortCol==='tier')  return d*(a.lines-b.lines);
+    return d*(a.lines-b.lines);
+  });
+  document.getElementById('codeTableHead').innerHTML = [
+    '<th>#</th>',
+    _thSort('Member','name',codeSortCol,codeSortDir,'sortCodeTable'),
+    _thSort('Dept','dept',codeSortCol,codeSortDir,'sortCodeTable'),
+    _thSort('Lines MTD','lines',codeSortCol,codeSortDir,'sortCodeTable','right'),
+    '<th>Share of Total</th>',
+    _thSort('Tier','tier',codeSortCol,codeSortDir,'sortCodeTable'),
+  ].join('');
   document.getElementById('codeTableBody').innerHTML = rows.map((m,i) => {
     const pct = DATA.totalLines > 0 ? (m.lines/DATA.totalLines*100).toFixed(1) : '0.0';
     const bw  = maxLines > 0 ? (m.lines/maxLines*100) : 0;
@@ -1566,6 +1589,10 @@ function renderCodeTable() {
     </tr>`;
   }).join('');
   if (codeSearch) searchRows('codeTableBody', codeSearch);
+}
+function sortCodeTable(col) {
+  if (codeSortCol===col) codeSortDir*=-1; else { codeSortCol=col; codeSortDir=-1; }
+  renderCodeTable();
 }
 function updateDistChart() {
   let filtered = members;
@@ -1735,30 +1762,49 @@ function sortPeople(col) {
   renderPeopleTable();
 }
 
-function _topTableHelper(data, keyField, color, tbodyId, asOfId) {
+let projSortCol='projects', projSortDir=-1;
+let artSortCol='artifacts',  artSortDir=-1;
+function _topTableHelper(data, keyField, color, tbodyId, asOfId, sortCol, sortDir, sortFn, theadId) {
   const asOfEl = document.getElementById(asOfId);
   if (asOfEl) asOfEl.textContent = data.asOf;
   if (!data.topUsers || !data.topUsers.length) {
     document.getElementById(tbodyId).innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">No data</td></tr>';
     return;
   }
-  const maxVal = data.topUsers[0][keyField];
-  document.getElementById(tbodyId).innerHTML = data.topUsers.map((p, i) => {
+  let rows = data.topUsers.map(p => {
     const emp  = ALL_EMPLOYEES.find(e => e.email === p.email);
-    const name = emp ? emp.name : p.email.split('@')[0].split('.').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
-    const dept = emp ? emp.dept : getDept(p.email);
-    const bw   = (p[keyField] / maxVal * 100).toFixed(1);
+    return { ...p, _name: emp ? emp.name : p.email.split('@')[0].split('.').map(w=>w[0].toUpperCase()+w.slice(1)).join(' '), _dept: emp ? emp.dept : getDept(p.email) };
+  });
+  rows.sort((a,b) => {
+    const d = sortDir;
+    if (sortCol==='name') return d*a._name.localeCompare(b._name);
+    if (sortCol==='dept') return d*(a._dept||'').localeCompare(b._dept||'');
+    return d*(a[keyField]-b[keyField]);
+  });
+  const maxVal = Math.max(...rows.map(r=>r[keyField]),1);
+  const label = keyField==='projects'?'Projects Used':'Artifacts';
+  document.getElementById(theadId).innerHTML = [
+    '<th>#</th>',
+    _thSort('Member','name',sortCol,sortDir,sortFn),
+    _thSort('Dept','dept',sortCol,sortDir,sortFn),
+    _thSort(label,keyField,sortCol,sortDir,sortFn,'right'),
+    '<th style="text-align:right;width:200px">Usage Bar</th>',
+  ].join('');
+  document.getElementById(tbodyId).innerHTML = rows.map((p, i) => {
+    const bw = (p[keyField] / maxVal * 100).toFixed(1);
     return `<tr class="clickable-row" onclick="openPersonPanel('${p.email}')">
       <td class="rank">${i+1}</td>
-      <td><div class="name-cell">${name}</div><div class="email-muted">${p.email}</div></td>
-      <td>${deptBadge(dept)}</td>
+      <td><div class="name-cell">${p._name}</div><div class="email-muted">${p.email}</div></td>
+      <td>${deptBadge(p._dept)}</td>
       <td class="num-cell" style="font-size:1rem;font-weight:700;color:${color}">${p[keyField]}</td>
       <td><div class="mini-bar" style="width:160px"><div class="mini-bar-fill" style="width:${bw}%;background:${color}"></div></div></td>
     </tr>`;
   }).join('');
 }
-function renderProjectsTable()   { _topTableHelper(PROJECTS_DATA,  'projects',  '#ab47bc', 'projectsTableBody',  'projects-as-of'); }
-function renderArtifactsTable()  { _topTableHelper(ARTIFACTS_DATA, 'artifacts', '#26a69a', 'artifactsTableBody', 'artifacts-as-of'); }
+function renderProjectsTable()  { _topTableHelper(PROJECTS_DATA,'projects','#ab47bc','projectsTableBody','projects-as-of',projSortCol,projSortDir,'sortProjTable','projTableHead'); }
+function renderArtifactsTable() { _topTableHelper(ARTIFACTS_DATA,'artifacts','#26a69a','artifactsTableBody','artifacts-as-of',artSortCol,artSortDir,'sortArtTable','artTableHead'); }
+function sortProjTable(col) { if(projSortCol===col)projSortDir*=-1;else{projSortCol=col;projSortDir=-1;} renderProjectsTable(); }
+function sortArtTable(col)  { if(artSortCol===col)artSortDir*=-1;else{artSortCol=col;artSortDir=-1;}  renderArtifactsTable(); }
 
 function initFromData() {
   const d = DATA;
@@ -2462,6 +2508,7 @@ function initClickUp() {
   renderCUTable();
 }
 
+let cuSortCol='open', cuSortDir=-1;
 function renderCUTable() {
   // Limit to current employees only (ALL_EMPLOYEES is the HR source of truth)
   const activeEmpEmails = new Set(ALL_EMPLOYEES.map(e => e.email));
@@ -2530,11 +2577,26 @@ function renderCUTable() {
   ).join('');
 
   rows = [...rows].sort((a, b) => {
-    if (b.open !== a.open) return b.open - a.open;
-    return b.done - a.done;
+    const d = cuSortDir;
+    if (cuSortCol==='name')    return d*((a.name||'').localeCompare(b.name||''));
+    if (cuSortCol==='dept')    return d*((a.dept||'').localeCompare(b.dept||''));
+    if (cuSortCol==='done')    return d*(a.done-b.done);
+    if (cuSortCol==='nextDue') return d*((a.nextDue||'9999').localeCompare(b.nextDue||'9999'));
+    return d*(a.open-b.open);
   });
 
   set('cu-table-sub', `${CLICKUP_DATA.asOf} snapshot · ${rows.length} people shown`);
+  const cuMonthShort = document.getElementById('month-lbl-cu-short');
+  const closedLabel = cuMonthShort ? cuMonthShort.textContent : 'MTD';
+  document.getElementById('cuTableHead').innerHTML = [
+    '<th>#</th>',
+    _thSort('Member','name',cuSortCol,cuSortDir,'sortCUTable'),
+    _thSort('Team','dept',cuSortCol,cuSortDir,'sortCUTable'),
+    _thSort('Open','open',cuSortCol,cuSortDir,'sortCUTable','right'),
+    _thSort(`Closed (${closedLabel})`,'done',cuSortCol,cuSortDir,'sortCUTable','right'),
+    '<th>Open Priority Breakdown</th>',
+    _thSort('Nearest Due','nextDue',cuSortCol,cuSortDir,'sortCUTable'),
+  ].join('');
   const dash = '<span style="color:var(--muted)">—</span>';
   const cuToday = (()=>{ const d=new Date(DATA.asOf); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
 
@@ -2572,6 +2634,7 @@ function renderCUTable() {
   }).join('');
   if (cuSearch) searchRows('cuTableBody', cuSearch);
 }
+function sortCUTable(col) { if(cuSortCol===col)cuSortDir*=-1;else{cuSortCol=col;cuSortDir=-1;} renderCUTable(); }
 // ======================================================
 
 let adoptView='overall', adoptDept='all', adoptSearch='';
@@ -2826,6 +2889,7 @@ function renderAdoptHeatmap(){
     leg.innerHTML=`<div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#1a1d27"></div>0</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.2)"></div>1–4</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.4)"></div>5–9</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.6)"></div>10–19</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.85)"></div>20–49</div><div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#6c63ff"></div>50+</div><span style="color:var(--muted)">Cursor AI requests/day</span>`;
   }
 }
+let adoptSortCol='cursor', adoptSortDir=-1;
 function renderAdoptTable(uTotals,uDays){
   // Full roster: union of cursor users and windsurf users
   const allEmails=new Set([
@@ -2837,11 +2901,23 @@ function renderAdoptTable(uTotals,uDays){
     .filter(e=>{ const _d = GF.dept !== 'all' ? GF.dept : adoptDept; return _d==='all'||getDept(e)===_d; })
     .filter(e=>!adoptSearch||(nameFromEmail(e)+' '+e).toLowerCase().includes(adoptSearch))
     .sort((a,b)=>{
-      // Primary: cursor events desc; secondary: windsurf active
-      const ca=uTotals[a]||0, cb=uTotals[b]||0;
-      if(cb!==ca) return cb-ca;
-      return (WINDSURF_USERS[b]?1:0)-(WINDSURF_USERS[a]?1:0);
+      const d=adoptSortDir;
+      if(adoptSortCol==='name')   return d*(nameFromEmail(a).localeCompare(nameFromEmail(b)));
+      if(adoptSortCol==='dept')   return d*((getDept(a)||'').localeCompare(getDept(b)||''));
+      if(adoptSortCol==='days')   return d*((uDays[a]||0)-(uDays[b]||0));
+      if(adoptSortCol==='avg')    { const da=uDays[a]||0,db=uDays[b]||0; return d*((da>0?(uTotals[a]||0)/da:0)-(db>0?(uTotals[b]||0)/db:0)); }
+      if(adoptSortCol==='ws')     return d*((WINDSURF_USERS[b]?WINDSURF_USERS[b]:'0').localeCompare(WINDSURF_USERS[a]?WINDSURF_USERS[a]:'0'));
+      return d*((uTotals[a]||0)-(uTotals[b]||0));
     });
+  document.getElementById('adoptUserHead').innerHTML = [
+    '<th>#</th>',
+    _thSort('User','name',adoptSortCol,adoptSortDir,'sortAdoptTable'),
+    _thSort('Dept','dept',adoptSortCol,adoptSortDir,'sortAdoptTable'),
+    _thSort('Cursor Events MTD','cursor',adoptSortCol,adoptSortDir,'sortAdoptTable','right'),
+    _thSort('Active Days','days',adoptSortCol,adoptSortDir,'sortAdoptTable','right'),
+    _thSort('Avg/Day','avg',adoptSortCol,adoptSortDir,'sortAdoptTable','right'),
+    _thSort('Windsurf Last Active','ws',adoptSortCol,adoptSortDir,'sortAdoptTable'),
+  ].join('');
   document.getElementById('adopt-user-table').innerHTML=rows.map((email,i)=>{
     const total  =uTotals[email]||0;
     const days   =uDays[email]||0;
@@ -2859,6 +2935,7 @@ function renderAdoptTable(uTotals,uDays){
   }).join('');
 }
 
+function sortAdoptTable(col) { if(adoptSortCol===col)adoptSortDir*=-1;else{adoptSortCol=col;adoptSortDir=-1;} renderAdoptTable(adoptUTotals,adoptUDays); }
 function filterAdoptSearch(val) { adoptSearch = val.toLowerCase(); renderAdoptHeatmap(); renderAdoptTable(adoptUTotals, adoptUDays); }
 
 // ==================== THIS WEEK TAB ====================
