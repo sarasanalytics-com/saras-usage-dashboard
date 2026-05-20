@@ -289,6 +289,13 @@ new_cau_line = f"const CLAUDE_AI_USERS={new_cau_obj};"
 html = re.sub(r"const CLAUDE_AI_USERS=\{[^}]*\};", new_cau_line, html, count=1)
 log(f"  CLAUDE_AI_USERS: {len(chat_users)} entries")
 
+# ── Update COWORK_USERS ───────────────────────────────────────────────────────
+cowork_users = cc.get("coworkUsers", {})
+new_cwu_obj  = json.dumps(cowork_users, separators=(",", ":"))
+new_cwu_line = f"const COWORK_USERS={new_cwu_obj};"
+html = re.sub(r"const COWORK_USERS=\{[^}]*\};", new_cwu_line, html, count=1)
+log(f"  COWORK_USERS: {len(cowork_users)} entries")
+
 
 # ── Update WINDSURF_USERS ─────────────────────────────────────────────────────
 ws_match = re.search(r"const WINDSURF_USERS=\{[^}]*\};", html)

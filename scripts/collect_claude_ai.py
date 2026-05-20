@@ -92,6 +92,7 @@ user_loc_added     = defaultdict(int)   # email → lines from core_metrics.line
 user_rejected      = defaultdict(int)   # email → total tool rejects
 user_cc_active     = set()              # emails with any CC session MTD
 user_chats         = defaultdict(int)   # email → total chat conversations MTD
+user_cowork        = defaultdict(int)   # email → total cowork sessions MTD
 
 daily_chat_convos   = []             # total conversations per day
 daily_cowork_sess   = []             # total cowork sessions per day
@@ -184,8 +185,11 @@ for date_str in all_dates:
                 artifact_users_mtd.add(email)
 
             # Cowork sessions
-            day_cowork += (user.get("cowork_metrics", {})
+            cw_sessions = (user.get("cowork_metrics", {})
                            .get("distinct_session_count", 0))
+            day_cowork += cw_sessions
+            if cw_sessions > 0:
+                user_cowork[email] += cw_sessions
 
         if not data.get("has_more"):
             break
@@ -290,6 +294,7 @@ result = {
     "chatsDailyData":       chats_daily_data,
     "coworkDailyData":      cowork_daily_data,
     "chatUsers":            dict(sorted(user_chats.items(), key=lambda x: -x[1])),
+    "coworkUsers":          dict(sorted(user_cowork.items(), key=lambda x: -x[1])),
     "members":              members_sorted,
 }
 
