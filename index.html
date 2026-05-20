@@ -719,7 +719,7 @@
     <div>
       <div class="card-full">
         <div class="section-title" style="margin-bottom:4px;color:var(--accent)">Claude.ai — Feature Gaps</div>
-        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:14px">Adoption % vs target</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:14px">Adoption % MTD</div>
         <div style="height:240px"><canvas id="gapChart"></canvas></div>
       </div>
       <div class="card-full">
@@ -727,7 +727,7 @@
         <div style="display:flex;flex-direction:column;gap:10px">
           <div style="background:var(--surface2);border-radius:8px;padding:14px;border-left:3px solid var(--accent2)">
             <div style="font-size:0.8rem;font-weight:700;color:var(--accent2);margin-bottom:4px">Host a Projects workshop</div>
-            <div style="font-size:0.78rem;color:var(--muted)">Show the team how to set up a Project for a real client workflow. Target: 10% → 40% in 30 days.</div>
+            <div style="font-size:0.78rem;color:var(--muted)">Show the team how to set up a Project for a real client workflow.</div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:14px;border-left:3px solid var(--accent4)">
             <div style="font-size:0.8rem;font-weight:700;color:var(--accent4);margin-bottom:4px">Run a Cowork demo session</div>
@@ -1593,6 +1593,7 @@ function filterCode(f, btn) {
 function filterCodeDept(val) { codeDept = val; renderCodeTable(); updateDistChart(); }
 
 let peopleTier = 'all', peopleQ = '', peopleDept = 'all';
+let peopleSortCol = 'ccLines', peopleSortDir = -1; // default: CC lines desc
 function renderPeopleTable() {
   // Base roster: all 209 employees from Employee Data.xlsx
   let rows = ALL_EMPLOYEES.filter(emp => emp.email.endsWith('@sarasanalytics.com')).map(emp => {
@@ -1607,7 +1608,9 @@ function renderPeopleTable() {
     const cuDone       = cuPerson ? (cuPerson.done || 0) : 0;
     const aiChats      = CLAUDE_AI_USERS[email] || 0;
     const toolCount    = (ccLines > 0 ? 1 : 0) + (cursorEvents > 0 ? 1 : 0) + (wsLast ? 1 : 0) + (hasCu ? 1 : 0) + (aiChats > 0 ? 1 : 0);
-    return { email, name: emp.name, dept: emp.dept, ccLines, cursorEvents, wsLast, hasCu, cuOpen, cuDone, aiChats, toolCount };
+    return { email, name: emp.name, dept: emp.dept,
+             org: emp.org || '—', deptManager: emp.deptManager || '—', reportingManager: emp.reportingManager || '—',
+             ccLines, cursorEvents, wsLast, hasCu, cuOpen, cuDone, aiChats, toolCount };
   });
 
   // Apply tool filter
@@ -1624,15 +1627,28 @@ function renderPeopleTable() {
   if (peopleQ) rows = rows.filter(r =>
     r.name.toLowerCase().includes(peopleQ) ||
     r.email.toLowerCase().includes(peopleQ) ||
-    (r.dept||'').toLowerCase().includes(peopleQ)
+    (r.dept||'').toLowerCase().includes(peopleQ) ||
+    (r.org||'').toLowerCase().includes(peopleQ) ||
+    (r.deptManager||'').toLowerCase().includes(peopleQ) ||
+    (r.reportingManager||'').toLowerCase().includes(peopleQ)
   );
 
-  // Sort: ClickUp filter → by open tasks desc; otherwise active first by tool count
+  // Sort by column
   rows.sort((a, b) => {
-    if (peopleTier === 'cu') return (b.cuOpen + b.cuDone) - (a.cuOpen + a.cuDone);
-    if (b.toolCount !== a.toolCount) return b.toolCount - a.toolCount;
-    if (b.ccLines !== a.ccLines)     return b.ccLines - a.ccLines;
-    return b.cursorEvents - a.cursorEvents;
+    const col = peopleSortCol;
+    const dir = peopleSortDir;
+    if (col === 'name')             return dir * a.name.localeCompare(b.name);
+    if (col === 'dept')             return dir * (a.dept||'').localeCompare(b.dept||'');
+    if (col === 'org')              return dir * (a.org||'').localeCompare(b.org||'');
+    if (col === 'deptManager')      return dir * (a.deptManager||'').localeCompare(b.deptManager||'');
+    if (col === 'reportingManager') return dir * (a.reportingManager||'').localeCompare(b.reportingManager||'');
+    if (col === 'wsLast')           return dir * ((a.wsLast||'0').localeCompare(b.wsLast||'0'));
+    if (col === 'toolCount')        return dir * (a.toolCount - b.toolCount);
+    if (col === 'cuOpen')           return dir * (a.cuOpen - b.cuOpen);
+    if (col === 'cuDone')           return dir * (a.cuDone - b.cuDone);
+    if (col === 'aiChats')          return dir * (a.aiChats - b.aiChats);
+    if (col === 'cursorEvents')     return dir * (a.cursorEvents - b.cursorEvents);
+    return dir * (a.ccLines - b.ccLines); // default: ccLines
   });
 
   set('people-subtitle', `${DATA.monthLabel} MTD · ${rows.length} people shown · 1 employee excluded (no @sarasanalytics.com address in HR system — fix in Keka)`);
@@ -1645,18 +1661,28 @@ function renderPeopleTable() {
   const showAI     = ['all','multi','cc','ai','none'].includes(peopleTier);
   const showCU     = ['all','multi','cu'].includes(peopleTier);
 
+  function sortTh(label, col, align) {
+    const active = peopleSortCol === col;
+    const arrow  = active ? (peopleSortDir === -1 ? ' ▼' : ' ▲') : ' ⇅';
+    const style  = align ? `style="text-align:${align};cursor:pointer;user-select:none${active?';color:var(--accent)':''}"` : `style="cursor:pointer;user-select:none${active?';color:var(--accent)':''}"`;
+    return `<th ${style} onclick="sortPeople('${col}')">${label}${arrow}</th>`;
+  }
+
   // Update header columns dynamically
   const headCells = [
     '<th>#</th>',
-    '<th>Member</th>',
-    '<th>Dept</th>',
-    showCC     ? '<th style="text-align:right">CC Lines MTD</th>' : '',
-    showCursor ? '<th style="text-align:right">Cursor Events</th>' : '',
-    showWS     ? '<th>Windsurf Last Active</th>' : '',
-    showAI     ? '<th style="text-align:right">Claude.ai Chats</th>' : '',
-    showCU     ? '<th style="text-align:right">Open Tasks</th>' : '',
-    showCU     ? '<th style="text-align:right">Done MTD</th>' : '',
-    '<th>Active Tools</th>',
+    sortTh('Member',           'name'),
+    sortTh('Dept',             'dept'),
+    sortTh('Org',              'org'),
+    sortTh('Dept Manager',     'deptManager'),
+    sortTh('Reporting Manager','reportingManager'),
+    showCC     ? sortTh('CC Lines MTD',      'ccLines',      'right') : '',
+    showCursor ? sortTh('Cursor Events',     'cursorEvents', 'right') : '',
+    showWS     ? sortTh('Windsurf Last Active','wsLast')              : '',
+    showAI     ? sortTh('Claude.ai Chats',   'aiChats',      'right') : '',
+    showCU     ? sortTh('Open Tasks',        'cuOpen',       'right') : '',
+    showCU     ? sortTh('Done MTD',          'cuDone',       'right') : '',
+    sortTh('Active Tools', 'toolCount'),
   ].join('');
   document.querySelector('#tab-people thead tr').innerHTML = headCells;
 
@@ -1682,6 +1708,9 @@ function renderPeopleTable() {
       <td class="rank">${i+1}</td>
       <td><div class="name-cell">${r.name}</div><div class="email-muted">${r.email}</div></td>
       <td>${deptBadge(r.dept)}</td>
+      <td style="font-size:0.75rem;color:var(--muted)">${r.org}</td>
+      <td style="font-size:0.75rem;color:var(--muted)">${r.deptManager}</td>
+      <td style="font-size:0.75rem;color:var(--muted)">${r.reportingManager}</td>
       ${showCC     ? `<td class="num-cell">${ccCell}</td>` : ''}
       ${showCursor ? `<td class="num-cell">${r.cursorEvents ? fmt(r.cursorEvents) : dash}</td>` : ''}
       ${showWS     ? `<td style="font-size:0.75rem;color:${r.wsLast ? 'var(--accent2)' : 'var(--muted)'}">${r.wsLast || dash}</td>` : ''}
@@ -1700,6 +1729,11 @@ function filterPeopleTier(f, btn) {
 }
 function filterPeopleDept(val) { peopleDept = val; renderPeopleTable(); }
 function filterPeopleSearch(v) { peopleQ = v.toLowerCase(); renderPeopleTable(); }
+function sortPeople(col) {
+  if (peopleSortCol === col) peopleSortDir *= -1;
+  else { peopleSortCol = col; peopleSortDir = -1; }
+  renderPeopleTable();
+}
 
 function _topTableHelper(data, keyField, color, tbodyId, asOfId) {
   const asOfEl = document.getElementById(asOfId);
@@ -1846,7 +1880,7 @@ function initFromData() {
   // Claude.ai tab
   set('kpi-ai-chats', d.chatsPerDay);
   set('kpi-ai-chats-sub', `MTD daily avg · ${d.monthLabel}`);
-  set('kpi-ai-chat-user-pct', `${d.chatUserPct}% · target 50%`);
+  set('kpi-ai-chat-user-pct', `${d.chatUserPct}% of seats engaged`);
   set('kpi-ai-chat-user-sub', `MTD ${d.monthLabel} · of ${d.licensedSeats} licensed seats`);
   // WAU / MAU KPIs
   set('kpi-ai-wau', d.wau || '—');
@@ -1855,12 +1889,12 @@ function initFromData() {
   set('kpi-ai-mau-sub', `of ${d.licensedSeats} seats · ${d.mau ? Math.round(d.mau/d.licensedSeats*100)+'% monthly reach' : ''}`);
   set('kpi-ai-projects', d.projectsCreated);
   set('kpi-ai-projects-month', `MTD ${d.monthLabel}`);
-  set('kpi-ai-project-user-pct', `${d.projectUserPct}% · target 40%`);
+  set('kpi-ai-project-user-pct', `${d.projectUserPct}% of seats used projects`);
   set('kpi-ai-project-user-sub', `MTD ${d.monthLabel} · of ${d.licensedSeats} licensed seats`);
   const projTotal = PROJECTS_DATA.topUsers.reduce((s,p) => s+p.projects, 0);
   set('kpi-ai-projects-total', `${projTotal} existing across top ${PROJECTS_DATA.topUsers.length} users (cumulative)`);
   set('kpi-ai-artifacts', d.artifactsCreated);
-  set('kpi-ai-artifact-sub', `MTD ${d.monthLabel} · ${d.artifactUserPct}% active · target 25%`);
+  set('kpi-ai-artifact-sub', `MTD ${d.monthLabel} · ${d.artifactUserPct}% created ≥1 artifact`);
   const artTotal = ARTIFACTS_DATA.topUsers.reduce((s,p) => s+p.artifacts, 0);
   set('kpi-ai-artifacts-total', `${artTotal} existing across top ${ARTIFACTS_DATA.topUsers.length} users (cumulative)`);
   set('insight-chat-pct', d.chatUserPct);
@@ -3411,10 +3445,10 @@ function renderToolStrips() {
   const wsTotal = typeof WINDSURF_SEATS!=='undefined' ? WINDSURF_SEATS : 6;
   const wsPct = wsTotal>0 ? Math.round(wsUsers.size/wsTotal*100) : 0;
 
-  function strip(icon, name, metric, sub, pct, target, color, meta, inScopeForDept) {
+  function strip(icon, name, metric, sub, pct, color, meta, inScopeForDept) {
     if(!inScopeForDept) return '';
     const barW = Math.min(100,pct);
-    const barColor = pct>=target?'var(--green)':pct>=target*0.6?'var(--yellow)':'var(--accent3)';
+    const barColor = pct>=70?'var(--green)':pct>=40?'var(--yellow)':'var(--accent3)';
     return `<div class="tool-strip">
       <div class="tool-strip-name">
         <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em">${icon} ${name}</div>
@@ -3424,7 +3458,6 @@ function renderToolStrips() {
       <div class="tool-strip-bar-wrap">
         <div class="tool-strip-bar-label">
           <span style="color:${barColor}">${pct}% adoption</span>
-          <span>Target: ${target}%</span>
         </div>
         <div class="tool-strip-bar-bg">
           <div class="tool-strip-bar-fill" style="width:${barW}%;background:${barColor}"></div>
@@ -3438,11 +3471,11 @@ function renderToolStrips() {
   const inScope = t => dept==='all' || expectedTools.includes(t);
 
   const html = [
-    strip('💻','Claude Code', fmt(ccLines)+' lines', ccActive+' of '+ccTotal+' licensed active', ccPct, 70, '#00d4aa', 'Claude Admin · MTD · ~2d lag', inScope('Claude Code')),
-    strip('💬','Claude.ai Chat', DATA.chatsPerDay+'/day', DATA.chatUserPct+'% users with 1+ chat', DATA.chatUserPct, 50, '#6c63ff', 'Claude Admin · MTD daily avg · ~2d lag · Org-wide only', inScope('Claude.ai')),
-    strip('🤝','Cowork', DATA.coworkDailyUsers+' users/day', DATA.coworkUserPct+'% users with 1+ session', DATA.coworkUserPct, 50, '#ffa726', 'Claude Admin · Daily graph · Weekday avg · Org-wide only', inScope('Cowork')),
-    strip('⚡','Cursor', fmt(cursorEvents)+' events', cursorUsers.size+' of '+CURSOR_SEATS+' licensed active', cursorPct, 70, '#00d4aa', 'Cursor Admin API · MTD · Real-time', inScope('Cursor')),
-    strip('🌊','Windsurf', wsUsers.size+' active users', 'of '+wsTotal+' licensed seats', wsPct, 70, '#26c6da', 'Windsurf API · MTD · Per-feature lag', inScope('Windsurf')),
+    strip('💻','Claude Code', fmt(ccLines)+' lines', ccActive+' of '+ccTotal+' licensed active', ccPct, '#00d4aa', 'Claude Admin · MTD · ~2d lag', inScope('Claude Code')),
+    strip('💬','Claude.ai Chat', DATA.chatsPerDay+'/day', DATA.chatUserPct+'% users with 1+ chat', DATA.chatUserPct, '#6c63ff', 'Claude Admin · MTD daily avg · ~2d lag · Org-wide only', inScope('Claude.ai')),
+    strip('🤝','Cowork', DATA.coworkDailyUsers+' users/day', DATA.coworkUserPct+'% users with 1+ session', DATA.coworkUserPct, '#ffa726', 'Claude Admin · Daily graph · Weekday avg · Org-wide only', inScope('Cowork')),
+    strip('⚡','Cursor', fmt(cursorEvents)+' events', cursorUsers.size+' of '+CURSOR_SEATS+' licensed active', cursorPct, '#00d4aa', 'Cursor Admin API · MTD · Real-time', inScope('Cursor')),
+    strip('🌊','Windsurf', wsUsers.size+' active users', 'of '+wsTotal+' licensed seats', wsPct, '#26c6da', 'Windsurf API · MTD · Per-feature lag', inScope('Windsurf')),
   ].join('');
 
   document.getElementById('tool-strips-container').innerHTML = html || '<div style="color:var(--muted);font-size:0.85rem;padding:12px">No tools expected for this department filter.</div>';
