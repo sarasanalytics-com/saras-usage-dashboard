@@ -91,6 +91,7 @@ user_tool_lines    = defaultdict(int)   # email → lines from tool_actions.*.ac
 user_loc_added     = defaultdict(int)   # email → lines from core_metrics.lines_of_code.added_count
 user_rejected      = defaultdict(int)   # email → total tool rejects
 user_cc_active     = set()              # emails with any CC session MTD
+user_chats         = defaultdict(int)   # email → total chat conversations MTD
 
 daily_chat_convos   = []             # total conversations per day
 daily_cowork_sess   = []             # total cowork sessions per day
@@ -170,6 +171,7 @@ for date_str in all_dates:
             day_convos += convos
             if convos > 0:
                 chat_users_mtd.add(email)
+                user_chats[email] += convos
 
             proj_created = cm.get("distinct_projects_created_count", 0)
             if proj_created > 0:
@@ -287,6 +289,7 @@ result = {
     "artifactUserPct":      artifact_user_pct,
     "chatsDailyData":       chats_daily_data,
     "coworkDailyData":      cowork_daily_data,
+    "chatUsers":            dict(sorted(user_chats.items(), key=lambda x: -x[1])),
     "members":              members_sorted,
 }
 

@@ -282,6 +282,14 @@ html = re.sub(r"const members = \[.*?\];", new_members_block, html, count=1, fla
 log(f"  members[]: {len(member_lines)} entries")
 
 
+# ── Update CLAUDE_AI_USERS ────────────────────────────────────────────────────
+chat_users = cc.get("chatUsers", {})
+new_cau_obj  = json.dumps(chat_users, separators=(",", ":"))
+new_cau_line = f"const CLAUDE_AI_USERS={new_cau_obj};"
+html = re.sub(r"const CLAUDE_AI_USERS=\{[^}]*\};", new_cau_line, html, count=1)
+log(f"  CLAUDE_AI_USERS: {len(chat_users)} entries")
+
+
 # ── Update WINDSURF_USERS ─────────────────────────────────────────────────────
 ws_match = re.search(r"const WINDSURF_USERS=\{[^}]*\};", html)
 if ws_match:
