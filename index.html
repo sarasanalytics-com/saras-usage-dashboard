@@ -3328,8 +3328,9 @@ function renderDeptScorecardTable() {
     const anyCt = anySet.size;
     let html = `<tr><td>${deptBadge(dept)}</td><td class="num-cell">${hc}</td>`;
     activeCols.forEach(tool => {
-      const inScope = expected.includes(tool) || tool==='ClickUp';
-      if(tool==='Claude Code') { html+=cell(ccActive,hc,inScope); }
+      // Claude Code is available to all seats; show real count for every dept
+      const inScope = expected.includes(tool) || tool==='ClickUp' || tool==='Claude Code';
+      if(tool==='Claude Code') { html+=cell(ccActive,hc,true); }
       else if(tool==='Cursor')  { html+=cell(cursorCt,hc,inScope); }
       else if(tool==='Windsurf'){ html+=cell(wsCt,hc,inScope); }
       else if(tool==='Cowork')  { html+=cell(coworkCt,hc,inScope); }
