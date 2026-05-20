@@ -259,7 +259,7 @@
     <!-- populated by renderToolStrips() -->
   </div>
 
-  <div class="section-divider"><span>Daily Usage Trend <span class="timeframe-badge tbadge-daily">May 2026 Weekdays</span></span></div>
+  <div class="section-divider"><span>Daily Usage Trend <span class="timeframe-badge tbadge-daily"><span id="month-lbl-overview">May 2026</span> Weekdays</span></span></div>
   <div class="two-col" style="margin-bottom:4px">
     <div class="card">
       <div class="section-header">
@@ -632,7 +632,7 @@
     </div>
   </div>
   <div class="card-full" style="background:rgba(255,193,7,0.04);border-color:rgba(255,193,7,0.2)">
-    <div class="section-title" style="margin-bottom:12px;color:var(--accent4)">Daily Active Users — May 2026 <span style="font-size:0.72rem;color:var(--muted);font-weight:400;margin-left:8px">Source: Claude Admin daily graph · Weekdays only · ~2 day lag</span></div>
+    <div class="section-title" style="margin-bottom:12px;color:var(--accent4)">Daily Active Users — <span id="month-lbl-cowork">May 2026</span> <span style="font-size:0.72rem;color:var(--muted);font-weight:400;margin-left:8px">Source: Claude Admin daily graph · Weekdays only · ~2 day lag</span></div>
     <div id="cowork-daily-table"></div>
   </div>
   <div class="insight-box yellow">
@@ -813,7 +813,7 @@
       <thead><tr>
         <th>#</th><th>Member</th><th>Team</th>
         <th style="text-align:right">Open</th>
-        <th style="text-align:right">Closed (May)</th>
+        <th style="text-align:right">Closed (<span id="month-lbl-cu-short">May</span>)</th>
         <th>Open Priority Breakdown</th>
         <th>Nearest Due</th>
       </tr></thead>
@@ -822,7 +822,7 @@
   </div>
   <div class="insight-box" style="background:rgba(0,212,170,0.06);border-color:rgba(0,212,170,0.2);margin-top:0">
     <div class="insight-title" style="color:var(--accent2)">📌 ClickUp snapshot · as of <span id="cu-as-of"></span></div>
-    <div style="color:var(--muted)">Open = not yet closed. Closed = completed in May 2026 MTD. Priority shown for open tickets only. Data sourced live from ClickUp workspace.</div>
+    <div style="color:var(--muted)">Open = not yet closed. Closed = completed in <span id="month-lbl-cu-note">May 2026</span> MTD. Priority shown for open tickets only. Data sourced live from ClickUp workspace.</div>
   </div>
 </div>
 
@@ -848,7 +848,7 @@
       <div class="kpi-meta" style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(46,50,80,0.3)"><strong>Source:</strong> cursor.com/cn/teams · Scraped by scheduled task</div>
     </div>
   </div>
-  <div class="section-divider"><span>Usage Overview <span class="timeframe-badge tbadge-mtd">MTD May 2026</span></span></div>
+  <div class="section-divider"><span>Usage Overview <span class="timeframe-badge tbadge-mtd">MTD <span id="month-lbl-adopt">May 2026</span></span></span></div>
   <div class="kpi-grid">
     <div class="kpi c1"><div class="kpi-label">Cursor Active / Licensed</div><div class="kpi-value" id="adopt-cursor-latest" style="font-size:1.5rem">–</div><div class="kpi-sub" id="adopt-cursor-latest-sub">most recent day with data</div><div class="kpi-meta"><strong>Source:</strong> Cursor Admin API &nbsp;·&nbsp; <strong>Period:</strong> Most recent day &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div></div>
     <div class="kpi c2"><div class="kpi-label">Windsurf Active Today</div><div class="kpi-value" id="adopt-ws-today">–</div><div class="kpi-sub">from last-active timestamp</div><div class="kpi-meta"><strong>Source:</strong> Windsurf API &nbsp;·&nbsp; <strong>Period:</strong> Last-active timestamp &nbsp;·&nbsp; <strong>Lag:</strong> Per-feature</div></div>
@@ -877,7 +877,7 @@
 
   <div class="card-full">
     <div class="section-header">
-      <div><div class="section-title">Daily Usage Heatmap — May 2026</div><div class="section-sub">Per user per day · hover cells for details</div></div>
+      <div><div class="section-title">Daily Usage Heatmap — <span id="month-lbl-heatmap">May 2026</span></div><div class="section-sub">Per user per day · hover cells for details</div></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div class="filter-bar">
           <button class="filter-btn active" onclick="setAdoptView('overall',this)">Overall</button>
@@ -893,7 +893,7 @@
   </div>
   <div class="card-full">
     <div class="section-header">
-      <div class="section-title">User Summary — May 2026</div>
+      <div class="section-title">User Summary — <span id="month-lbl-user-summary">May 2026</span></div>
       <div class="section-sub">Cursor requests · active days · Windsurf last active</div>
     </div>
     <table class="data-table">
@@ -966,12 +966,12 @@ const DATA = {
   monthLabel: 'May 2026',
   utilization: 94,
   licensedSeats: 150,
-  totalLines: 437869,
+  totalLines: 375065,
   acceptRate: 99.9,
   activeMembers: 75,
-  totalMembers: 146,
+  totalMembers: 144,
   orgSize: 209,
-  avgLinesActive: 5838,
+  avgLinesActive: 5001,
   coworkDailyUsers: 20,
   coworkSessionsPerDay: 29,
   coworkUserPct: 40,
@@ -1690,6 +1690,10 @@ function filterPeopleSearch(v) { peopleQ = v.toLowerCase(); renderPeopleTable();
 function _topTableHelper(data, keyField, color, tbodyId, asOfId) {
   const asOfEl = document.getElementById(asOfId);
   if (asOfEl) asOfEl.textContent = data.asOf;
+  if (!data.topUsers || !data.topUsers.length) {
+    document.getElementById(tbodyId).innerHTML = '<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:20px">No data</td></tr>';
+    return;
+  }
   const maxVal = data.topUsers[0][keyField];
   document.getElementById(tbodyId).innerHTML = data.topUsers.map((p, i) => {
     const emp  = ALL_EMPLOYEES.find(e => e.email === p.email);
@@ -1720,6 +1724,11 @@ function initFromData() {
   set('header-date', d.asOf);
   set('header-month', `Claude Code · Claude.ai · Cowork · ${d.monthLabel}`);
   set('overview-month-label', d.monthLabel);
+  // Sync all month labels throughout the dashboard
+  const _ml = d.monthLabel, _ms = _ml.split(' ')[0]; // e.g. "May 2026", "May"
+  ['month-lbl-overview','month-lbl-cowork','month-lbl-cu-note',
+   'month-lbl-adopt','month-lbl-heatmap','month-lbl-user-summary'].forEach(id => set(id, _ml));
+  set('month-lbl-cu-short', _ms);
 
   // Key Takeaways box
   const ccActive = members.filter(m => m.lines > 0).length;
@@ -2686,10 +2695,10 @@ function renderAdoptHeatmap(){
     Object.keys(WINDSURF_USERS).forEach(e=>usersSet.add(e));
   } else if(adoptView==='overall'){
     // Cursor + Windsurf sources
-    days.forEach(day=>Object.keys(day.c).forEach(e=>usersSet.add(e)));
+    days.forEach(day=>Object.keys(day.c).forEach(e=>{ if(e.endsWith('@sarasanalytics.com')) usersSet.add(e); }));
     Object.keys(WINDSURF_USERS).forEach(e=>usersSet.add(e));
   } else {
-    days.forEach(day=>Object.keys(day.c).forEach(e=>usersSet.add(e)));
+    days.forEach(day=>Object.keys(day.c).forEach(e=>{ if(e.endsWith('@sarasanalytics.com')) usersSet.add(e); }));
   }
   const _adoptActiveDept = GF.dept !== 'all' ? GF.dept : adoptDept;
   const users=[...usersSet].filter(e=>_adoptActiveDept==='all'||getDept(e)===_adoptActiveDept).filter(e=>!adoptSearch||(nameFromEmail(e)+' '+e).toLowerCase().includes(adoptSearch)).sort((a,b)=>{
@@ -2820,11 +2829,12 @@ function renderWeeklyTab() {
 
   // Collect all users active in this window (Cursor + Windsurf + Claude Code MTD)
   const usersSet = new Set();
-  days7.forEach(day => Object.keys(day.c).forEach(e => usersSet.add(e)));
+  const _isReal = e => e.endsWith('@sarasanalytics.com') && !BOT_ACCOUNTS.has(e);
+  days7.forEach(day => Object.keys(day.c).forEach(e => { if (_isReal(e)) usersSet.add(e); }));
   Object.entries(WINDSURF_USERS).forEach(([email, lastDate]) => {
-    if (lastDate && lastDate >= d7[0] && lastDate <= d7[6]) usersSet.add(email);
+    if (lastDate && lastDate >= d7[0] && lastDate <= d7[6] && _isReal(email)) usersSet.add(email);
   });
-  Object.entries(ADOPTION_CC_MTD).forEach(([email, lines]) => { if (lines > 0) usersSet.add(email); });
+  Object.entries(ADOPTION_CC_MTD).forEach(([email, lines]) => { if (lines > 0 && _isReal(email)) usersSet.add(email); });
 
   // Per-user stats
   const userStats = [...usersSet].map(email => {
@@ -2875,11 +2885,11 @@ function renderWeeklyTab() {
 
   // ── Last-week aggregates for WoW comparison ──
   const prevUsersSet = new Set();
-  daysPrev.forEach(day => Object.keys(day.c).forEach(e => prevUsersSet.add(e)));
+  daysPrev.forEach(day => Object.keys(day.c).forEach(e => { if (_isReal(e)) prevUsersSet.add(e); }));
   Object.entries(WINDSURF_USERS).forEach(([email, lastDate]) => {
-    if (lastDate && lastDate >= d7prev[0] && lastDate <= d7prev[6]) prevUsersSet.add(email);
+    if (lastDate && lastDate >= d7prev[0] && lastDate <= d7prev[6] && _isReal(email)) prevUsersSet.add(email);
   });
-  Object.entries(ADOPTION_CC_MTD).forEach(([email, lines]) => { if (lines > 0) prevUsersSet.add(email); });
+  Object.entries(ADOPTION_CC_MTD).forEach(([email, lines]) => { if (lines > 0 && _isReal(email)) prevUsersSet.add(email); });
   const totalEvPrev = daysPrev.reduce((s, d) => s + Object.values(d.c).reduce((a, v) => a + v, 0), 0);
   const powerPrev   = [...prevUsersSet].filter(email => {
     const ev   = daysPrev.reduce((s, d) => s + (d.c[email] || 0), 0);
@@ -3098,7 +3108,7 @@ function openPersonPanel(email) {
   let cursorSec = '';
   if (hasCursor) {
     cursorSec = `<div class="panel-section">
-      <div class="panel-section-title">Cursor Activity · May 2026</div>
+      <div class="panel-section-title">Cursor Activity · ${DATA.monthLabel}</div>
       <div style="font-size:0.78rem;color:var(--muted);margin-bottom:4px">${totalCursor.toLocaleString()} events this month</div>
       <div class="panel-chart-wrap" style="height:130px"><canvas id="panelCursorChart"></canvas></div>
     </div>`;
@@ -3274,9 +3284,10 @@ function renderDeptScorecardTable() {
     wsByDept[d].add(email);
   });
 
-  // Claude.ai per-dept (from CLAUDE_AI_USERS)
+  // Claude.ai per-dept (from CLAUDE_AI_USERS, bots excluded)
   const aiByDept = {};
   Object.keys(CLAUDE_AI_USERS||{}).forEach(email => {
+    if (BOT_ACCOUNTS.has(email)) return;
     const d = getDept(email);
     if(!aiByDept[d]) aiByDept[d] = new Set();
     aiByDept[d].add(email);
@@ -3333,7 +3344,12 @@ function renderDeptScorecardTable() {
       if(tool==='Claude Code') { html+=cell(ccActive,hc,true); }
       else if(tool==='Cursor')  { html+=cell(cursorCt,hc,inScope); }
       else if(tool==='Windsurf'){ html+=cell(wsCt,hc,inScope); }
-      else if(tool==='Cowork')  { html+=cell(coworkCt,hc,inScope); }
+      else if(tool==='Cowork')  {
+        // When COWORK_USERS is empty, show N/A — avoid contradicting the org-wide 40% KPI with 0%
+        if (Object.keys(COWORK_USERS||{}).length === 0) {
+          html += '<td class="num-cell"><span style="color:var(--muted);font-size:0.72rem" title="Per-dept breakdown not yet available — see org-wide KPI">N/A</span></td>';
+        } else { html += cell(coworkCt,hc,inScope); }
+      }
       else if(tool==='Claude.ai'){ html+=cell(aiCt,hc,inScope); }
       else if(tool==='ClickUp') { html+=cell(cuActive,hc,true); }
     });

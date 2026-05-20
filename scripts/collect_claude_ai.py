@@ -233,6 +233,11 @@ log(f"  → Using [{lines_source}] = {total_lines_out:,}")
 # Exclude service/shared accounts — not real individual contributors
 BOT_EMAILS = {'consulting@sarasanalytics.com', 'consulting.claude@sarasanalytics.com'}
 
+# Subtract bot lines from total so KPI shows real human-only lines
+bot_lines      = sum(user_lines_final.get(e, 0) for e in BOT_EMAILS)
+total_lines_out -= bot_lines
+log(f"  Bot lines excluded: {bot_lines:,}  → Human total: {total_lines_out:,}")
+
 # Active members = users with accepted lines > 0 OR CC sessions > 0 (bots excluded)
 active_emails      = ({e for e, v in user_lines_final.items() if v > 0} | user_cc_active) - BOT_EMAILS
 active_members     = len(active_emails)
