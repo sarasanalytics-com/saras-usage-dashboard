@@ -197,6 +197,7 @@
   <span class="tab-sep">Work</span>
   <div class="tab" onclick="switchTab('clickup',this)">✅ ClickUp</div>
   <div class="tab" onclick="switchTab('attention',this)">🎯 Action Items</div>
+  <div class="tab" onclick="switchTab('trends',this)">📈 Trends</div>
 </div>
 
 <!-- OVERVIEW / EXECUTIVE SUMMARY -->
@@ -3570,7 +3571,247 @@ initClickUp();
 renderOverviewKPIs();
 renderDeptScorecardTable();
 renderToolStrips();
+initTrendsTab();
+
+// ==================== TRENDS TAB ====================
+function initTrendsTab() {
+  const TMONTHS = ['Feb 2026','Mar 2026','Apr 2026','May 2026'];
+  // Historical monthly snapshots — add a new row each month
+  const TM = [
+    {lines:0,      activeMembers:0,  chatsPerDay:0,   chatUserPct:0,  coworkDAU:0,  cursorDAU:0,  cursorEvents:0,     projectsCreated:0,  artifactUserPct:0},
+    {lines:85000,  activeMembers:28, chatsPerDay:72,  chatUserPct:55, coworkDAU:8,  cursorDAU:18, cursorEvents:4200,  projectsCreated:12, artifactUserPct:4},
+    {lines:310000, activeMembers:62, chatsPerDay:118, chatUserPct:80, coworkDAU:15, cursorDAU:28, cursorEvents:9800,  projectsCreated:38, artifactUserPct:7},
+    {lines:DATA.totalLines, activeMembers:DATA.activeMembers, chatsPerDay:DATA.chatsPerDay, chatUserPct:DATA.chatUserPct, coworkDAU:DATA.coworkDailyUsers, cursorDAU:35, cursorEvents:14200, projectsCreated:DATA.projectsCreated, artifactUserPct:DATA.artifactUserPct},
+  ];
+
+  // Dept breakdown (May MTD) — update monthly
+  const TR_DEPTS = [
+    {dept:'Engineering',      lines:142000, ccActive:12, cursorEvents:0,     cursorUsers:0,  chatPct:90,  mom:'up'},
+    {dept:'Data Engineering', lines:238000, ccActive:48, cursorEvents:14200, cursorUsers:41, chatPct:85,  mom:'up'},
+    {dept:'Consulting',       lines:38000,  ccActive:9,  cursorEvents:0,     cursorUsers:0,  chatPct:95,  mom:'up'},
+    {dept:'Marketing',        lines:0,      ccActive:0,  cursorEvents:0,     cursorUsers:0,  chatPct:80,  mom:'flat'},
+    {dept:'Growth',           lines:0,      ccActive:0,  cursorEvents:0,     cursorUsers:0,  chatPct:75,  mom:'up'},
+    {dept:'Customer Success', lines:0,      ccActive:0,  cursorEvents:0,     cursorUsers:0,  chatPct:70,  mom:'flat'},
+    {dept:'Finance',          lines:0,      ccActive:0,  cursorEvents:0,     cursorUsers:0,  chatPct:60,  mom:'up'},
+    {dept:'HR',               lines:0,      ccActive:0,  cursorEvents:0,     cursorUsers:0,  chatPct:50,  mom:'down'},
+    {dept:'IT',               lines:0,      ccActive:0,  cursorEvents:0,     cursorUsers:0,  chatPct:40,  mom:'flat'},
+    {dept:'Product',          lines:0,      ccActive:0,  cursorEvents:0,     cursorUsers:0,  chatPct:65,  mom:'up'},
+    {dept:'CEO Office',       lines:19869,  ccActive:2,  cursorEvents:0,     cursorUsers:0,  chatPct:100, mom:'up'},
+  ];
+
+  const curr = TM[3], prev = TM[2], first = TM[1];
+
+  function trPct(a,b){ return b ? Math.round((a-b)/b*100) : 0; }
+  function trDeltaStr(v){ return v>0?'↑ +'+v+'%':v<0?'↓ '+v+'%':'→ flat'; }
+  function trDeltaClr(v){ return v>0?'#00d4aa':v<0?'#ff6b6b':'#8b92b8'; }
+  function trHeat(v,hi,mid){
+    if(!v)return'background:rgba(46,50,80,0.5);color:#8b92b8';
+    if(v>=hi)return'background:rgba(0,212,170,0.2);color:#00d4aa';
+    if(v>=mid)return'background:rgba(108,99,255,0.18);color:#a89cff';
+    return'background:rgba(255,167,38,0.18);color:#ffa726';
+  }
+  function trTrend(t){
+    if(t==='up')   return '<span style="color:#00d4aa;font-weight:700">↑ Growing</span>';
+    if(t==='down') return '<span style="color:#ff6b6b;font-weight:700">↓ Declining</span>';
+    return '<span style="color:#8b92b8">→ Stable</span>';
+  }
+
+  // KPI Row
+  const kpis = [
+    {label:'CC Lines (May MTD)', val:fmt(curr.lines),        delta:trPct(curr.lines,prev.lines),                cls:'c1'},
+    {label:'CC Active Members',  val:curr.activeMembers,     delta:trPct(curr.activeMembers,prev.activeMembers), cls:'c2'},
+    {label:'Chats / Day (avg)',  val:curr.chatsPerDay,       delta:trPct(curr.chatsPerDay,prev.chatsPerDay),     cls:'c3'},
+    {label:'Cowork DAU',         val:curr.coworkDAU,         delta:trPct(curr.coworkDAU,prev.coworkDAU),         cls:'c4'},
+    {label:'Claude.ai Users %',  val:curr.chatUserPct+'%',  delta:curr.chatUserPct-prev.chatUserPct,            cls:'c5'},
+  ];
+  document.getElementById('trends-mom-kpis').innerHTML = kpis.map(k=>`
+    <div class="kpi ${k.cls}">
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.val}</div>
+      <div class="kpi-sub" style="color:${trDeltaClr(k.delta)};font-weight:600;margin-top:5px">${trDeltaStr(k.delta)} <span style="color:var(--muted);font-weight:400">vs Apr</span></div>
+    </div>`).join('');
+
+  // MoM Strip
+  const cards = [
+    {title:'Claude Code Lines',  apr:fmt(prev.lines),        may:fmt(curr.lines),        delta:trPct(curr.lines,prev.lines),        color:'#6c63ff'},
+    {title:'Claude.ai Chats/Day',apr:prev.chatsPerDay,       may:curr.chatsPerDay,        delta:trPct(curr.chatsPerDay,prev.chatsPerDay),color:'#00d4aa'},
+    {title:'Cowork Daily Users', apr:prev.coworkDAU,         may:curr.coworkDAU,          delta:trPct(curr.coworkDAU,prev.coworkDAU), color:'#ffa726'},
+    {title:'Cursor Events',      apr:fmt(prev.cursorEvents), may:fmt(curr.cursorEvents), delta:trPct(curr.cursorEvents,prev.cursorEvents),color:'#26c6da'},
+    {title:'Projects Created',   apr:prev.projectsCreated,   may:curr.projectsCreated,   delta:trPct(curr.projectsCreated,prev.projectsCreated),color:'#ab47bc'},
+  ];
+  document.getElementById('trends-mom-strip').innerHTML = cards.map(c=>{
+    const dc=trDeltaClr(c.delta), ds=trDeltaStr(c.delta);
+    return `<div class="card" style="display:flex;flex-direction:column;gap:8px">
+      <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600">${c.title}</div>
+      <div style="display:flex;justify-content:space-between"><span style="font-size:0.78rem;color:var(--muted)">Apr 2026</span><span style="font-weight:700;color:var(--muted)">${c.apr}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="font-size:0.78rem;color:var(--muted)">May 2026</span><span style="font-weight:700;color:${c.color}">${c.may}</span></div>
+      <div style="text-align:center;font-size:1.3rem;color:${dc};border-top:1px solid var(--border);padding-top:6px">${c.delta>0?'↑':c.delta<0?'↓':'→'}</div>
+      <div style="text-align:center;font-size:0.82rem;font-weight:700;color:${dc}">${ds} MoM</div>
+    </div>`;
+  }).join('');
+
+  // Insight box
+  const lineGrowth = trPct(curr.lines, first.lines);
+  const chatGrowth = trPct(curr.chatsPerDay, first.chatsPerDay);
+  document.getElementById('trends-insight-body').innerHTML =
+    `Claude Code lines grew <strong style="color:#fff">${lineGrowth}%</strong> from Mar → May `
+    +`(${fmt(first.lines)} → ${fmt(curr.lines)}). `
+    +`Claude.ai daily chats grew <strong style="color:#fff">${chatGrowth}%</strong> in the same period. `
+    +`Active members on Claude Code: <strong style="color:#fff">${first.activeMembers}</strong> → <strong style="color:#fff">${curr.activeMembers}</strong> `
+    +`(+${curr.activeMembers - first.activeMembers} people onboarded). `
+    +`Cowork: <strong style="color:#fff">${curr.coworkDAU} users/day</strong> avg in May (was ${first.coworkDAU} in Mar).<br><br>`
+    +`<strong style="color:#fff">Biggest gaps remaining:</strong> `
+    +`Projects (${curr.chatUserPct - DATA.projectUserPct}pp below chat adoption) · `
+    +`Artifacts (${25 - curr.artifactUserPct}% below 25% target).`;
+
+  // Chart helper
+  function trLine(id,labels,data,color,yFmt){
+    new Chart(document.getElementById(id),{type:'line',data:{labels,datasets:[{
+      data,borderColor:color,backgroundColor:color+'22',fill:true,tension:0.4,
+      pointBackgroundColor:color,pointRadius:5,pointHoverRadius:7,borderWidth:2.5
+    }]},options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{ticks:{color:'#8b92b8',font:{size:10}},grid:{display:false}},
+              y:{ticks:{color:'#8b92b8',callback:yFmt||undefined},grid:{color:'rgba(46,50,80,0.5)'},beginAtZero:true}}}});
+  }
+
+  // Individual trend charts
+  trLine('tr-chartLines',         TMONTHS, TM.map(m=>m.lines),          '#6c63ff', v=>v>=1000?(v/1000).toFixed(0)+'k':v);
+  trLine('tr-chartActiveMembers',  TMONTHS, TM.map(m=>m.activeMembers),  '#00d4aa');
+  trLine('tr-chartChats',          TMONTHS, TM.map(m=>m.chatsPerDay),    '#ffa726');
+  trLine('tr-chartCowork',         TMONTHS, TM.map(m=>m.coworkDAU),      '#ff6b6b');
+  trLine('tr-chartChatPct',        TMONTHS, TM.map(m=>m.chatUserPct),    '#26c6da', v=>v+'%');
+  trLine('tr-chartCursor',         TMONTHS, TM.map(m=>m.cursorDAU),      '#ab47bc');
+
+  // All tools combined grouped bar
+  new Chart(document.getElementById('tr-chartAllTools'),{type:'bar',data:{labels:TMONTHS,datasets:[
+    {label:'CC Lines (÷100)', data:TM.map(m=>Math.round(m.lines/100)), backgroundColor:'rgba(108,99,255,0.75)',borderRadius:5},
+    {label:'Chats/Day',       data:TM.map(m=>m.chatsPerDay),           backgroundColor:'rgba(0,212,170,0.75)', borderRadius:5},
+    {label:'Cowork DAU',      data:TM.map(m=>m.coworkDAU),             backgroundColor:'rgba(255,167,38,0.75)',borderRadius:5},
+    {label:'Cursor DAU',      data:TM.map(m=>m.cursorDAU),             backgroundColor:'rgba(38,198,218,0.75)',borderRadius:5},
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:true,labels:{color:'#8b92b8',font:{size:11}}},tooltip:{mode:'index',intersect:false}},
+    scales:{x:{ticks:{color:'#8b92b8'},grid:{display:false}},y:{ticks:{color:'#8b92b8'},grid:{color:'rgba(46,50,80,0.5)'},beginAtZero:true}}}});
+
+  // Daily May chart (uses live DATA arrays)
+  const chatsDaily  = DATA.chatsDailyData  || [];
+  const coworkDaily = DATA.coworkDailyData || [];
+  const dayLabels   = chatsDaily.map(x=>x.date.slice(5).replace('-','/'));
+  new Chart(document.getElementById('tr-chartDailyMay'),{type:'line',data:{labels:dayLabels,datasets:[
+    {label:'Chats/Day',    data:chatsDaily.map(x=>x.chats),  borderColor:'#6c63ff',backgroundColor:'rgba(108,99,255,0.1)',fill:true,tension:0.4,pointBackgroundColor:'#6c63ff',pointRadius:4,borderWidth:2},
+    {label:'Cowork Users', data:coworkDaily.map(x=>x.users), borderColor:'#ffa726',backgroundColor:'rgba(255,167,38,0.07)',fill:true,tension:0.4,pointBackgroundColor:'#ffa726',pointRadius:4,borderWidth:2},
+  ]},options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:true,labels:{color:'#8b92b8',font:{size:11}}},tooltip:{mode:'index',intersect:false}},
+    scales:{x:{ticks:{color:'#8b92b8'},grid:{display:false}},y:{ticks:{color:'#8b92b8'},grid:{color:'rgba(46,50,80,0.5)'},beginAtZero:true}}}});
+
+  // Dept table
+  document.getElementById('tr-deptTableBody').innerHTML = TR_DEPTS.map(d=>`
+    <tr>
+      <td><strong style="color:#fff">${d.dept}</strong></td>
+      <td style="text-align:right"><span style="display:inline-block;padding:3px 10px;border-radius:5px;font-weight:700;font-size:0.78rem;${trHeat(d.lines,50000,10000)}">${d.lines>0?fmt(d.lines):'—'}</span></td>
+      <td style="text-align:right"><span style="display:inline-block;padding:3px 10px;border-radius:5px;font-weight:700;font-size:0.78rem;${trHeat(d.ccActive,10,3)}">${d.ccActive>0?d.ccActive:'—'}</span></td>
+      <td style="text-align:right"><span style="display:inline-block;padding:3px 10px;border-radius:5px;font-weight:700;font-size:0.78rem;${trHeat(d.cursorEvents,5000,1000)}">${d.cursorEvents>0?fmt(d.cursorEvents):'—'}</span></td>
+      <td style="text-align:right"><span style="display:inline-block;padding:3px 10px;border-radius:5px;font-weight:700;font-size:0.78rem;${trHeat(d.cursorUsers,10,3)}">${d.cursorUsers>0?d.cursorUsers:'—'}</span></td>
+      <td style="text-align:right"><span style="display:inline-block;padding:3px 10px;border-radius:5px;font-weight:700;font-size:0.78rem;${trHeat(d.chatPct,80,50)}">${d.chatPct}%</span></td>
+      <td>${trTrend(d.mom)}</td>
+    </tr>`).join('');
+}
+// ==================== END TRENDS TAB ====================
 </script>
+
+<!-- TRENDS TAB -->
+<div class="page" id="tab-trends">
+
+  <div class="section-divider"><span>Month-over-Month Snapshot <span class="timeframe-badge tbadge-mtd">MoM</span></span></div>
+  <div class="kpi-grid" id="trends-mom-kpis"></div>
+
+  <div class="section-divider"><span>Apr → May Comparison <span class="timeframe-badge tbadge-mtd">MoM</span></span></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:24px" id="trends-mom-strip"></div>
+
+  <div id="trends-insight" style="background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.22);border-radius:10px;padding:14px 18px;margin-bottom:24px;font-size:0.82rem;">
+    <div style="font-weight:700;font-size:0.85rem;color:#00d4aa;margin-bottom:6px">📈 Key Trend for Leadership</div>
+    <div id="trends-insight-body" style="color:var(--muted)">Loading…</div>
+  </div>
+
+  <div class="section-divider"><span>Monthly Trend Lines <span class="timeframe-badge tbadge-mtd">Feb → May 2026</span></span></div>
+  <div class="two-col">
+    <div class="card">
+      <div class="section-title">Claude Code — Lines Accepted</div>
+      <div class="section-sub">MTD total per month · Source: Claude Admin</div>
+      <div style="height:210px;margin-top:14px"><canvas id="tr-chartLines"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Claude Code — Active Members</div>
+      <div class="section-sub">Members with any lines · of 146 licensed seats</div>
+      <div style="height:210px;margin-top:14px"><canvas id="tr-chartActiveMembers"></canvas></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="section-title">Claude.ai — Chats per Day</div>
+      <div class="section-sub">MTD daily average · Source: Claude Admin</div>
+      <div style="height:210px;margin-top:14px"><canvas id="tr-chartChats"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Cowork — Daily Active Users</div>
+      <div class="section-sub">MTD weekday average · Source: Claude Admin</div>
+      <div style="height:210px;margin-top:14px"><canvas id="tr-chartCowork"></canvas></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="card">
+      <div class="section-title">Claude.ai — User Adoption %</div>
+      <div class="section-sub">% of org with 1+ chat per month</div>
+      <div style="height:210px;margin-top:14px"><canvas id="tr-chartChatPct"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="section-title">Cursor — Daily Active Users</div>
+      <div class="section-sub">Avg daily active users per month · Source: Cursor Admin</div>
+      <div style="height:210px;margin-top:14px"><canvas id="tr-chartCursor"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-divider"><span>All Tools Combined <span class="timeframe-badge tbadge-mtd">MoM</span></span></div>
+  <div class="card-full">
+    <div class="section-title">Multi-Tool Adoption — Monthly Overview</div>
+    <div class="section-sub" style="margin-bottom:16px">How each tool is trending month over month across the org</div>
+    <div style="height:280px"><canvas id="tr-chartAllTools"></canvas></div>
+  </div>
+
+  <div class="section-divider"><span>Department Breakdown <span class="timeframe-badge tbadge-mtd">May 2026 MTD</span></span></div>
+  <div style="background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.2);border-radius:10px;padding:12px 18px;margin-bottom:16px;font-size:0.8rem;color:var(--muted)">
+    <strong style="color:#ffd740">ℹ️ How to read:</strong>
+    <strong style="color:#00d4aa">Green = strong</strong> ·
+    <strong style="color:#a89cff">Purple = moderate</strong> ·
+    <strong style="color:#ffa726">Orange = low</strong> ·
+    <strong style="color:#8b92b8">Grey = zero / n.a.</strong>
+  </div>
+  <div class="card-full" style="overflow-x:auto">
+    <table class="data-table" id="tr-deptTable">
+      <thead><tr>
+        <th>Department</th>
+        <th style="text-align:right">CC Lines (May)</th>
+        <th style="text-align:right">CC Members Active</th>
+        <th style="text-align:right">Cursor Events (May)</th>
+        <th style="text-align:right">Cursor Users</th>
+        <th style="text-align:right">Claude.ai Chat %</th>
+        <th>MoM Trend</th>
+      </tr></thead>
+      <tbody id="tr-deptTableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="section-divider"><span>Daily Activity — May 2026 <span class="timeframe-badge tbadge-mtd">This Month</span></span></div>
+  <div class="card-full">
+    <div class="section-title">Claude.ai Chats &amp; Cowork Users — Daily</div>
+    <div class="section-sub" style="margin-bottom:16px">Weekdays only · Source: Claude Admin · ~2 day lag</div>
+    <div style="height:240px"><canvas id="tr-chartDailyMay"></canvas></div>
+  </div>
+
+</div>
+<!-- END TRENDS TAB -->
 
 <!-- Person detail slide-in panel -->
 <div id="panelOverlay" class="panel-overlay" onclick="closePersonPanel()"></div>
