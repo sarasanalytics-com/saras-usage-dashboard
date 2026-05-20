@@ -3590,20 +3590,50 @@ function initTrendsTab() {
     {lines:DATA.totalLines, activeMembers:DATA.activeMembers, chatsPerDay:DATA.chatsPerDay, chatUserPct:DATA.chatUserPct, coworkDAU:DATA.coworkDailyUsers, cursorDAU:35, cursorEvents:14200, projectsCreated:DATA.projectsCreated, artifactUserPct:DATA.artifactUserPct},
   ];
 
-  // Dept breakdown (May MTD) — update monthly
-  const TR_DEPTS = [
-    {dept:'Engineering',      lines:142000, ccActive:12, cursorEvents:0,     cursorUsers:0,  chatPct:90,  mom:'up'},
-    {dept:'Data Engineering', lines:238000, ccActive:48, cursorEvents:14200, cursorUsers:41, chatPct:85,  mom:'up'},
-    {dept:'Consulting',       lines:38000,  ccActive:9,  cursorEvents:0,     cursorUsers:0,  chatPct:95,  mom:'up'},
-    {dept:'Marketing',        lines:0,      ccActive:0,  cursorEvents:0,     cursorUsers:0,  chatPct:80,  mom:'flat'},
-    {dept:'Growth',           lines:0,      ccActive:0,  cursorEvents:0,     cursorUsers:0,  chatPct:75,  mom:'up'},
-    {dept:'Customer Success', lines:0,      ccActive:0,  cursorEvents:0,     cursorUsers:0,  chatPct:70,  mom:'flat'},
-    {dept:'Finance',          lines:0,      ccActive:0,  cursorEvents:0,     cursorUsers:0,  chatPct:60,  mom:'up'},
-    {dept:'HR',               lines:0,      ccActive:0,  cursorEvents:0,     cursorUsers:0,  chatPct:50,  mom:'down'},
-    {dept:'IT',               lines:0,      ccActive:0,  cursorEvents:0,     cursorUsers:0,  chatPct:40,  mom:'flat'},
-    {dept:'Product',          lines:0,      ccActive:0,  cursorEvents:0,     cursorUsers:0,  chatPct:65,  mom:'up'},
-    {dept:'CEO Office',       lines:19869,  ccActive:2,  cursorEvents:0,     cursorUsers:0,  chatPct:100, mom:'up'},
-  ];
+  // Dept breakdown — computed live from members[], adoptUTotals, ALL_EMPLOYEES
+  const TR_DEPTS = (function() {
+    const deptLines = {}, deptCCActive = {}, deptCursor = {}, deptCursorUsers = {};
+    const deptChatUsers = {}, deptTotalSeats = {};
+
+    // CC lines + active members per dept
+    members.forEach(m => {
+      const d = m.dept || 'Unknown';
+      deptLines[d]    = (deptLines[d]    || 0) + (m.lines || 0);
+      deptCCActive[d] = (deptCCActive[d] || 0) + (m.lines > 0 ? 1 : 0);
+    });
+
+    // Cursor events + users per dept
+    Object.keys(adoptUTotals).forEach(email => {
+      const d = getDept(email);
+      const ev = adoptUTotals[email] || 0;
+      if (ev > 0) {
+        deptCursor[d]      = (deptCursor[d]      || 0) + ev;
+        deptCursorUsers[d] = (deptCursorUsers[d] || 0) + 1;
+      }
+    });
+
+    // Claude.ai chat % per dept
+    ALL_EMPLOYEES.forEach(emp => {
+      const d = emp.dept || 'Unknown';
+      deptTotalSeats[d] = (deptTotalSeats[d] || 0) + 1;
+    });
+    Object.keys(DATA.chatUsers || {}).forEach(email => {
+      const d = getDept(email);
+      deptChatUsers[d] = (deptChatUsers[d] || 0) + 1;
+    });
+
+    return DEPT_OPTIONS.map(dept => ({
+      dept,
+      lines:        deptLines[dept]       || 0,
+      ccActive:     deptCCActive[dept]    || 0,
+      cursorEvents: deptCursor[dept]      || 0,
+      cursorUsers:  deptCursorUsers[dept] || 0,
+      chatPct: deptTotalSeats[dept]
+        ? Math.round((deptChatUsers[dept] || 0) / deptTotalSeats[dept] * 100)
+        : 0,
+      mom: (deptLines[dept] || 0) > 0 ? 'up' : 'flat',
+    }));
+  })();
 
   const curr = TM[3], prev = TM[2], first = TM[1];
 
