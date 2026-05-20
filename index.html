@@ -671,17 +671,19 @@
       <button class="filter-btn" onclick="filterPeopleTier('none',this)">No Activity</button>
     </div>
   </div>
-  <div class="card-full">
+  <div class="card-full" style="overflow:hidden">
     <div class="section-header">
       <div>
         <div class="section-title">Every Person · All AI Tools</div>
         <div class="section-sub" id="people-subtitle"></div>
       </div>
     </div>
+    <div style="overflow-x:auto">
     <table class="data-table">
       <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">CC Lines MTD</th><th style="text-align:right">Cursor Events</th><th>Windsurf Last Active</th><th style="text-align:right">Claude.ai Chats</th><th>Active Tools</th></tr></thead>
       <tbody id="peopleTableBody"></tbody>
     </table>
+    </div>
   </div>
 </div>
 
@@ -822,7 +824,7 @@
         </div>
       </div>
     </div>
-    <table class="data-table">
+    <div style="overflow-x:auto"><table class="data-table">
       <thead><tr id="cuTableHead">
         <th>#</th><th>Member</th><th>Team</th>
         <th style="text-align:right">Open</th>
@@ -832,6 +834,7 @@
       </tr></thead>
       <tbody id="cuTableBody"></tbody>
     </table>
+    </div>
   </div>
   <div class="insight-box" style="background:rgba(0,212,170,0.06);border-color:rgba(0,212,170,0.2);margin-top:0">
     <div class="insight-title" style="color:var(--accent2)">📌 ClickUp snapshot · as of <span id="cu-as-of"></span></div>
@@ -909,10 +912,11 @@
       <div class="section-title">User Summary — <span id="month-lbl-user-summary">May 2026</span></div>
       <div class="section-sub">Cursor requests · active days · Windsurf last active</div>
     </div>
-    <table class="data-table">
+    <div style="overflow-x:auto"><table class="data-table">
       <thead><tr id="adoptUserHead"><th>#</th><th>User</th><th>Dept</th><th style="text-align:right">Cursor Events MTD</th><th style="text-align:right">Active Days</th><th style="text-align:right">Avg/Day</th><th>Windsurf Last Active</th></tr></thead>
       <tbody id="adopt-user-table"></tbody>
     </table>
+    </div>
   </div>
 
 </div>
