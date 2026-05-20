@@ -1706,7 +1706,6 @@ function renderPeopleTable() {
     '<th>#</th>',
     sortTh('Member',           'name'),
     sortTh('Dept',             'dept'),
-    sortTh('Org',              'org'),
     sortTh('Dept Manager',     'deptManager'),
     sortTh('Reporting Manager','reportingManager'),
     showCC     ? sortTh('CC Lines MTD',      'ccLines',      'right') : '',
@@ -1741,9 +1740,8 @@ function renderPeopleTable() {
       <td class="rank">${i+1}</td>
       <td><div class="name-cell">${r.name}</div><div class="email-muted">${r.email}</div></td>
       <td>${deptBadge(r.dept)}</td>
-      <td style="font-size:0.75rem;color:var(--muted)">${r.org}</td>
-      <td style="font-size:0.75rem;color:var(--muted)">${r.deptManager}</td>
-      <td style="font-size:0.75rem;color:var(--muted)">${r.reportingManager}</td>
+      <td style="font-size:0.75rem;white-space:nowrap;color:var(--muted)" title="${r.deptManager}">${r.deptManager}</td>
+      <td style="font-size:0.75rem;white-space:nowrap;color:var(--muted)" title="${r.reportingManager}">${r.reportingManager}</td>
       ${showCC     ? `<td class="num-cell">${ccCell}</td>` : ''}
       ${showCursor ? `<td class="num-cell">${r.cursorEvents ? fmt(r.cursorEvents) : dash}</td>` : ''}
       ${showWS     ? `<td style="font-size:0.75rem;color:${r.wsLast ? 'var(--accent2)' : 'var(--muted)'}">${r.wsLast || dash}</td>` : ''}
