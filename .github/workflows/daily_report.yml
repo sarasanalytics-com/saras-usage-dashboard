@@ -28,7 +28,13 @@ jobs:
       - name: Install dependencies
         run: pip install requests
 
-      # ── 3. Collect external data ──────────────────────────────────────────────
+      # ── 3. Collect Claude.ai analytics via Anthropic Analytics API ───────────────
+      - name: Collect Claude.ai analytics (API — no browser needed)
+        env:
+          ANTHROPIC_ANALYTICS_KEY: ${{ secrets.ANTHROPIC_ANALYTICS_KEY }}
+        run: python scripts/collect_claude_ai.py
+
+      # ── 4. Collect Cursor / Windsurf / ClickUp ────────────────────────────────
       - name: Collect Cursor / Windsurf / ClickUp data
         env:
           CLICKUP_API_KEY:       ${{ secrets.CLICKUP_API_KEY }}
@@ -37,11 +43,11 @@ jobs:
           CLICKUP_TEAM_ID:       '9011000533'
         run: python scripts/collect_data.py
 
-      # ── 4. Patch dashboard HTML + adoption JSON ────────────────────────────────
+      # ── 5. Patch dashboard HTML + adoption JSON ────────────────────────────────
       - name: Update dashboard HTML and adoption data
         run: python scripts/update_dashboard.py
 
-      # ── 5. Post to Slack ──────────────────────────────────────────────────────
+      # ── 6. Post to Slack ──────────────────────────────────────────────────────
       - name: Post to Slack
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -49,12 +55,12 @@ jobs:
           SLACK_CHANNEL:     'C0B3AA5ERKL'
         run: python scripts/post_slack.py
 
-      # ── 6. Commit & push ──────────────────────────────────────────────────────
+      # ── 7. Commit & push ──────────────────────────────────────────────────────
       - name: Commit and push changes
         run: |
           git config user.name  "Dashboard Bot"
           git config user.email "dashboard-bot@sarasanalytics.com"
-          git add index.html data/saras-daily-adoption.json data/daily_collected.json
+          git add index.html data/saras-daily-adoption.json data/daily_collected.json data/claude_ai_stats.json
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
