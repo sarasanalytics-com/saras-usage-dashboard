@@ -2397,7 +2397,9 @@ function initClickUp() {
 }
 
 function renderCUTable() {
-  let rows = CLICKUP_DATA.people.filter(p => p.email.endsWith('@sarasanalytics.com'));
+  // Limit to current employees only (ALL_EMPLOYEES is the HR source of truth)
+  const activeEmpEmails = new Set(ALL_EMPLOYEES.map(e => e.email));
+  let rows = CLICKUP_DATA.people.filter(p => activeEmpEmails.has(p.email));
   if      (cuFilter === 'open')   rows = rows.filter(p => p.open > 0);
   else if (cuFilter === 'done')   rows = rows.filter(p => p.done > 0);
   else if (cuFilter === 'urgent') rows = rows.filter(p => p.open > 0 && p.urgent > 0);

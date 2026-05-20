@@ -65,10 +65,21 @@ if dept_block:
     for m in re.finditer(r"'([^']+@sarasanalytics\.com)':\s*'([^']+)'", dept_block.group(1)):
         dept_map[m.group(1).lower()] = m.group(2)
 
+# Extract ALL_EMPLOYEES dept (authoritative HR source)
+all_emp_dept = {}
+all_emp_block = re.search(r"const ALL_EMPLOYEES = \[(.*?)\];", html, flags=re.DOTALL)
+if all_emp_block:
+    for m in re.finditer(r"email:'([^']+)'.*?dept:'([^']+)'", all_emp_block.group(1), flags=re.DOTALL):
+        all_emp_dept[m.group(1).lower()] = m.group(2)
+log(f"  ALL_EMPLOYEES depts: {len(all_emp_dept)} entries")
+
 
 def dept_for(email):
     e = email.lower()
-    return existing_dept.get(e) or dept_map.get(e) or "Data Engineering"
+    prefix = e.replace("@sarasanalytics.com", "")
+    # Priority: HR roster > static DEPT_MAP > DEPT_DEFAULTS > stale existing value
+    return (all_emp_dept.get(e) or dept_map.get(e)
+            or DEPT_DEFAULTS.get(prefix) or existing_dept.get(e) or "Data Engineering")
 
 
 def name_for(email, fallback):
