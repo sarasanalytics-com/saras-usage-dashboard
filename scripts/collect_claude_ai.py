@@ -86,9 +86,11 @@ log(f"  WAU={wau} MAU={mau} Seats={assigned_seats} Cowork-MAU={cowork_mau}")
 log(f"Fetching per-user activity ({len(all_dates)} days × all users)...")
 
 # MTD accumulators
-user_accepted   = defaultdict(int)   # email → total lines accepted
-user_rejected   = defaultdict(int)   # email → total lines rejected
-user_cc_active  = set()              # emails with any CC session MTD
+user_accepted      = defaultdict(int)   # email → tool-invocation accepts (fallback count)
+user_tool_lines    = defaultdict(int)   # email → lines from tool_actions.*.accepted_line_count
+user_loc_added     = defaultdict(int)   # email → lines from core_metrics.lines_of_code.added_count
+user_rejected      = defaultdict(int)   # email → total tool rejects
+user_cc_active     = set()              # emails with any CC session MTD
 
 daily_chat_convos   = []             # total conversations per day
 daily_cowork_sess   = []             # total cowork sessions per day
@@ -97,6 +99,8 @@ project_created_mtd = defaultdict(int)  # email → projects created
 artifact_created_mtd = defaultdict(int) # email → artifacts created
 project_users_mtd   = set()
 artifact_users_mtd  = set()
+
+_debug_logged = False   # log full structure of first user once
 
 for date_str in all_dates:
     day_convos        = 0
@@ -123,12 +127,35 @@ for date_str in all_dates:
         for user in data.get("data", []):
             email = user["user"]["email_address"].lower().strip()
 
-            # Claude Code tool actions
-            ta = user.get("claude_code_metrics", {}).get("tool_actions", {})
+            ccm = user.get("claude_code_metrics", {})
+
+            # ── Debug: log full structure of first active user once ────────────
+            if not _debug_logged and ccm:
+                log(f"\n[DEBUG] Sample claude_code_metrics keys: {list(ccm.keys())}")
+                core = ccm.get("core_metrics", {})
+                log(f"[DEBUG] core_metrics keys: {list(core.keys())}")
+                loc = core.get("lines_of_code", {})
+                log(f"[DEBUG] lines_of_code: {loc}")
+                ta_debug = ccm.get("tool_actions", {})
+                log(f"[DEBUG] tool_actions keys: {list(ta_debug.keys())}")
+                if ta_debug:
+                    first_tool = next(iter(ta_debug))
+                    log(f"[DEBUG] tool_actions.{first_tool}: {ta_debug[first_tool]}")
+                _debug_logged = True
+
+            # ── Claude Code tool actions ──────────────────────────────────────
+            ta = ccm.get("tool_actions", {})
             for tool in ("edit_tool", "multi_edit_tool", "write_tool", "notebook_edit_tool"):
                 t = ta.get(tool, {})
-                user_accepted[email] += t.get("accepted_count", 0)
-                user_rejected[email] += t.get("rejected_count", 0)
+                user_accepted[email]   += t.get("accepted_count", 0)
+                user_rejected[email]   += t.get("rejected_count", 0)
+                # line-level counts within each tool (may or may not exist)
+                user_tool_lines[email] += t.get("accepted_line_count", 0)
+                user_tool_lines[email] += t.get("lines_accepted", 0)
+
+            # ── lines_of_code from core_metrics (git-commit lines) ────────────
+            loc = ccm.get("core_metrics", {}).get("lines_of_code", {})
+            user_loc_added[email] += loc.get("added_count", 0)
 
             # Claude Code session presence
             cc_sessions = (user.get("claude_code_metrics", {})
@@ -170,13 +197,35 @@ for date_str in all_dates:
 
 
 # ── 3. Derived metrics ────────────────────────────────────────────────────────
-total_accepted     = sum(user_accepted.values())
+total_accepted     = sum(user_accepted.values())   # tool invocation accepts
 total_rejected     = sum(user_rejected.values())
 total_actions      = total_accepted + total_rejected
 accept_rate        = round(100 * total_accepted / total_actions, 1) if total_actions else 0
 
+# Prefer line-level metrics over invocation counts (priority: tool_lines > loc_added > invocations)
+total_tool_lines   = sum(user_tool_lines.values())
+total_loc_added    = sum(user_loc_added.values())
+
+if total_tool_lines > 0:
+    user_lines_final = user_tool_lines
+    total_lines_out  = total_tool_lines
+    lines_source     = "tool_actions.accepted_line_count"
+elif total_loc_added > 0:
+    user_lines_final = user_loc_added
+    total_lines_out  = total_loc_added
+    lines_source     = "core_metrics.lines_of_code.added_count"
+else:
+    user_lines_final = user_accepted
+    total_lines_out  = total_accepted
+    lines_source     = "tool_actions.accepted_count (invocations — fallback)"
+
+log(f"  Tool accepts (invocations): {total_accepted:,}")
+log(f"  Tool line counts:           {total_tool_lines:,}")
+log(f"  LoC added (git):            {total_loc_added:,}")
+log(f"  → Using [{lines_source}] = {total_lines_out:,}")
+
 # Active members = users with accepted lines > 0 OR CC sessions > 0
-active_emails      = {e for e, v in user_accepted.items() if v > 0} | user_cc_active
+active_emails      = {e for e, v in user_lines_final.items() if v > 0} | user_cc_active
 active_members     = len(active_emails)
 total_members      = len(user_accepted)   # everyone who appears in API at all
 
@@ -191,21 +240,26 @@ artifact_user_pct  = round(100 * len(artifact_users_mtd) / assigned_seats) if as
 projects_created_mtd  = sum(project_created_mtd.values())
 artifacts_created_mtd = sum(artifact_created_mtd.values())
 
-# Sort members by lines accepted (desc)
-members_sorted = dict(sorted(user_accepted.items(), key=lambda x: -x[1]))
-
 log(f"\n=== Summary ===")
-log(f"  Lines accepted MTD: {total_accepted:,}  |  Accept rate: {accept_rate}%")
+log(f"  totalLines = {total_lines_out:,} ({lines_source})")
+log(f"  Accept rate: {accept_rate}%  |  Total invocations: {total_accepted:,}")
 log(f"  Active CC members: {active_members} / {total_members}")
 log(f"  WAU: {wau}  |  Cowork MAU: {cowork_mau}")
 log(f"  Chat users: {len(chat_users_mtd)}  |  Avg chats/day: {avg_chat_per_day}")
 
 
 # ── 4. Write output ───────────────────────────────────────────────────────────
+# Sort members by lines (desc)
+members_sorted = dict(sorted(user_lines_final.items(), key=lambda x: -x[1]))
+
 result = {
     "asOf":                 data_until.strftime("%Y-%m-%d"),
     "_dataDelay":           "3-day API delay — most recent available date",
-    "totalLines":           total_accepted,
+    "totalLines":              total_lines_out,
+    "_linesSource":            lines_source,
+    "_totalLinesInvocations":  total_accepted,
+    "_totalToolLines":         total_tool_lines,
+    "_totalLocAdded":          total_loc_added,
     "acceptRate":           accept_rate,
     "activeMembers":        active_members,
     "totalMembers":         total_members,
