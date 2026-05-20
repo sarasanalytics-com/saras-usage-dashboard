@@ -1,0 +1,47 @@
+{
+  "today": "2026-05-20",
+  "clickup": {
+    "open_count": 0,
+    "done_count": 0,
+    "daily_active": {},
+    "done_top": [],
+    "list_freq": [],
+    "people": {}
+  },
+  "cursor_today": {
+    "amith@sarasanalytics.com": 6,
+    "swayam.satapathy@sarasanalytics.com": 5,
+    "vaibhav.singh@sarasanalytics.com": 15,
+    "karthik.b@sarasanalytics.com": 4,
+    "bhavika.rathore@sarasanalytics.com": 6,
+    "manoj.p@sarasanalytics.com": 5,
+    "kakul.verma@sarasanalytics.com": 6,
+    "kamal.bura@sarasanalytics.com": 13,
+    "sahil.chhimpa@sarasanalytics.com": 6,
+    "abhishek.baruah@sarasanalytics.com": 1,
+    "krishna.bhargavi@sarasanalytics.com": 3,
+    "aman.kumar@sarasanalytics.com": 5,
+    "saad@sarasanalytics.com": 2,
+    "iqjot.singh@sarasanalytics.com": 7,
+    "abhignya.pinnoju@sarasanalytics.com": 1,
+    "rudrasen.gouda@sarasanalytics.com": 3,
+    "saivarun.pathi@sarasanalytics.com": 6,
+    "mani.kumar@sarasanalytics.com": 4,
+    "manasa.karumuru@sarasanalytics.com": 2
+  },
+  "windsurf_today": {
+    "nithin.dornala@sarasanalytics.com": 1,
+    "jigar.trivedi@sarasanalytics.com": 1,
+    "sairaj.kujala@sarasanalytics.com": 1,
+    "pratishtha.yadav@sarasanalytics.com": 1
+  },
+  "windsurf_users": {
+    "nithin.dornala@sarasanalytics.com": "2026-05-20",
+    "jigar.trivedi@sarasanalytics.com": "2026-05-20",
+    "sairaj.kujala@sarasanalytics.com": "2026-05-20",
+    "pratishtha.yadav@sarasanalytics.com": "2026-05-20",
+    "ram.gupta@sarasanalytics.com": "2026-05-18",
+    "venkateshwaran.s@sarasanalytics.com": "2026-04-21",
+    "anudeep.kolla@sarasanalytics.com": null
+  }
+}
