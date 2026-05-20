@@ -655,8 +655,6 @@
       <button class="filter-btn" onclick="filterPeopleTier('ws',this)">Windsurf</button>
       <button class="filter-btn" onclick="filterPeopleTier('cu',this)">ClickUp</button>
       <button class="filter-btn" onclick="filterPeopleTier('ai',this)">Claude.ai</button>
-      <button class="filter-btn" onclick="filterPeopleTier('proj',this)">Projects</button>
-      <button class="filter-btn" onclick="filterPeopleTier('art',this)">Artifacts</button>
       <button class="filter-btn" onclick="filterPeopleTier('none',this)">No Activity</button>
     </div>
   </div>
@@ -1573,13 +1571,11 @@ function renderPeopleTable() {
     const wsLast       = WINDSURF_USERS[email] || null;
     const cuPerson     = CLICKUP_DATA.people.find(p => p.email === email);
     const hasCu        = !!(cuPerson && (cuPerson.open > 0 || cuPerson.done > 0));
-    const projEntry    = PROJECTS_DATA.topUsers.find(p => p.email === email);
-    const projCount    = projEntry ? projEntry.projects : 0;
-    const artEntry     = ARTIFACTS_DATA.topUsers.find(p => p.email === email);
-    const artCount     = artEntry ? artEntry.artifacts : 0;
+    const cuOpen       = cuPerson ? (cuPerson.open || 0) : 0;
+    const cuDone       = cuPerson ? (cuPerson.done || 0) : 0;
     const aiChats      = CLAUDE_AI_USERS[email] || 0;
-    const toolCount    = (ccLines > 0 ? 1 : 0) + (cursorEvents > 0 ? 1 : 0) + (wsLast ? 1 : 0) + (hasCu ? 1 : 0) + (aiChats > 0 ? 1 : 0) + (projCount > 0 ? 1 : 0) + (artCount > 0 ? 1 : 0);
-    return { email, name: emp.name, dept: emp.dept, ccLines, cursorEvents, wsLast, hasCu, aiChats, projCount, artCount, toolCount };
+    const toolCount    = (ccLines > 0 ? 1 : 0) + (cursorEvents > 0 ? 1 : 0) + (wsLast ? 1 : 0) + (hasCu ? 1 : 0) + (aiChats > 0 ? 1 : 0);
+    return { email, name: emp.name, dept: emp.dept, ccLines, cursorEvents, wsLast, hasCu, cuOpen, cuDone, aiChats, toolCount };
   });
 
   // Apply tool filter
@@ -1589,8 +1585,6 @@ function renderPeopleTable() {
   else if (peopleTier === 'ws')     rows = rows.filter(r => r.wsLast);
   else if (peopleTier === 'cu')     rows = rows.filter(r => r.hasCu);
   else if (peopleTier === 'ai')     rows = rows.filter(r => r.aiChats > 0);
-  else if (peopleTier === 'proj')   rows = rows.filter(r => r.projCount > 0);
-  else if (peopleTier === 'art')    rows = rows.filter(r => r.artCount > 0);
   else if (peopleTier === 'none')   rows = rows.filter(r => r.toolCount === 0);
 
   const activeDept = GF.dept !== 'all' ? GF.dept : peopleDept;
@@ -1601,8 +1595,9 @@ function renderPeopleTable() {
     (r.dept||'').toLowerCase().includes(peopleQ)
   );
 
-  // Sort: active first (by tool count), then CC lines desc, then cursor events desc
+  // Sort: ClickUp filter → by open tasks desc; otherwise active first by tool count
   rows.sort((a, b) => {
+    if (peopleTier === 'cu') return (b.cuOpen + b.cuDone) - (a.cuOpen + a.cuDone);
     if (b.toolCount !== a.toolCount) return b.toolCount - a.toolCount;
     if (b.ccLines !== a.ccLines)     return b.ccLines - a.ccLines;
     return b.cursorEvents - a.cursorEvents;
@@ -1612,10 +1607,11 @@ function renderPeopleTable() {
   const dash = '<span style="color:var(--muted)">—</span>';
 
   // Show only relevant columns based on active filter
-  const showCC      = !['cursor','ws','ai'].includes(peopleTier);
-  const showCursor  = ['all','multi','cursor','none'].includes(peopleTier);
-  const showWS      = ['all','multi','ws','none'].includes(peopleTier);
-  const showAI      = !['cursor','ws'].includes(peopleTier);
+  const showCC     = ['all','multi','cc','ai','cursor','none'].includes(peopleTier);
+  const showCursor = ['all','multi','cursor','none'].includes(peopleTier);
+  const showWS     = ['all','multi','ws','none'].includes(peopleTier);
+  const showAI     = ['all','multi','cc','ai','none'].includes(peopleTier);
+  const showCU     = peopleTier === 'cu';
 
   // Update header columns dynamically
   const headCells = [
@@ -1626,6 +1622,8 @@ function renderPeopleTable() {
     showCursor ? '<th style="text-align:right">Cursor Events</th>' : '',
     showWS     ? '<th>Windsurf Last Active</th>' : '',
     showAI     ? '<th style="text-align:right">Claude.ai Chats</th>' : '',
+    showCU     ? '<th style="text-align:right">Open Tasks</th>' : '',
+    showCU     ? '<th style="text-align:right">Done MTD</th>' : '',
     '<th>Active Tools</th>',
   ].join('');
   document.querySelector('#tab-people thead tr').innerHTML = headCells;
@@ -1638,8 +1636,6 @@ function renderPeopleTable() {
     if (r.wsLast)           pills.push(`<span style="background:#00d4aa;color:#111;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">WS</span>`);
     if (r.hasCu)            pills.push(`<span style="background:#ffa726;color:#111;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">ClickUp</span>`);
     if (r.aiChats > 0)      pills.push(`<span style="background:#e040fb;color:#fff;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">Claude.ai</span>`);
-    if (r.projCount > 0)    pills.push(`<span style="background:#ab47bc;color:#fff;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">Projects&thinsp;${r.projCount}</span>`);
-    if (r.artCount > 0)     pills.push(`<span style="background:#26a69a;color:#fff;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">Artifacts&thinsp;${r.artCount}</span>`);
     const toolPills = pills.length
       ? pills.join('&thinsp;')
       : `<span style="color:var(--muted);font-size:0.75rem">no activity</span>`;
@@ -1658,6 +1654,8 @@ function renderPeopleTable() {
       ${showCursor ? `<td class="num-cell">${r.cursorEvents ? fmt(r.cursorEvents) : dash}</td>` : ''}
       ${showWS     ? `<td style="font-size:0.75rem;color:${r.wsLast ? 'var(--accent2)' : 'var(--muted)'}">${r.wsLast || dash}</td>` : ''}
       ${showAI     ? `<td class="num-cell" style="color:${r.aiChats > 0 ? '#e040fb' : 'var(--muted)'}">${r.aiChats > 0 ? fmt(r.aiChats) : dash}</td>` : ''}
+      ${showCU     ? `<td class="num-cell" style="color:${r.cuOpen > 0 ? '#ffa726' : 'var(--muted)'}">${r.cuOpen > 0 ? r.cuOpen : dash}</td>` : ''}
+      ${showCU     ? `<td class="num-cell" style="color:${r.cuDone > 0 ? 'var(--green)' : 'var(--muted)'}">${r.cuDone > 0 ? r.cuDone : dash}</td>` : ''}
       <td style="white-space:nowrap">${toolPills}</td>
     </tr>`;
   }).join('');
