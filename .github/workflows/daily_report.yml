@@ -44,8 +44,9 @@ jobs:
       # ── 5. Post to Slack ──────────────────────────────────────────────────────
       - name: Post to Slack
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL:   'C0B3AA5ERKL'
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_BOT_TOKEN:   ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL:     'C0B3AA5ERKL'
         run: python scripts/post_slack.py
 
       # ── 6. Commit & push ──────────────────────────────────────────────────────

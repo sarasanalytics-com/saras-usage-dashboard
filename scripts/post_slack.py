@@ -21,8 +21,9 @@ REPO_ROOT      = Path(__file__).resolve().parent.parent
 COLLECTED_PATH = REPO_ROOT / "data" / "daily_collected.json"
 CLAUDE_PATH    = REPO_ROOT / "data" / "claude_ai_stats.json"
 
-SLACK_TOKEN   = os.environ["SLACK_BOT_TOKEN"]
+SLACK_TOKEN   = os.environ.get("SLACK_BOT_TOKEN", "")
 SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "C0B3AA5ERKL")
+SLACK_WEBHOOK = os.environ.get("SLACK_WEBHOOK_URL", "")
 
 with COLLECTED_PATH.open(encoding="utf-8") as f:
     fresh = json.load(f)
@@ -181,29 +182,48 @@ msg += (
 )
 
 # ── Post to Slack ─────────────────────────────────────────────────────────────
-payload = json.dumps({
-    "channel": SLACK_CHANNEL,
-    "text":    msg,
-}).encode()
-
-req = urllib.request.Request(
-    "https://slack.com/api/chat.postMessage",
-    data=payload,
-    method="POST",
-    headers={
-        "Authorization": f"Bearer {SLACK_TOKEN}",
-        "Content-Type":  "application/json; charset=utf-8",
-    },
-)
-
-try:
-    with urllib.request.urlopen(req, timeout=30) as r:
-        resp = json.loads(r.read())
-    if resp.get("ok"):
-        print(f"Slack message posted to {SLACK_CHANNEL}. ts={resp.get('ts')}")
-    else:
-        print(f"[ERROR] Slack API error: {resp.get('error')}", flush=True)
+if SLACK_WEBHOOK:
+    # Incoming webhook — simpler, no need for bot to be in channel
+    payload = json.dumps({"text": msg}).encode()
+    req = urllib.request.Request(
+        SLACK_WEBHOOK,
+        data=payload,
+        method="POST",
+        headers={"Content-Type": "application/json; charset=utf-8"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            body = r.read().decode()
+        if body.strip() == "ok":
+            print("Slack message posted via webhook.")
+        else:
+            print(f"[WARN] Webhook response: {body}")
+    except urllib.error.HTTPError as e:
+        print(f"[ERROR] Webhook HTTP {e.code}: {e.read().decode()}", flush=True)
         raise SystemExit(1)
-except urllib.error.HTTPError as e:
-    print(f"[ERROR] HTTP {e.code}: {e.read().decode()}", flush=True)
+elif SLACK_TOKEN:
+    # Bot token with chat:write scope
+    payload = json.dumps({"channel": SLACK_CHANNEL, "text": msg}).encode()
+    req = urllib.request.Request(
+        "https://slack.com/api/chat.postMessage",
+        data=payload,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {SLACK_TOKEN}",
+            "Content-Type":  "application/json; charset=utf-8",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            resp = json.loads(r.read())
+        if resp.get("ok"):
+            print(f"Slack message posted to {SLACK_CHANNEL}. ts={resp.get('ts')}")
+        else:
+            print(f"[ERROR] Slack API error: {resp.get('error')}", flush=True)
+            raise SystemExit(1)
+    except urllib.error.HTTPError as e:
+        print(f"[ERROR] HTTP {e.code}: {e.read().decode()}", flush=True)
+        raise SystemExit(1)
+else:
+    print("[ERROR] Set SLACK_WEBHOOK_URL or SLACK_BOT_TOKEN environment variable.", flush=True)
     raise SystemExit(1)
