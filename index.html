@@ -1683,11 +1683,14 @@ function initFromData() {
   const top2Pct = Math.round(top2Lines / d.totalLines * 100);
   const idleMembers = members.filter(m => m.lines === 0 && m.email !== 'anudeep.kolla@sarasanalytics.com');
   const veryLowMembers = members.filter(m => m.lines > 0 && m.lines < 100);
+  // Safe array fallbacks in case daily data not yet populated
+  const chatsDailyData  = d.chatsDailyData  || [];
+  const coworkDailyData = d.coworkDailyData || [];
   // Mon-on-Mon delta for Claude.ai
-  const monData = d.chatsDailyData.filter(x => { const day = new Date(x.date).getDay(); return day === 1; });
+  const monData = chatsDailyData.filter(x => { const day = new Date(x.date).getDay(); return day === 1; });
   const chatMomDelta = monData.length >= 2 ? Math.round((monData[monData.length-1].chats - monData[0].chats) / monData[0].chats * 100) : null;
   // Cowork weekly trend
-  const cwFirst = d.coworkDailyData[0], cwLast = d.coworkDailyData[d.coworkDailyData.length-1];
+  const cwFirst = coworkDailyData[0], cwLast = coworkDailyData[coworkDailyData.length-1];
   const cwTrend = cwFirst && cwLast ? Math.round((cwLast.users - cwFirst.users) / cwFirst.users * 100) : null;
 
   document.getElementById('key-takeaways').innerHTML = `
@@ -1729,7 +1732,7 @@ function initFromData() {
   set('kpi-overview-cowork-sessions', d.coworkDailyUsers);
   set('kpi-overview-cowork-user-sub', `Weekday avg · graph data as of ${d.coworkDataAsOf}`);
   set('kpi-overview-chats', d.chatsPerDay);
-  const chatMon1 = d.chatsDailyData.filter(x=>new Date(x.date).getDay()===1);
+  const chatMon1 = chatsDailyData.filter(x=>new Date(x.date).getDay()===1);
   const chatDelta = chatMon1.length>=2 ? Math.round((chatMon1[chatMon1.length-1].chats-chatMon1[0].chats)/chatMon1[0].chats*100) : null;
   set('kpi-overview-chat-user-sub', `${d.chatUserPct}% of org engaged${chatDelta!==null?' · '+(chatDelta>=0?'↑':'↓')+Math.abs(chatDelta)+'% Mon-on-Mon':''} · data as of ${d.chatsDataAsOf}`);
   set('kpi-overview-projects', d.projectsCreated);
@@ -1754,7 +1757,7 @@ function initFromData() {
   }
 
   // Cowork overview delta
-  const cwD = d.coworkDailyData;
+  const cwD = coworkDailyData;
   const cwDelta = cwD.length>=2 ? Math.round((cwD[cwD.length-1].users - cwD[0].users)/cwD[0].users*100) : null;
   set('kpi-overview-cowork-user-sub', `Weekday avg · ${cwDelta!==null?'↑'+cwDelta+'% Mon→Thu · ':''} data as of ${d.coworkDataAsOf}`);
 
@@ -1792,14 +1795,14 @@ function initFromData() {
   set('kpi-cowork-sessions', d.coworkDailyUsers);
   // Render cowork daily table
   const cwTbl = document.getElementById('cowork-daily-table');
-  if (cwTbl && d.coworkDailyData && d.coworkDailyData.length) {
-    const avg = Math.round(d.coworkDailyData.reduce((s,x)=>s+x.users,0)/d.coworkDailyData.length);
+  if (cwTbl && coworkDailyData.length) {
+    const avg = Math.round(coworkDailyData.reduce((s,x)=>s+x.users,0)/coworkDailyData.length);
     cwTbl.innerHTML = `<table class="data-table" style="max-width:400px">
       <thead><tr><th>Date</th><th style="text-align:right">Daily Active Users</th></tr></thead>
-      <tbody>${d.coworkDailyData.map(x=>`<tr><td>${x.date}</td><td style="text-align:right;color:#ffa726;font-weight:600">${x.users}</td></tr>`).join('')}
+      <tbody>${coworkDailyData.map(x=>`<tr><td>${x.date}</td><td style="text-align:right;color:#ffa726;font-weight:600">${x.users}</td></tr>`).join('')}
       <tr style="border-top:1px solid rgba(108,99,255,0.3)"><td style="color:var(--muted)">Weekday avg</td><td style="text-align:right;color:#fff;font-weight:700">${avg}</td></tr>
       </tbody></table>
-      <div style="font-size:0.72rem;color:var(--muted);margin-top:8px">Data as of ${d.coworkDataAsOf} · Weekdays only · Dept breakdown unavailable from Claude Admin</div>`;}
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:8px">Data as of ${d.coworkDataAsOf || d.asOf} · Weekdays only · Dept breakdown unavailable from Claude Admin</div>`;}
 
 
   // Attention tab
@@ -1859,10 +1862,13 @@ function initCharts() {
   const activeCnt   = members.filter(m => m.lines > 0).length;
   const inactiveCnt = members.filter(m => m.lines === 0).length;
   const codeActivePct = Math.round(activeCnt / DATA.totalMembers * 100);
+  // Safe fallbacks for per-day arrays
+  const chatsDailyData  = d.chatsDailyData  || [];
+  const coworkDailyData = d.coworkDailyData || [];
 
   // Claude.ai chats trend
-  const chatLabels = d.chatsDailyData.map(x => x.date.slice(5).replace('-','/'));
-  const chatValues = d.chatsDailyData.map(x => x.chats);
+  const chatLabels = chatsDailyData.map(x => x.date.slice(5).replace('-','/'));
+  const chatValues = chatsDailyData.map(x => x.chats);
   new Chart(document.getElementById('chatsTrendChart'), {
     type:'bar',
     data:{ labels:chatLabels, datasets:[{data:chatValues, backgroundColor:'rgba(108,99,255,0.7)', borderRadius:6, label:'Chats'}]},
@@ -1873,8 +1879,8 @@ function initCharts() {
   });
 
   // Cowork daily users trend
-  const cwLabels = d.coworkDailyData.map(x => x.date.slice(5).replace('-','/'));
-  const cwValues = d.coworkDailyData.map(x => x.users);
+  const cwLabels = coworkDailyData.map(x => x.date.slice(5).replace('-','/'));
+  const cwValues = coworkDailyData.map(x => x.users);
   new Chart(document.getElementById('coworkTrendChart'), {
     type:'bar',
     data:{ labels:cwLabels, datasets:[{data:cwValues, backgroundColor:'rgba(255,167,38,0.7)', borderRadius:6, label:'Users'}]},

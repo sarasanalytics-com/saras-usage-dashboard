@@ -131,9 +131,19 @@ active_members = cc["activeMembers"]
 total_members  = cc["totalMembers"]
 utilization    = round(cc["utilization"])
 members_dict   = cc["members"]
+cc_as_of       = cc.get("asOf", TODAY)
 
 all_lines    = sum(members_dict.values())
 avg_lines    = round(all_lines / active_members) if active_members else 0
+
+# Per-day trend arrays (from API; may be empty on first run)
+chats_daily  = cc.get("chatsDailyData", [])
+cowork_daily = cc.get("coworkDailyData", [])
+chats_as_of  = chats_daily[-1]["date"]  if chats_daily  else cc_as_of
+cowork_as_of = cowork_daily[-1]["date"] if cowork_daily else cc_as_of
+
+chats_daily_js  = json.dumps(chats_daily,  separators=(",", ":"))
+cowork_daily_js = json.dumps(cowork_daily, separators=(",", ":"))
 
 new_data_block = f"""const DATA = {{
   asOf: '{TODAY_LABEL}',
@@ -155,6 +165,10 @@ new_data_block = f"""const DATA = {{
   projectUserPct: {cc.get('projectUserPct', 0)},
   artifactsCreated: {cc.get('artifactsCreated', 0)},
   artifactUserPct: {cc.get('artifactUserPct', 0)},
+  chatsDailyData: {chats_daily_js},
+  coworkDailyData: {cowork_daily_js},
+  chatsDataAsOf: '{chats_as_of}',
+  coworkDataAsOf: '{cowork_as_of}',
 }};"""
 
 html = re.sub(r"const DATA = \{.*?\};", new_data_block, html, count=1, flags=re.DOTALL)

@@ -252,6 +252,15 @@ log(f"  Chat users: {len(chat_users_mtd)}  |  Avg chats/day: {avg_chat_per_day}"
 # Sort members by lines (desc)
 members_sorted = dict(sorted(user_lines_final.items(), key=lambda x: -x[1]))
 
+# Build per-day arrays for trend charts (weekdays only)
+chats_daily_data  = []
+cowork_daily_data = []
+for date_str, chats, cowork in zip(all_dates, daily_chat_convos, daily_cowork_sess):
+    dt = datetime.strptime(date_str, "%Y-%m-%d")
+    if dt.weekday() < 5:   # Mon–Fri only
+        chats_daily_data.append({"date": date_str, "chats": chats})
+        cowork_daily_data.append({"date": date_str, "users": cowork})
+
 result = {
     "asOf":                 data_until.strftime("%Y-%m-%d"),
     "_dataDelay":           "3-day API delay — most recent available date",
@@ -276,6 +285,8 @@ result = {
     "projectUserPct":       project_user_pct,
     "artifactsCreated":     artifacts_created_mtd,
     "artifactUserPct":      artifact_user_pct,
+    "chatsDailyData":       chats_daily_data,
+    "coworkDailyData":      cowork_daily_data,
     "members":              members_sorted,
 }
 
