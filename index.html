@@ -1611,14 +1611,33 @@ function renderPeopleTable() {
   set('people-subtitle', `${DATA.monthLabel} MTD · ${rows.length} people shown · 1 employee excluded (no @sarasanalytics.com address in HR system — fix in Keka)`);
   const dash = '<span style="color:var(--muted)">—</span>';
 
+  // Show only relevant columns based on active filter
+  const showCC      = !['cursor','ws','ai'].includes(peopleTier);
+  const showCursor  = ['all','multi','cursor','none'].includes(peopleTier);
+  const showWS      = ['all','multi','ws','none'].includes(peopleTier);
+  const showAI      = !['cursor','ws'].includes(peopleTier);
+
+  // Update header columns dynamically
+  const headCells = [
+    '<th>#</th>',
+    '<th>Member</th>',
+    '<th>Dept</th>',
+    showCC     ? '<th style="text-align:right">CC Lines MTD</th>' : '',
+    showCursor ? '<th style="text-align:right">Cursor Events</th>' : '',
+    showWS     ? '<th>Windsurf Last Active</th>' : '',
+    showAI     ? '<th style="text-align:right">Claude.ai Chats</th>' : '',
+    '<th>Active Tools</th>',
+  ].join('');
+  document.querySelector('#tab-people thead tr').innerHTML = headCells;
+
   document.getElementById('peopleTableBody').innerHTML = rows.map((r, i) => {
-    // Tool pills: CC · Cursor · Windsurf · ClickUp
+    // Tool pills
     const pills = [];
     if (r.ccLines > 0)      pills.push(`<span style="background:#6c63ff;color:#fff;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">CC</span>`);
     if (r.cursorEvents > 0) pills.push(`<span style="background:#00bcd4;color:#111;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">Cursor</span>`);
     if (r.wsLast)           pills.push(`<span style="background:#00d4aa;color:#111;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">WS</span>`);
     if (r.hasCu)            pills.push(`<span style="background:#ffa726;color:#111;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">ClickUp</span>`);
-    if (r.aiChats > 0)     pills.push(`<span style="background:#e040fb;color:#fff;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">Claude.ai</span>`);
+    if (r.aiChats > 0)      pills.push(`<span style="background:#e040fb;color:#fff;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">Claude.ai</span>`);
     if (r.projCount > 0)    pills.push(`<span style="background:#ab47bc;color:#fff;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">Projects&thinsp;${r.projCount}</span>`);
     if (r.artCount > 0)     pills.push(`<span style="background:#26a69a;color:#fff;border-radius:4px;padding:2px 7px;font-size:0.68rem;font-weight:600;letter-spacing:0.3px">Artifacts&thinsp;${r.artCount}</span>`);
     const toolPills = pills.length
@@ -1635,10 +1654,10 @@ function renderPeopleTable() {
       <td class="rank">${i+1}</td>
       <td><div class="name-cell">${r.name}</div><div class="email-muted">${r.email}</div></td>
       <td>${deptBadge(r.dept)}</td>
-      <td class="num-cell">${ccCell}</td>
-      <td class="num-cell">${r.cursorEvents ? fmt(r.cursorEvents) : dash}</td>
-      <td style="font-size:0.75rem;color:${r.wsLast ? 'var(--accent2)' : 'var(--muted)'}">${r.wsLast || dash}</td>
-      <td class="num-cell" style="color:${r.aiChats > 0 ? '#e040fb' : 'var(--muted)'}">${r.aiChats > 0 ? fmt(r.aiChats) : dash}</td>
+      ${showCC     ? `<td class="num-cell">${ccCell}</td>` : ''}
+      ${showCursor ? `<td class="num-cell">${r.cursorEvents ? fmt(r.cursorEvents) : dash}</td>` : ''}
+      ${showWS     ? `<td style="font-size:0.75rem;color:${r.wsLast ? 'var(--accent2)' : 'var(--muted)'}">${r.wsLast || dash}</td>` : ''}
+      ${showAI     ? `<td class="num-cell" style="color:${r.aiChats > 0 ? '#e040fb' : 'var(--muted)'}">${r.aiChats > 0 ? fmt(r.aiChats) : dash}</td>` : ''}
       <td style="white-space:nowrap">${toolPills}</td>
     </tr>`;
   }).join('');
