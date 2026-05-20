@@ -541,6 +541,18 @@
       <div class="kpi-sub" id="kpi-ai-chat-user-sub"></div>
       <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> MTD daily avg &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Company-wide only</em></div>
     </div>
+    <div class="kpi c5">
+      <div class="kpi-label">Weekly Active Users</div>
+      <div class="kpi-value" id="kpi-ai-wau"></div>
+      <div class="kpi-sub" id="kpi-ai-wau-sub"></div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> Rolling 7-day &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Unique users with ≥1 chat in past week</em></div>
+    </div>
+    <div class="kpi c3">
+      <div class="kpi-label">Monthly Active Users</div>
+      <div class="kpi-value" id="kpi-ai-mau"></div>
+      <div class="kpi-sub" id="kpi-ai-mau-sub"></div>
+      <div class="kpi-meta"><strong>Source:</strong> Claude Admin &nbsp;·&nbsp; <strong>Period:</strong> Rolling 30-day &nbsp;·&nbsp; <strong>Lag:</strong> ~2 days &nbsp;·&nbsp; <em>Unique users with ≥1 chat in past month</em></div>
+    </div>
   </div>
   <div class="section-divider"><span>Output Volume <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
   <div class="kpi-grid">
@@ -977,6 +989,8 @@ const DATA = {
   coworkUserPct: 40,
   chatsPerDay: 140,
   chatUserPct: 90,
+  wau: 141,
+  mau: 146,
   projectsCreated: 57,
   projectUserPct: 23,
   artifactsCreated: 33,
@@ -1759,11 +1773,15 @@ function initFromData() {
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start">
-          <span style="font-size:1.4rem;line-height:1">🟡</span>
+          <span style="font-size:1.4rem;line-height:1">${d.chatUserPct>=70?'🟢':d.chatUserPct>=50?'🟡':'🔴'}</span>
           <div>
-            <div style="color:#ffa726;font-weight:700;font-size:0.85rem;margin-bottom:3px">CLAUDE.AI — UNDERUTILIZED</div>
-            <div style="color:var(--text);font-size:0.82rem"><strong style="color:#fff">${d.chatsPerDay} chats/day</strong> avg · only <strong style="color:#fff">${d.chatUserPct}%</strong> of org engaged${chatMomDelta !== null ? ` · <span style="color:${chatMomDelta<0?'#ff6b6b':'#00d4aa'}">${chatMomDelta>0?'↑':'↓'}${Math.abs(chatMomDelta)}% Mon-on-Mon</span>` : ''}</div>
-            <div style="color:var(--muted);font-size:0.75rem;margin-top:4px">0 artifacts · 1 project MTD — Projects &amp; Artifacts not yet org-wide; dedicated enablement session needed before next review</div>
+            ${(()=>{
+              const pct = d.chatUserPct;
+              const [lbl,col,dot] = pct>=70 ? ['CLAUDE.AI — STRONG','#00d4aa','🟢'] : pct>=50 ? ['CLAUDE.AI — GROWING','#ffa726','🟡'] : ['CLAUDE.AI — UNDERUTILIZED','#ff6b6b','🔴'];
+              return `<div style="color:${col};font-weight:700;font-size:0.85rem;margin-bottom:3px">${lbl}</div>`;
+            })()}
+            <div style="color:var(--text);font-size:0.82rem"><strong style="color:#fff">${d.chatsPerDay} chats/day</strong> avg · <strong style="color:#fff">${d.chatUserPct}%</strong> of org engaged · <strong style="color:#fff">${d.wau||'—'} WAU</strong>${chatMomDelta !== null ? ` · <span style="color:${chatMomDelta<0?'#ff6b6b':'#00d4aa'}">${chatMomDelta>0?'↑':'↓'}${Math.abs(chatMomDelta)}% Mon-on-Mon</span>` : ''}</div>
+            <div style="color:var(--muted);font-size:0.75rem;margin-top:4px">${d.artifactsCreated} artifacts · ${d.projectsCreated} projects MTD — Projects (${d.projectUserPct}%) &amp; Artifacts (${d.artifactUserPct}%) are the depth opportunity</div>
           </div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start">
@@ -1830,6 +1848,11 @@ function initFromData() {
   set('kpi-ai-chats-sub', `MTD daily avg · ${d.monthLabel}`);
   set('kpi-ai-chat-user-pct', `${d.chatUserPct}% · target 50%`);
   set('kpi-ai-chat-user-sub', `MTD ${d.monthLabel} · of ${d.licensedSeats} licensed seats`);
+  // WAU / MAU KPIs
+  set('kpi-ai-wau', d.wau || '—');
+  set('kpi-ai-wau-sub', `of ${d.licensedSeats} seats · ${d.wau ? Math.round(d.wau/d.licensedSeats*100)+'% weekly reach' : ''}`);
+  set('kpi-ai-mau', d.mau || '—');
+  set('kpi-ai-mau-sub', `of ${d.licensedSeats} seats · ${d.mau ? Math.round(d.mau/d.licensedSeats*100)+'% monthly reach' : ''}`);
   set('kpi-ai-projects', d.projectsCreated);
   set('kpi-ai-projects-month', `MTD ${d.monthLabel}`);
   set('kpi-ai-project-user-pct', `${d.projectUserPct}% · target 40%`);

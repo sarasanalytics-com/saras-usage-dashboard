@@ -143,6 +143,8 @@ total_members  = cc["totalMembers"]
 utilization    = round(cc["utilization"])
 members_dict   = cc["members"]
 cc_as_of       = cc.get("asOf", TODAY)
+wau            = cc.get("wau", 0)
+mau            = cc.get("mau", 0)
 
 all_lines    = sum(members_dict.values())
 avg_lines    = round(all_lines / active_members) if active_members else 0
@@ -175,6 +177,8 @@ new_data_block = f"""const DATA = {{
   coworkUserPct: {cc.get('coworkUserPct', 0)},
   chatsPerDay: {cc.get('chatsPerDay', 0)},
   chatUserPct: {cc.get('chatUserPct', 0)},
+  wau: {wau},
+  mau: {mau},
   projectsCreated: {cc.get('projectsCreated', 0)},
   projectUserPct: {cc.get('projectUserPct', 0)},
   artifactsCreated: {cc.get('artifactsCreated', 0)},
