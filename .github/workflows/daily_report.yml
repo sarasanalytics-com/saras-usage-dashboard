@@ -40,7 +40,7 @@ jobs:
           CLICKUP_API_KEY:       ${{ secrets.CLICKUP_API_KEY }}
           CURSOR_BEARER_TOKEN:   ${{ secrets.CURSOR_BEARER_TOKEN }}
           WINDSURF_SERVICE_KEY:  ${{ secrets.WINDSURF_SERVICE_KEY }}
-          CLICKUP_TEAM_ID:       '9011000533'
+          CLICKUP_TEAM_ID:       '3369097'
         run: python scripts/collect_data.py
 
       # ── 5. Patch dashboard HTML + adoption JSON ────────────────────────────────
