@@ -70,7 +70,14 @@ user_id_to_email = {}
 user_id_to_name  = {}
 
 try:
-    teams = get_json("https://api.clickup.com/api/v2/team", cu_headers).get("teams", [])
+    teams_resp = get_json("https://api.clickup.com/api/v2/team", cu_headers)
+    teams = teams_resp.get("teams", [])
+    team_ids = [t.get("id") for t in teams]
+    log(f"  Team IDs found: {team_ids}")
+    # Auto-select workspace ID if not matching config
+    if teams and WORKSPACE_ID not in [str(tid) for tid in team_ids]:
+        WORKSPACE_ID = str(teams[0].get("id", WORKSPACE_ID))
+        log(f"  [INFO] Using team ID: {WORKSPACE_ID}")
     for team in teams:
         for m in team.get("members", []):
             u    = m.get("user", {})
@@ -90,18 +97,27 @@ log(f"  Members: {len(user_id_to_email)}")
 def fetch_clickup_tasks(extra_params, max_pages=100):
     tasks = []
     for page in range(max_pages):
-        params = {**extra_params, "page": str(page), "subtasks": "true"}
+        params = {**extra_params, "page": str(page)}
         qs  = "&".join(f"{k}={urllib.request.quote(str(v))}" for k, v in params.items())
         url = f"https://api.clickup.com/api/v2/team/{WORKSPACE_ID}/task?{qs}"
         try:
             d = get_json(url, cu_headers, timeout=90)
         except urllib.error.HTTPError as e:
+            body = ""
+            try:
+                body = e.read().decode()[:200]
+            except Exception:
+                pass
+            log(f"  ClickUp page {page} HTTP {e.code}: {body}")
+            break
+        except Exception as e:
             log(f"  ClickUp page {page} error: {e}")
             break
         batch = d.get("tasks", [])
         if not batch:
             break
         tasks.extend(batch)
+        log(f"    page {page}: {len(batch)} tasks (total so far: {len(tasks)})")
         if len(batch) < 100:
             break
         time.sleep(0.3)
