@@ -638,7 +638,7 @@
   <div class="insight-box yellow">
     <div class="insight-title" style="color:#ffd740">Cowork context</div>
     <div style="color:var(--muted)">
-      Cowork was separated from Claude Code metrics after <strong style="color:#fff">March 27, 2026</strong> — previously its usage was counted under Claude Code. Averaging <strong style="color:#fff"><span id="cowork-trend-note-val"></span> daily active users</strong> this month. Dept-level breakdown is not available from the Claude Admin API — figures are company-wide only.
+      Cowork was separated from Claude Code metrics after <strong style="color:#fff">March 27, 2026</strong> — previously its usage was counted under Claude Code. Averaging <strong style="color:#fff"><span id="cowork-trend-note-val"></span> daily active users</strong> this month. Per-dept Cowork counts are shown in the Dept Scorecard, derived from per-user Claude Admin API data.
     </div>
   </div>
 </div>
@@ -986,6 +986,15 @@ const DATA = {
   chatsDataAsOf: '2026-05-15',
   coworkDataAsOf: '2026-05-15',
 };
+
+// Dynamic month prefix — auto-rolls each month (e.g. '2026-05', '2026-06')
+const MONTH_PREFIX = (function(){
+  const d = DATA.chatsDailyData && DATA.chatsDailyData.length ? DATA.chatsDailyData[0].date :
+            DATA.coworkDailyData && DATA.coworkDailyData.length ? DATA.coworkDailyData[0].date : null;
+  if (d) return d.slice(0, 7);
+  try { const dt = new Date(DATA.asOf); return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0'); }
+  catch(e) { return ''; }
+})();
 
 // ── Claude.ai Artifacts per user (Top 10, MTD) ───────────────────────────
 const ARTIFACTS_DATA = {
@@ -1450,6 +1459,15 @@ const ALL_EMPLOYEES = [
   {name:'Pradeep AP', email:'pradeep.anandhan@sarasanalytics.com', dept:'Consulting'},
   {name:'Lohitha Srinivasalu', email:'lohitha.srinivasalu@sarasanalytics.com', dept:'Consulting'},
 ];
+
+// ALL_EMPLOYEES (HR system) is the authoritative dept source — override members[] dept in DEPT_MAP
+ALL_EMPLOYEES.forEach(e => { if(e.email) DEPT_MAP[e.email] = e.dept; });
+
+// Remove service/shared accounts — not real individual contributors
+const BOT_ACCOUNTS = new Set(['consulting@sarasanalytics.com', 'consulting.claude@sarasanalytics.com']);
+for (let i = members.length - 1; i >= 0; i--) {
+  if (BOT_ACCOUNTS.has(members[i].email)) members.splice(i, 1);
+}
 
 function getDept(email) { return DEPT_MAP[email] || 'Other'; }
 
@@ -1984,7 +2002,7 @@ function initCharts() {
 
   // Exec summary — Cursor events by dept (mini version)
   (function(){
-    const mayDays=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01');
+    const mayDays=ADOPTION_DAYS.filter(d=>d.date>=MONTH_PREFIX+'-01');
     const deptEv={};
     mayDays.forEach(day=>Object.entries(day.c).forEach(([e,cnt])=>{
       if(!e.endsWith('@sarasanalytics.com')) return;
@@ -1999,7 +2017,7 @@ function initCharts() {
   (function(){
     const ccActivePct=Math.round(members.filter(m=>m.lines>0).length/DATA.totalMembers*100);
     const wsTracked=Object.values(WINDSURF_USERS).filter(v=>v!==null).length;
-    const mayDays=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01');
+    const mayDays=ADOPTION_DAYS.filter(d=>d.date>=MONTH_PREFIX+'-01');
     const cursorUsers=new Set(); mayDays.forEach(day=>Object.keys(day.c).filter(e=>e.endsWith('@sarasanalytics.com')).forEach(e=>cursorUsers.add(e)));
     const cursorPct=Math.round(cursorUsers.size/CURSOR_SEATS*100);
     const wsPct=Math.round(wsTracked/WINDSURF_SEATS*100);
@@ -2508,7 +2526,7 @@ function cellClr(cnt,isWs){
 }
 function nameFromEmail(e){return e.split('@')[0].split('.').map(p=>p[0].toUpperCase()+p.slice(1)).join(' ');}
 function initAdoption(){
-  const mayDays=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01');
+  const mayDays=ADOPTION_DAYS.filter(d=>d.date>=MONTH_PREFIX+'-01');
   const today=(()=>{ const d=new Date(DATA.asOf); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
   let totalEv=0;
   mayDays.forEach(day=>{
@@ -2586,7 +2604,7 @@ function initAdoption(){
 }
 
 function renderDeptMetrics() {
-  const mayDays = ADOPTION_DAYS.filter(d => d.date >= '2026-05-01');
+  const mayDays = ADOPTION_DAYS.filter(d => d.date >= MONTH_PREFIX+'-01');
   const deptCursorEv = {}, deptCursorUserSet = {};
 
   // Aggregate Cursor events by dept
@@ -2659,7 +2677,7 @@ function overallCellClr(cursorCnt, wsActive){
   return'background:#1a1d27';
 }
 function renderAdoptHeatmap(){
-  const days=ADOPTION_DAYS.filter(d=>d.date>='2026-05-01').sort((a,b)=>a.date.localeCompare(b.date));
+  const days=ADOPTION_DAYS.filter(d=>d.date>=MONTH_PREFIX+'-01').sort((a,b)=>a.date.localeCompare(b.date));
   const dates=days.map(d=>d.date);
   const usersSet=new Set();
   if(adoptView==='windsurf'){
@@ -2889,7 +2907,7 @@ function renderWeeklyTab() {
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:14px">
         ${wowMetrics.map(m => {
           const δ = wowDelta(m.curr, m.prev);
-          return `<div style="border-right:1px solid var(--border);padding-right:16px;last-child:border:none">
+          return `<div style="border-right:1px solid var(--border);padding-right:16px">
             <div style="font-size:0.72rem;color:var(--muted);margin-bottom:6px">${m.label}</div>
             <div style="display:flex;align-items:baseline;gap:10px">
               <span style="font-size:1.6rem;font-weight:800;color:#fff">${m.fmt(m.curr)}</span>
@@ -3034,7 +3052,7 @@ function openPersonPanel(email) {
   const initials = name.split(' ').filter(Boolean).slice(0,2).map(w=>w[0].toUpperCase()).join('');
 
   // Cursor daily data (May 2026)
-  const allDays     = ADOPTION_DAYS.filter(d=>d.date>='2026-05-01').sort((a,b)=>a.date.localeCompare(b.date));
+  const allDays     = ADOPTION_DAYS.filter(d=>d.date>=MONTH_PREFIX+'-01').sort((a,b)=>a.date.localeCompare(b.date));
   const cursorLabels= allDays.map(d=>{const p=d.date.split('-');return p[1]+'/'+p[2];});
   const cursorData  = allDays.map(d=>d.c[email]||0);
   const hasCursor   = cursorData.some(v=>v>0);
@@ -3232,7 +3250,7 @@ function renderDeptScorecardTable() {
   const activeDept = GF.dept;
   const depts = activeDept !== 'all' ? [activeDept] : Object.keys(TEAM_TOOLS);
 
-  const allMayDays = ADOPTION_DAYS.filter(d => d.date.startsWith('2026-05'));
+  const allMayDays = ADOPTION_DAYS.filter(d => d.date.startsWith(MONTH_PREFIX));
   const cursorByDept = {};
   allMayDays.forEach(day => {
     Object.keys(day.c||{}).forEach(email => {
@@ -3245,7 +3263,7 @@ function renderDeptScorecardTable() {
   const wsActiveEmails = new Set();
   allMayDays.forEach(day => { Object.keys(day.w||{}).forEach(e => wsActiveEmails.add(e)); });
   Object.entries(WINDSURF_USERS||{}).forEach(([email,date]) => {
-    if(date && date.startsWith('2026-05')) wsActiveEmails.add(email);
+    if(date && date.startsWith(MONTH_PREFIX)) wsActiveEmails.add(email);
   });
   const wsByDept = {};
   wsActiveEmails.forEach(email => {
@@ -3327,7 +3345,7 @@ function renderDeptScorecardTable() {
 
 function renderToolStrips() {
   const dept = GF.dept;
-  const allMayDays = ADOPTION_DAYS.filter(d => d.date.startsWith('2026-05'));
+  const allMayDays = ADOPTION_DAYS.filter(d => d.date.startsWith(MONTH_PREFIX));
 
   const ccActive = dept==='all' ? DATA.activeMembers : members.filter(m=>m.dept===dept&&m.lines>0).length;
   const ccTotal  = dept==='all' ? DATA.totalMembers  : members.filter(m=>m.dept===dept).length;
@@ -3346,7 +3364,7 @@ function renderToolStrips() {
     if(dept==='all'||getDept(e)===dept) wsUsers.add(e);
   }));
   Object.entries(WINDSURF_USERS||{}).forEach(([e,dt])=>{
-    if(dt&&dt.startsWith('2026-05')&&(dept==='all'||getDept(e)===dept)) wsUsers.add(e);
+    if(dt&&dt.startsWith(MONTH_PREFIX)&&(dept==='all'||getDept(e)===dept)) wsUsers.add(e);
   });
   const wsTotal = typeof WINDSURF_SEATS!=='undefined' ? WINDSURF_SEATS : 6;
   const wsPct = wsTotal>0 ? Math.round(wsUsers.size/wsTotal*100) : 0;

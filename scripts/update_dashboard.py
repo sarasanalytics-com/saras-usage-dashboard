@@ -142,6 +142,9 @@ cowork_daily = cc.get("coworkDailyData", [])
 chats_as_of  = chats_daily[-1]["date"]  if chats_daily  else cc_as_of
 cowork_as_of = cowork_daily[-1]["date"] if cowork_daily else cc_as_of
 
+# Cowork daily avg from actual per-day data (not wau/7 which is meaningless)
+cowork_daily_avg = round(sum(d["users"] for d in cowork_daily) / len(cowork_daily)) if cowork_daily else cc.get("coworkSessionsPerDay", 0)
+
 chats_daily_js  = json.dumps(chats_daily,  separators=(",", ":"))
 cowork_daily_js = json.dumps(cowork_daily, separators=(",", ":"))
 
@@ -156,7 +159,7 @@ new_data_block = f"""const DATA = {{
   totalMembers: {total_members},
   orgSize: 209,
   avgLinesActive: {avg_lines},
-  coworkDailyUsers: {round(cc.get('wau', 0) / 7) if cc.get('wau') else 35},
+  coworkDailyUsers: {cowork_daily_avg},
   coworkSessionsPerDay: {cc.get('coworkSessionsPerDay', 0)},
   coworkUserPct: {cc.get('coworkUserPct', 0)},
   chatsPerDay: {cc.get('chatsPerDay', 0)},
@@ -269,7 +272,12 @@ def get_dept_for_member(prefix):
     return DEPT_DEFAULTS.get(prefix, "Data Engineering")
 
 
-members_sorted = sorted(members_dict.items(), key=lambda x: -x[1])
+# Exclude service/shared accounts from the per-member leaderboard
+BOT_EMAILS = {'consulting@sarasanalytics.com', 'consulting.claude@sarasanalytics.com'}
+members_sorted = sorted(
+    [(e, l) for e, l in members_dict.items() if e not in BOT_EMAILS],
+    key=lambda x: -x[1]
+)
 member_lines = []
 for email, lines in members_sorted:
     prefix = email.replace("@sarasanalytics.com", "")

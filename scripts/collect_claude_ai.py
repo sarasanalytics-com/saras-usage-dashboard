@@ -230,10 +230,13 @@ log(f"  Tool line counts:           {total_tool_lines:,}")
 log(f"  LoC added (git):            {total_loc_added:,}")
 log(f"  → Using [{lines_source}] = {total_lines_out:,}")
 
-# Active members = users with accepted lines > 0 OR CC sessions > 0
-active_emails      = {e for e, v in user_lines_final.items() if v > 0} | user_cc_active
+# Exclude service/shared accounts — not real individual contributors
+BOT_EMAILS = {'consulting@sarasanalytics.com', 'consulting.claude@sarasanalytics.com'}
+
+# Active members = users with accepted lines > 0 OR CC sessions > 0 (bots excluded)
+active_emails      = ({e for e, v in user_lines_final.items() if v > 0} | user_cc_active) - BOT_EMAILS
 active_members     = len(active_emails)
-total_members      = len(user_accepted)   # everyone who appears in API at all
+total_members      = sum(1 for e in user_accepted if e not in BOT_EMAILS)
 
 avg_chat_per_day   = round(sum(daily_chat_convos) / len(daily_chat_convos), 0) if daily_chat_convos else 0
 avg_cowork_per_day = round(sum(daily_cowork_sess)  / len(daily_cowork_sess),  0) if daily_cowork_sess else 0
@@ -255,8 +258,11 @@ log(f"  Chat users: {len(chat_users_mtd)}  |  Avg chats/day: {avg_chat_per_day}"
 
 
 # ── 4. Write output ───────────────────────────────────────────────────────────
-# Sort members by lines (desc)
-members_sorted = dict(sorted(user_lines_final.items(), key=lambda x: -x[1]))
+# Sort members by lines (desc), excluding service/shared accounts
+members_sorted = dict(sorted(
+    {k: v for k, v in user_lines_final.items() if k not in BOT_EMAILS}.items(),
+    key=lambda x: -x[1]
+))
 
 # Build per-day arrays for trend charts (weekdays only)
 chats_daily_data  = []
