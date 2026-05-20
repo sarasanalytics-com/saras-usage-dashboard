@@ -22,6 +22,98 @@
   "projectUserPct": 23,
   "artifactsCreated": 33,
   "artifactUserPct": 9,
+  "chatsDailyData": [
+    {
+      "date": "2026-05-01",
+      "chats": 142
+    },
+    {
+      "date": "2026-05-04",
+      "chats": 211
+    },
+    {
+      "date": "2026-05-05",
+      "chats": 211
+    },
+    {
+      "date": "2026-05-06",
+      "chats": 190
+    },
+    {
+      "date": "2026-05-07",
+      "chats": 231
+    },
+    {
+      "date": "2026-05-08",
+      "chats": 190
+    },
+    {
+      "date": "2026-05-11",
+      "chats": 184
+    },
+    {
+      "date": "2026-05-12",
+      "chats": 209
+    },
+    {
+      "date": "2026-05-13",
+      "chats": 228
+    },
+    {
+      "date": "2026-05-14",
+      "chats": 204
+    },
+    {
+      "date": "2026-05-15",
+      "chats": 154
+    }
+  ],
+  "coworkDailyData": [
+    {
+      "date": "2026-05-01",
+      "users": 30
+    },
+    {
+      "date": "2026-05-04",
+      "users": 47
+    },
+    {
+      "date": "2026-05-05",
+      "users": 33
+    },
+    {
+      "date": "2026-05-06",
+      "users": 46
+    },
+    {
+      "date": "2026-05-07",
+      "users": 34
+    },
+    {
+      "date": "2026-05-08",
+      "users": 28
+    },
+    {
+      "date": "2026-05-11",
+      "users": 45
+    },
+    {
+      "date": "2026-05-12",
+      "users": 34
+    },
+    {
+      "date": "2026-05-13",
+      "users": 45
+    },
+    {
+      "date": "2026-05-14",
+      "users": 45
+    },
+    {
+      "date": "2026-05-15",
+      "users": 34
+    }
+  ],
   "members": {
     "consulting@sarasanalytics.com": 59447,
     "sparsh.gupta@sarasanalytics.com": 50647,
