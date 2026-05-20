@@ -222,7 +222,7 @@ DEPT_DEFAULTS = {
     "reeshab.nayak": "Data Engineering",
     "ajay": "Data Engineering",
     "sarath.buchi": "Data Engineering",
-    "anudeep.kolla": "Management",
+    "anudeep.kolla": "IT",
     "rudrasen.gouda": "Data Engineering",
     "ram.gupta": "Data Engineering",
     "thanoj.rahul": "Data Engineering",
@@ -277,10 +277,10 @@ NAME_DEFAULTS = {
 
 
 def get_dept_for_member(prefix):
-    d = dept_map.get(f"{prefix}@sarasanalytics.com")
-    if d:
-        return d
-    return DEPT_DEFAULTS.get(prefix, "Data Engineering")
+    email = f"{prefix}@sarasanalytics.com"
+    # Priority: HR roster (ALL_EMPLOYEES) > static DEPT_MAP > DEPT_DEFAULTS
+    return (all_emp_dept.get(email) or dept_map.get(email)
+            or DEPT_DEFAULTS.get(prefix, "Data Engineering"))
 
 
 # Exclude service/shared accounts from the per-member leaderboard
