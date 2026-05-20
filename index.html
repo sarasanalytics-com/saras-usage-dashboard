@@ -1611,7 +1611,7 @@ function renderPeopleTable() {
   const showCursor = ['all','multi','cursor','none'].includes(peopleTier);
   const showWS     = ['all','multi','ws','none'].includes(peopleTier);
   const showAI     = ['all','multi','cc','ai','none'].includes(peopleTier);
-  const showCU     = peopleTier === 'cu';
+  const showCU     = ['all','multi','cu'].includes(peopleTier);
 
   // Update header columns dynamically
   const headCells = [
