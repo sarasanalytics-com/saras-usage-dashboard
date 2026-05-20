@@ -247,7 +247,7 @@
         <tbody id="dept-scorecard-body"></tbody>
       </table>
       <div style="font-size:0.68rem;color:var(--muted);margin-top:8px;line-height:1.6">
-        ✱ Claude.ai adoption is org-wide from Claude Admin — dept-level breakdown not available from the API. &nbsp;
+        Claude.ai = users with ≥1 chat this month (from Claude Admin Analytics API · per-user data). &nbsp;
         CC Lines = Claude Code lines accepted MTD. &nbsp;
         "Any AI" = employee active on at least one tool this month.
       </div>
@@ -3236,6 +3236,14 @@ function renderDeptScorecardTable() {
     wsByDept[d].add(email);
   });
 
+  // Claude.ai per-dept (from CLAUDE_AI_USERS)
+  const aiByDept = {};
+  Object.keys(CLAUDE_AI_USERS||{}).forEach(email => {
+    const d = getDept(email);
+    if(!aiByDept[d]) aiByDept[d] = new Set();
+    aiByDept[d].add(email);
+  });
+
   const allTools = ['Claude Code','Cursor','Windsurf','Cowork','Claude.ai'];
   const activeCols = allTools.filter(t => depts.some(d => (TEAM_TOOLS[d]||[]).includes(t)));
   activeCols.push('ClickUp');
@@ -3262,10 +3270,12 @@ function renderDeptScorecardTable() {
     const cursorCt = (cursorByDept[dept]||new Set()).size;
     const wsCt     = (wsByDept[dept]||new Set()).size;
     const cuActive = (CLICKUP_DATA.people||[]).filter(p=>p.dept===dept&&(p.open>0||p.done>0)).length;
+    const aiCt     = (aiByDept[dept]||new Set()).size;
     const anySet = new Set([
       ...members.filter(m=>m.dept===dept&&m.lines>0).map(m=>m.email),
       ...(cursorByDept[dept]||new Set()),
       ...(wsByDept[dept]||new Set()),
+      ...(aiByDept[dept]||new Set()),
     ]);
     const anyCt = anySet.size;
     let html = `<tr><td>${deptBadge(dept)}</td><td class="num-cell">${hc}</td>`;
@@ -3275,7 +3285,7 @@ function renderDeptScorecardTable() {
       else if(tool==='Cursor')  { html+=cell(cursorCt,hc,inScope); }
       else if(tool==='Windsurf'){ html+=cell(wsCt,hc,inScope); }
       else if(tool==='Cowork')  { html+=inScope ? `<td class="num-cell" style="font-size:0.7rem;color:var(--muted)">org-wide only</td>` : `<td class="num-cell"><span class="not-in-scope">–</span></td>`; }
-      else if(tool==='Claude.ai'){ html+=inScope ? `<td class="num-cell" style="font-size:0.7rem;color:var(--muted)">org-wide only✱</td>` : `<td class="num-cell"><span class="not-in-scope">–</span></td>`; }
+      else if(tool==='Claude.ai'){ html+=cell(aiCt,hc,inScope); }
       else if(tool==='ClickUp') { html+=cell(cuActive,hc,true); }
     });
     html+=`<td class="num-cell">${cell(anyCt,hc,true).replace(/<\/?td[^>]*>/g,'')}</td>`;
