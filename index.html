@@ -224,6 +224,19 @@
 
 <!-- OVERVIEW / EXECUTIVE SUMMARY -->
 <div class="page active" id="tab-overview">
+  
+  <!-- CRITICAL ALERTS (Top Priority for Krishna) -->
+  <div id="critical-alerts-box" style="background:linear-gradient(135deg,rgba(244,67,54,0.12),rgba(255,82,82,0.08));border:2px solid rgba(244,67,54,0.4);border-radius:12px;padding:20px 24px;margin-bottom:24px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <span style="font-size:1.8rem">🚨</span>
+      <div>
+        <div style="font-size:1.1rem;font-weight:800;color:#ff6b6b">CRITICAL ATTENTION NEEDED</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Issues requiring immediate action this week</div>
+      </div>
+    </div>
+    <div id="critical-alerts-content" style="display:flex;flex-direction:column;gap:12px;font-size:0.85rem"></div>
+  </div>
+
   <!-- Key Takeaways -->
   <div id="key-takeaways" style="margin-bottom:24px"></div>
   
@@ -1043,7 +1056,8 @@ function applyGlobalFilters() {
     document.getElementById('gf-active-label').textContent =
       `Filtered: ${GF.dept} · ${hc} employees`;
   }
-  renderOverviewKPIs();
+  renderCriticalAlerts();
+renderOverviewKPIs();
   renderDeptScorecardTable();
   renderCodeTable();
   renderPeopleTable();
@@ -3492,6 +3506,76 @@ function openPersonPanel(email) {
       }));
     }
   });
+}
+
+function renderCriticalAlerts() {
+  const d = DATA;
+  const zeroLiners = members.filter(m => m.lines === 0 && m.email !== 'anudeep.kolla@sarasanalytics.com');
+  const veryLow = members.filter(m => m.lines > 0 && m.lines < 100);
+  const top2 = members[0].lines + members[1].lines;
+  const top2pct = Math.round(top2/d.totalLines*100);
+  
+  const alerts = [];
+  
+  // Concentration risk
+  if (top2pct >= 50) {
+    alerts.push(`
+      <div style="display:flex;gap:10px;align-items:start;padding:12px;background:rgba(244,67,54,0.08);border-left:3px solid #ff6b6b;border-radius:6px">
+        <span style="font-size:1.2rem">⚠️</span>
+        <div>
+          <div style="font-weight:700;color:#ff6b6b;margin-bottom:4px">Concentration Risk</div>
+          <div style="color:var(--text)">Top 2 contributors (${members[0].name}, ${members[1].name}) = <strong style="color:#fff">${top2pct}% of all lines</strong>. If either is unavailable, monthly output drops dramatically.</div>
+        </div>
+      </div>`);
+  }
+  
+  // Idle seats
+  if (zeroLiners.length > 50) {
+    alerts.push(`
+      <div style="display:flex;gap:10px;align-items:start;padding:12px;background:rgba(244,67,54,0.08);border-left:3px solid #ff6b6b;border-radius:6px">
+        <span style="font-size:1.2rem">💤</span>
+        <div>
+          <div style="font-weight:700;color:#ff6b6b;margin-bottom:4px">Idle Licenses</div>
+          <div style="color:var(--text)"><strong style="color:#fff">${zeroLiners.length} Claude Code seats</strong> have zero lines this month. At ~$39/seat, that's <strong style="color:#ffa726">$${(zeroLiners.length * 39).toLocaleString()}/mo wasted</strong> on unused licenses.</div>
+        </div>
+      </div>`);
+  }
+  
+  // Projects gap
+  const projectGap = 40 - d.projectUserPct;
+  if (projectGap > 10) {
+    alerts.push(`
+      <div style="display:flex;gap:10px;align-items:start;padding:12px;background:rgba(255,167,38,0.08);border-left:3px solid #ffa726;border-radius:6px">
+        <span style="font-size:1.2rem">📁</span>
+        <div>
+          <div style="font-weight:700;color:#ffa726;margin-bottom:4px">Projects Underutilized</div>
+          <div style="color:var(--text)">Only <strong style="color:#fff">${d.projectUserPct}% using Projects</strong> (target: 40%). Gap = ${projectGap}pp. Projects are the highest-leverage Claude.ai feature for client work.</div>
+        </div>
+      </div>`);
+  }
+  
+  // Low engagement
+  if (veryLow.length > 10) {
+    alerts.push(`
+      <div style="display:flex;gap:10px;align-items:start;padding:12px;background:rgba(255,167,38,0.08);border-left:3px solid #ffa726;border-radius:6px">
+        <span style="font-size:1.2rem">🐌</span>
+        <div>
+          <div style="font-weight:700;color:#ffa726;margin-bottom:4px">Low Engagement</div>
+          <div style="color:var(--text)"><strong style="color:#fff">${veryLow.length} members</strong> have &lt;100 lines — they're technically "active" but barely using the tool. Need 1:1 onboarding.</div>
+        </div>
+      </div>`);
+  }
+  
+  const box = document.getElementById('critical-alerts-box');
+  const content = document.getElementById('critical-alerts-content');
+  
+  if (alerts.length === 0) {
+    // No critical issues — hide the box
+    box.style.display = 'none';
+  } else {
+    box.style.display = '';
+    content.innerHTML = alerts.join('');
+  }
 }
 
 function renderOverviewKPIs() {
