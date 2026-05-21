@@ -3809,6 +3809,97 @@ function initTrendsTab() {
       <td>${trTrend(d.mom)}</td>
     </tr>`).join('');
 }
+// ==================== MODEL USAGE RENDERING ====================
+function renderModelUsage() {
+  const mu = DATA.modelUsage || {};
+  const mc = DATA.modelCost || {};
+  
+  // If no data, hide all model sections
+  if (Object.keys(mu).length === 0) {
+    ['model-section', 'model-card', 'claudeai-model-section', 'claudeai-model-card', 
+     'trends-model-section', 'trends-model-card'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = 'none';
+    });
+    return;
+  }
+  
+  // Show sections
+  ['model-section', 'model-card', 'claudeai-model-section', 'claudeai-model-card',
+   'trends-model-section', 'trends-model-card'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = '';
+  });
+  
+  // Model display names
+  const modelNames = {
+    'claude-opus-4-7': 'Opus 4.7',
+    'claude-opus-4-6': 'Opus 4.6',
+    'claude-sonnet-4-6': 'Sonnet 4.6',
+    'claude-sonnet-4-5': 'Sonnet 4.5',
+    'claude-haiku-4-5': 'Haiku 4.5',
+  };
+  
+  // Sort models by cost (desc)
+  const models = Object.keys(mu).sort((a,b) => (mc[b]||0) - (mc[a]||0));
+  const totalCost = Object.values(mc).reduce((s,v)=>s+v, 0);
+  const totalMsgs = models.reduce((s,m) => s + (mu[m]?.messages || 0), 0);
+  
+  // ── Executive Summary: compact grid ──
+  const overviewHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
+      ${models.map(m => {
+        const d = mu[m];
+        const cost = mc[m] || 0;
+        const pct = totalCost > 0 ? Math.round(cost / totalCost * 100) : 0;
+        const name = modelNames[m] || m.replace('claude-','');
+        return `
+          <div class="card" style="padding:16px">
+            <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:6px">${name}</div>
+            <div style="font-size:1.5rem;font-weight:800;color:#fff;margin-bottom:4px">${fmt(d.messages || 0)}</div>
+            <div style="font-size:0.75rem;color:var(--muted)">messages</div>
+            <div style="font-size:0.9rem;font-weight:700;color:var(--accent2);margin-top:8px">$${cost.toFixed(2)}</div>
+            <div style="font-size:0.72rem;color:var(--muted)">${pct}% of total cost</div>
+          </div>`;
+      }).join('')}
+    </div>`;
+  document.getElementById('model-overview-content').innerHTML = overviewHTML;
+  
+  // ── Claude.ai tab: detailed table ──
+  const tableHTML = models.map(m => {
+    const d = mu[m];
+    const cost = mc[m] || 0;
+    const totalTok = (d.input_tokens||0) + (d.output_tokens||0);
+    const pct = totalCost > 0 ? ((cost / totalCost) * 100).toFixed(1) : '0.0';
+    const name = modelNames[m] || m.replace('claude-','');
+    return `
+      <tr>
+        <td><strong style="color:#fff">${name}</strong><div style="font-size:0.7rem;color:var(--muted);margin-top:2px">${m}</div></td>
+        <td class="num-cell">${fmt(d.messages || 0)}</td>
+        <td class="num-cell">${fmt(d.input_tokens || 0)}</td>
+        <td class="num-cell">${fmt(d.output_tokens || 0)}</td>
+        <td class="num-cell" style="font-weight:700">${fmt(totalTok)}</td>
+        <td class="num-cell" style="color:var(--accent2);font-weight:700">$${cost.toFixed(2)}</td>
+        <td class="num-cell">${pct}%</td>
+      </tr>`;
+  }).join('');
+  document.getElementById('claudeai-model-table').innerHTML = tableHTML;
+  
+  // ── Trends tab: simple summary (MoM will come later once we have historical data) ──
+  const trendsHTML = `
+    <div style="background:rgba(108,99,255,0.07);border:1px solid rgba(108,99,255,0.2);border-radius:10px;padding:14px 18px;margin-bottom:16px;font-size:0.85rem">
+      <strong style="color:#a89cff">📊 Current Month Summary</strong><br>
+      Total messages: <strong style="color:#fff">${fmt(totalMsgs)}</strong> · 
+      Total cost: <strong style="color:var(--accent2)">$${totalCost.toFixed(2)}</strong><br>
+      <span style="font-size:0.78rem;color:var(--muted);margin-top:6px;display:inline-block">
+        Month-over-month trends will appear here once we have 2+ months of model-level data.
+      </span>
+    </div>
+    ${overviewHTML}`;
+  document.getElementById('trends-model-content').innerHTML = trendsHTML;
+}
+// ==================== END MODEL USAGE ====================
+
 // ==================== END TRENDS TAB ====================
 </script>
 
@@ -3901,6 +3992,16 @@ function initTrendsTab() {
     <div class="section-title">Claude.ai Chats &amp; Cowork Users — Daily</div>
     <div class="section-sub" style="margin-bottom:16px">Weekdays only · Source: Claude Admin · ~2 day lag</div>
     <div style="height:240px"><canvas id="tr-chartDailyMay"></canvas></div>
+  </div>
+
+</div>
+
+  <!-- Model Usage MoM -->
+  <div class="section-divider" id="trends-model-section" style="display:none"><span>🤖 Model Usage Month-over-Month <span class="timeframe-badge tbadge-mom">MoM</span></span></div>
+  <div class="card-full" id="trends-model-card" style="display:none">
+    <div class="section-title">Model Usage Trends — May 2026</div>
+    <div class="section-sub" style="margin-bottom:16px">Messages and cost per model over time</div>
+    <div id="trends-model-content"></div>
   </div>
 
 </div>
