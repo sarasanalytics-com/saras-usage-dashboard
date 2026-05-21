@@ -936,7 +936,7 @@ function getSubTeam(managerName) {
   const result = new Set();
   function collect(name) {
     ALL_EMPLOYEES.forEach(emp => {
-      if ((emp.manager || '').trim().toLowerCase() === name.trim().toLowerCase()) {
+      if ((emp.reportingManager || '').trim().toLowerCase() === name.trim().toLowerCase()) {
         if (!result.has(emp.email)) {
           result.add(emp.email);
           collect(emp.name); // recurse into their reports
@@ -965,7 +965,7 @@ function inGFScope(email) {
 function populateManagerDropdown() {
   const managers = new Set();
   ALL_EMPLOYEES.forEach(emp => {
-    if (emp.manager && emp.manager.trim()) managers.add(emp.manager.trim());
+    if (emp.reportingManager && emp.reportingManager.trim()) managers.add(emp.reportingManager.trim());
   });
   const sel = document.getElementById('gf-manager');
   [...managers].sort().forEach(mgr => {
