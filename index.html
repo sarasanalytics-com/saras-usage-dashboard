@@ -999,6 +999,7 @@ function applyGlobalFilters() {
   renderCUTable();
   renderWeeklyTab();
   renderToolStrips();
+renderModelUsage();
 }
 function clearGlobalFilters() {
   document.getElementById('gf-manager').value = 'all';
@@ -1059,6 +1060,8 @@ const DATA = {
   coworkDailyData: [{"date":"2026-05-01","users":30},{"date":"2026-05-04","users":47},{"date":"2026-05-05","users":33},{"date":"2026-05-06","users":46},{"date":"2026-05-07","users":34},{"date":"2026-05-08","users":28},{"date":"2026-05-11","users":45},{"date":"2026-05-12","users":34},{"date":"2026-05-13","users":45},{"date":"2026-05-14","users":45},{"date":"2026-05-15","users":34}],
   chatsDataAsOf: '2026-05-15',
   coworkDataAsOf: '2026-05-15',
+  modelUsage: {},
+  modelCost: {},
 };
 
 // Dynamic month prefix — auto-rolls each month (e.g. '2026-05', '2026-06')
