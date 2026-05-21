@@ -74,6 +74,49 @@ if all_emp_block:
 log(f"  ALL_EMPLOYEES depts: {len(all_emp_dept)} entries")
 
 
+DEPT_DEFAULTS = {
+    "sparsh.gupta": "Engineering",
+    "bheem": "Engineering",
+    "bhawna.kumari": "Consulting",
+    "rakesh.varma": "Marketing",
+    "saivarun.pathi": "Data Engineering",
+    "saiteja.katrapati": "Data Engineering",
+    "rajavardhan": "Data Engineering",
+    "venkateshwaran.s": "Data Engineering",
+    "harsh.sharma": "Data Engineering",
+    "moiz.essaji": "Finance",
+    "katharin.benson": "HR",
+    "anusha": "Data Engineering",
+    "rohit.pandey": "Data Engineering",
+    "kritik.kumar": "Data Engineering",
+    "vignesh.bodiga": "Data Engineering",
+    "yashveer.gaur": "Data Engineering",
+    "naveena.kolli": "Data Engineering",
+    "waheedul.akbar": "Data Engineering",
+    "satyam.deshwal": "Data Engineering",
+    "sreeram.ravuri": "Data Engineering",
+    "abhignya.pinnoju": "Data Engineering",
+    "joseph.ubbarapu": "Data Engineering",
+    "ritvik.vemula": "Data Engineering",
+    "mahadas.srianshu": "Data Engineering",
+    "mohammed.muneeb": "Data Engineering",
+    "nithin.dornala": "Data Engineering",
+    "jigar.trivedi": "Data Engineering",
+    "reeshab.nayak": "Data Engineering",
+    "ajay": "Data Engineering",
+    "sarath.buchi": "Data Engineering",
+    "anudeep.kolla": "IT",
+    "rudrasen.gouda": "Data Engineering",
+    "ram.gupta": "Data Engineering",
+    "thanoj.rahul": "Data Engineering",
+    "ripujit": "Data Engineering",
+    "arijit.bhattacharyya": "Data Engineering",
+    "kaivalya": "Data Engineering",
+    "kranthi.kumar": "Data Engineering",
+    "srinithi.reddy": "Data Engineering",
+}
+
+
 def dept_for(email):
     e = email.lower()
     prefix = e.replace("@sarasanalytics.com", "")
@@ -195,47 +238,7 @@ log(f"  DATA block updated: {total_lines:,} lines, {active_members}/{total_membe
 
 # ── Update members[] ──────────────────────────────────────────────────────────
 # Build per-member lines list (sorted desc)
-DEPT_DEFAULTS = {
-    "sparsh.gupta": "Engineering",
-    "bheem": "Engineering",
-    "bhawna.kumari": "Consulting",
-    "rakesh.varma": "Marketing",
-    "saivarun.pathi": "Data Engineering",
-    "saiteja.katrapati": "Data Engineering",
-    "rajavardhan": "Data Engineering",
-    "venkateshwaran.s": "Data Engineering",
-    "harsh.sharma": "Data Engineering",
-    "moiz.essaji": "Finance",
-    "katharin.benson": "HR",
-    "anusha": "Data Engineering",
-    "rohit.pandey": "Data Engineering",
-    "kritik.kumar": "Data Engineering",
-    "vignesh.bodiga": "Data Engineering",
-    "yashveer.gaur": "Data Engineering",
-    "naveena.kolli": "Data Engineering",
-    "waheedul.akbar": "Data Engineering",
-    "satyam.deshwal": "Data Engineering",
-    "sreeram.ravuri": "Data Engineering",
-    "abhignya.pinnoju": "Data Engineering",
-    "joseph.ubbarapu": "Data Engineering",
-    "ritvik.vemula": "Data Engineering",
-    "mahadas.srianshu": "Data Engineering",
-    "mohammed.muneeb": "Data Engineering",
-    "nithin.dornala": "Data Engineering",
-    "jigar.trivedi": "Data Engineering",
-    "reeshab.nayak": "Data Engineering",
-    "ajay": "Data Engineering",
-    "sarath.buchi": "Data Engineering",
-    "anudeep.kolla": "IT",
-    "rudrasen.gouda": "Data Engineering",
-    "ram.gupta": "Data Engineering",
-    "thanoj.rahul": "Data Engineering",
-    "ripujit": "Data Engineering",
-    "arijit.bhattacharyya": "Data Engineering",
-    "kaivalya": "Data Engineering",
-    "kranthi.kumar": "Data Engineering",
-    "srinithi.reddy": "Data Engineering",
-}
+
 
 NAME_DEFAULTS = {
     "sparsh.gupta": "Sparsh Gupta",
