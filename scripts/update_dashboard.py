@@ -415,3 +415,5 @@ log(f"  ADOPTION_DAYS: {len(last30)} days")
 # ── Write HTML ────────────────────────────────────────────────────────────────
 HTML_PATH.write_text(html, encoding="utf-8")
 log(f"\nDone. index.html updated.")
+ 
+ 
