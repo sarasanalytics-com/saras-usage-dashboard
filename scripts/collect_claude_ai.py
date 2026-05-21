@@ -262,6 +262,47 @@ log(f"  WAU: {wau}  |  Cowork MAU: {cowork_mau}")
 log(f"  Chat users: {len(chat_users_mtd)}  |  Avg chats/day: {avg_chat_per_day}")
 
 
+
+# ── 4. Model-level usage (Opus / Sonnet / Haiku) ──────────────────────────────
+log("\nFetching model-level usage (Opus/Sonnet/Haiku)...")
+model_usage = {}
+model_cost = {}
+
+try:
+    # Try the usage_report API for model breakdown
+    usage_data = get_json("usage_report/messages", {
+        "starting_at": month_start.strftime("%Y-%m-%dT00:00:00Z"),
+        "ending_at":   (data_until + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z"),
+        "bucket_width": "1d",
+        "group_by": ["model"],
+    })
+    
+    # Aggregate across all buckets
+    for bucket in usage_data.get("data", []):
+        model = bucket.get("model", "unknown")
+        tokens_in  = bucket.get("input_tokens", 0)
+        tokens_out = bucket.get("output_tokens", 0)
+        cost_usd   = bucket.get("cost_usd", 0)
+        
+        if model not in model_usage:
+            model_usage[model] = {"messages": 0, "input_tokens": 0, "output_tokens": 0}
+            model_cost[model] = 0
+        
+        model_usage[model]["messages"] += bucket.get("message_count", 0)
+        model_usage[model]["input_tokens"] += tokens_in
+        model_usage[model]["output_tokens"] += tokens_out
+        model_cost[model] += cost_usd
+    
+    log(f"  Model breakdown:")
+    for model, data in sorted(model_usage.items()):
+        log(f"    {model}: {data['messages']} msgs, {data['input_tokens']:,} in, {data['output_tokens']:,} out, ${model_cost[model]:.2f}")
+
+except Exception as e:
+    log(f"  [WARN] Model usage fetch failed: {e}")
+    log(f"  [INFO] This requires Admin API access. Continuing without model breakdown.")
+    model_usage = {}
+    model_cost = {}
+
 # ── 4. Write output ───────────────────────────────────────────────────────────
 # Sort members by lines (desc), excluding service/shared accounts
 members_sorted = dict(sorted(
@@ -307,6 +348,8 @@ result = {
     "chatUsers":            dict(sorted(user_chats.items(), key=lambda x: -x[1])),
     "coworkUsers":          dict(sorted(user_cowork.items(), key=lambda x: -x[1])),
     "members":              members_sorted,
+    "modelUsage":           model_usage,
+    "modelCost":            model_cost,
 }
 
 OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
