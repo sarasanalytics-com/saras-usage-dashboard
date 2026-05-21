@@ -180,6 +180,9 @@
   <select id="gf-dept" class="dept-select" onchange="applyGlobalFilters()">
     <option value="all">All Departments</option>
   </select>
+  <select id="gf-manager" class="dept-select" onchange="applyGlobalFilters()">
+    <option value="all">All Managers</option>
+  </select>
   <span id="gf-active-label" style="font-size:0.75rem;color:var(--accent2);display:none"></span>
   <button onclick="clearGlobalFilters()" id="gf-clear" style="display:none;padding:4px 12px;background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:0.75rem;cursor:pointer;">✕ Clear filter</button>
   <span style="font-size:0.68rem;color:rgba(139,146,184,0.4);margin-left:auto">Filter affects all tabs</span>
@@ -926,12 +929,61 @@
 // ==================== UPDATE THESE TWO BLOCKS DAILY ====================
 
 // ── Global filter state ──────────────────────────────────────────────────────
-const GF = { dept: 'all' };
+const GF = { dept: 'all', manager: 'all' };
+
+// Returns a Set of emails in a manager's sub-team (direct + recursive)
+function getSubTeam(managerName) {
+  const result = new Set();
+  function collect(name) {
+    ALL_EMPLOYEES.forEach(emp => {
+      if ((emp.manager || '').trim().toLowerCase() === name.trim().toLowerCase()) {
+        if (!result.has(emp.email)) {
+          result.add(emp.email);
+          collect(emp.name); // recurse into their reports
+        }
+      }
+    });
+  }
+  collect(managerName);
+  return result;
+}
+
+// Returns true if email is in scope given current GF filters
+function inGFScope(email) {
+  if (GF.dept !== 'all') {
+    const d = getDept(email);
+    if (d !== GF.dept) return false;
+  }
+  if (GF.manager !== 'all') {
+    const subTeam = getSubTeam(GF.manager);
+    if (!subTeam.has(email)) return false;
+  }
+  return true;
+}
+
+// Populate manager dropdown from ALL_EMPLOYEES
+function populateManagerDropdown() {
+  const managers = new Set();
+  ALL_EMPLOYEES.forEach(emp => {
+    if (emp.manager && emp.manager.trim()) managers.add(emp.manager.trim());
+  });
+  const sel = document.getElementById('gf-manager');
+  [...managers].sort().forEach(mgr => {
+    const opt = document.createElement('option');
+    opt.value = mgr;
+    opt.textContent = mgr;
+    sel.appendChild(opt);
+  });
+}
 
 function applyGlobalFilters() {
-  GF.dept = document.getElementById('gf-dept').value;
-  const active = GF.dept !== 'all';
-  document.getElementById('gf-active-label').style.display = active ? '' : 'none';
+  GF.dept    = document.getElementById('gf-dept').value;
+  GF.manager = document.getElementById('gf-manager').value;
+  const active = GF.dept !== 'all' || GF.manager !== 'all';
+  const activeLabel = [GF.dept !== 'all' ? GF.dept : '', GF.manager !== 'all' ? GF.manager : ''].filter(Boolean).join(' · ');
+  const lbl = document.getElementById('gf-active-label');
+  lbl.textContent = activeLabel ? 'Filtered: ' + activeLabel : '';
+  lbl.style.display = active ? '' : 'none';
   document.getElementById('gf-clear').style.display = active ? '' : 'none';
   if (active) {
     const hc = ALL_EMPLOYEES.filter(e => e.dept === GF.dept).length;
@@ -949,6 +1001,8 @@ function applyGlobalFilters() {
   renderToolStrips();
 }
 function clearGlobalFilters() {
+  document.getElementById('gf-manager').value = 'all';
+  GF.manager = 'all';
   document.getElementById('gf-dept').value = 'all';
   applyGlobalFilters();
 }
@@ -1634,7 +1688,7 @@ let peopleTier = 'all', peopleQ = '', peopleDept = 'all';
 let peopleSortCol = 'ccLines', peopleSortDir = -1; // default: CC lines desc
 function renderPeopleTable() {
   // Base roster: all 209 employees from Employee Data.xlsx
-  let rows = ALL_EMPLOYEES.filter(emp => emp.email.endsWith('@sarasanalytics.com')).map(emp => {
+  let rows = ALL_EMPLOYEES.filter(emp => emp.email.endsWith('@sarasanalytics.com') && (GF.manager === 'all' || getSubTeam(GF.manager).has(emp.email))).map(emp => {
     const email        = emp.email;
     const member       = members.find(m => m.email === email);
     const ccLines      = member ? member.lines : (ADOPTION_CC_MTD[email] || 0);
@@ -3567,6 +3621,7 @@ function renderToolStrips() {
   document.getElementById('tool-strips-container').innerHTML = html || '<div style="color:var(--muted);font-size:0.85rem;padding:12px">No tools expected for this department filter.</div>';
 }
 
+populateManagerDropdown();
 initFromData();
 renderProjectsTable();
 renderArtifactsTable();
