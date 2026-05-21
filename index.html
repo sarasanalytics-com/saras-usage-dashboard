@@ -175,6 +175,24 @@
   </div>
 </header>
 
+<!-- Data Freshness Banner -->
+<div style="background:linear-gradient(135deg,rgba(255,167,38,0.15),rgba(255,193,7,0.1));border-bottom:1px solid rgba(255,167,38,0.3);padding:8px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:1.1rem">⏱️</span>
+    <div>
+      <div style="font-size:0.8rem;font-weight:700;color:#ffd740">Data Current As Of</div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-top:1px">
+        <strong id="freshness-date" style="color:#fff">Loading...</strong> 
+        <span style="margin-left:8px;color:rgba(255,167,38,0.8)">• Claude Admin reflects ~2 days prior</span>
+        <span style="margin-left:8px;color:var(--muted)">• ClickUp & Cursor: real-time</span>
+      </div>
+    </div>
+  </div>
+  <div style="font-size:0.7rem;color:rgba(139,146,184,0.6);text-align:right">
+    Dashboard auto-updates daily at 7:00 AM IST via GitHub Actions
+  </div>
+</div>
+
 <div id="global-filter-bar" style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;position:sticky;top:61px;z-index:99;flex-wrap:wrap;">
   <span style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-weight:600">View by:</span>
   <select id="gf-dept" class="dept-select" onchange="applyGlobalFilters()">
@@ -1918,6 +1936,7 @@ function initFromData() {
 
   // Header
   set('header-date', d.asOf);
+  set('freshness-date', d.asOf);
   set('header-month', `Claude Code · Claude.ai · Cowork · ${d.monthLabel}`);
   set('overview-month-label', d.monthLabel);
   // Sync all month labels throughout the dashboard
