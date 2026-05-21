@@ -178,7 +178,7 @@ msg += (
     "━━━━━━━━━━━━━━━━━━━━━━━\n"
     ":mag: *CODE REVIEW* — No data available\n\n\n"
     ":bar_chart: _Full interactive dashboard →_ "
-    "<https://anudeepkolla16.github.io/saras-usage-dashboard/|Open Dashboard>"
+    "<https://sarasanalytics-com.github.io/saras-usage-dashboard/|Open Dashboard>"
 )
 
 # ── Post to Slack ─────────────────────────────────────────────────────────────
