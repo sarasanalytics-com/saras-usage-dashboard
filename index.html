@@ -1625,6 +1625,7 @@ function renderCodeTable() {
   else if (codeFilter === 'zero') rows = rows.filter(m => m.lines === 0);
   const activeDept = GF.dept !== 'all' ? GF.dept : codeDept;
   if (activeDept !== 'all') rows = rows.filter(m => m.dept === activeDept);
+  if (GF.manager !== 'all') { const st = getSubTeam(GF.manager); rows = rows.filter(m => st.has(m.email)); }
   rows.sort((a,b) => {
     const d = codeSortDir;
     if (codeSortCol==='name')  return d*a.name.localeCompare(b.name);
