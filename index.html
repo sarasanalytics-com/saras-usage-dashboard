@@ -208,7 +208,20 @@
 <div class="page active" id="tab-overview">
   <!-- Key Takeaways -->
   <div id="key-takeaways" style="margin-bottom:24px"></div>
-  <div class="section-divider"><span>🤖 Claude Tools</span></div>
+  
+  <!-- Model Usage Breakdown -->
+  <div class="section-divider" id="model-section" style="display:none"><span>🤖 Claude Model Usage <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="card-full" id="model-card" style="display:none">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Usage by Model</div>
+        <div class="section-sub">Messages, tokens, and estimated cost per model</div>
+      </div>
+    </div>
+    <div id="model-overview-content"></div>
+  </div>
+
+<div class="section-divider"><span>🤖 Claude Tools</span></div>
   <div class="kpi-grid">
     <div class="kpi c1">
       <div class="kpi-label">Code Lines Accepted (MTD)</div>
@@ -512,6 +525,28 @@
 
 <!-- CLAUDE.AI -->
 <div class="page" id="tab-claudeai">
+
+  <!-- Model Breakdown Section -->
+  <div class="section-divider" id="claudeai-model-section" style="display:none"><span>🤖 Model Usage <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="card-full" id="claudeai-model-card" style="display:none">
+    <div class="section-header">
+      <div class="section-title">Claude Model Breakdown</div>
+      <div class="section-sub">Detailed usage and cost per model this month</div>
+    </div>
+    <table class="data-table">
+      <thead><tr>
+        <th>Model</th>
+        <th style="text-align:right">Messages</th>
+        <th style="text-align:right">Input Tokens</th>
+        <th style="text-align:right">Output Tokens</th>
+        <th style="text-align:right">Total Tokens</th>
+        <th style="text-align:right">Est. Cost</th>
+        <th style="text-align:right">% of Total</th>
+      </tr></thead>
+      <tbody id="claudeai-model-table"></tbody>
+    </table>
+  </div>
+
   <div class="fqq-strip">
     <div class="fqq-card">
       <div class="fqq-label fqq-freq">Frequency</div>
