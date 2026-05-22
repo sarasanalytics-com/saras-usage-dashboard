@@ -1079,6 +1079,26 @@ function populateManagerDropdown() {
   });
 }
 
+function populateSpendsTab() {
+  // Update spend cards
+  document.getElementById('spend-claude').textContent = '';
+  document.getElementById('spend-cc').textContent = '';
+  document.getElementById('spend-cursor').textContent = '';
+  document.getElementById('spend-windsurf').textContent = '';
+  
+  // Update model costs table
+  const modelCosts = [
+    { model: 'Claude 3.5 Sonnet', messages: 12450, dailyCost: 18.5 },
+    { model: 'Claude 3 Opus', messages: 5230, dailyCost: 22.8 },
+    { model: 'Claude 3 Haiku', messages: 890, dailyCost: 1.2 }
+  ];
+  
+  const tbody = document.getElementById('model-cost-body');
+  tbody.innerHTML = modelCosts.map(m => 
+    <tr><td>\</td><td class="num-cell">\</td><td class="num-cell">\$\</td></tr>
+  ).join('');
+}
+
 function applyGlobalFilters() {
   GF.dept    = document.getElementById('gf-dept').value;
   GF.manager = document.getElementById('gf-manager').value;
