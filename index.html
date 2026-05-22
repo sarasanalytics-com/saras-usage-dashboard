@@ -222,6 +222,19 @@
   <div class="tab" onclick="switchTab('clickup',this)">✅ ClickUp</div>
 </div>
 
+<!-- API KEY CONFIG (Hidden) -->
+<div id="api-config" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface2);border-radius:8px;padding:24px;z-index:9999;width:400px;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+  <div style="font-size:1.2rem;font-weight:700;margin-bottom:16px">Configure API Keys</div>
+  <div style="margin-bottom:12px">
+    <label style="display:block;font-size:0.85rem;color:var(--muted);margin-bottom:4px">Claude Admin API Key</label>
+    <input type="password" id="claude-api-key" placeholder="Enter your API key" style="width:100%;padding:8px;background:var(--surface);border:1px solid rgba(255,255,255,0.1);border-radius:4px;color:#fff">
+  </div>
+  <div style="display:flex;gap:8px">
+    <button onclick="saveApiKeys()" style="flex:1;padding:8px;background:#00d4aa;color:#000;border:none;border-radius:4px;cursor:pointer;font-weight:700">Save</button>
+    <button onclick="closeApiConfig()" style="flex:1;padding:8px;background:var(--surface);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:4px;cursor:pointer">Cancel</button>
+  </div>
+</div>
+
 <!-- OVERVIEW / EXECUTIVE SUMMARY -->
 <div class="page active" id="tab-overview">
   
