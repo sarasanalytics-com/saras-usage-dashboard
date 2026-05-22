@@ -1213,20 +1213,22 @@ function updateSpendData(claudeAiMtd, cursorMtd, windsurfMtd, claudeAiMonthly, c
 }
 
 function populateSpendsTab() {
-  // Spend data - Updated from https://claude.ai/analytics/activity
-  // Claude: $1,200 MTD (as per overage alert), Cursor & Windsurf estimated
-  const spendData = {claude:{mtd:3200,monthly:3200,seats:160,perSeat:20},cursor:{mtd:1240,monthly:1240,seats:62,perSeat:20},windsurf:{mtd:255,monthly:255,seats:8,perSeat:31.875}};
+  try {
+    // Spend data - Updated from https://claude.ai/analytics/activity
+    // Claude: $1,200 MTD (as per overage alert), Cursor & Windsurf estimated
+    const spendData = {claude:{mtd:3200,monthly:3200,seats:160,perSeat:20},cursor:{mtd:1240,monthly:1240,seats:62,perSeat:20},windsurf:{mtd:255,monthly:255,seats:8,perSeat:31.875}};
 
-  // Calculate yearly and daily averages (assuming 30-day month)
-  Object.keys(spendData).forEach(tool => {
-    const data = spendData[tool];
-    data.yearly = data.monthly * 12;
-    data.daily = Math.round(data.monthly / 30 * 100) / 100;
-  });
+    // Calculate yearly and daily averages (assuming 30-day month)
+    Object.keys(spendData).forEach(tool => {
+      const data = spendData[tool];
+      data.yearly = data.monthly * 12;
+      data.daily = Math.round(data.monthly / 30 * 100) / 100;
+    });
 
-  // Model costs - read from DATA.modelCost (populated by update_dashboard.py from API)
-  // Updated daily by the GitHub Actions workflow (collect_claude_ai.py)
-  let modelCostByModel = DATA.modelCost || {};
+    // Model costs - read from DATA.modelCost (populated by update_dashboard.py from API)
+    // Updated daily by the GitHub Actions workflow (collect_claude_ai.py)
+    // DATA may not be defined yet, so check first
+    let modelCostByModel = (typeof DATA !== 'undefined' ? DATA.modelCost : null) || {};
 
   // If no API data yet, use fallback estimates (will auto-update when workflow runs)
   if (Object.keys(modelCostByModel).length === 0) {
@@ -1237,21 +1239,22 @@ function populateSpendsTab() {
     };
   }
 
-  // Convert to display format with calculated daily costs (divide MTD by days in month)
-  const daysInMonth = 22; // Days with data through May 22
-  const modelCosts = Object.entries(modelCostByModel).map(([model, mtdCost]) => {
-    const dailyCost = mtdCost / daysInMonth;
-    const displayName = model
-      .replace('claude-3-5-sonnet', 'Claude 3.5 Sonnet')
-      .replace('claude-opus', 'Claude 3 Opus')
-      .replace('claude-haiku', 'Claude 3 Haiku')
-      .replace(/-/g, ' ');
-    return {
-      model: displayName,
-      messages: DATA.modelUsage[model]?.messages || 0,
-      dailyCost: Math.round(dailyCost * 100) / 100
-    };
-  });
+    // Convert to display format with calculated daily costs (divide MTD by days in month)
+    const daysInMonth = 22; // Days with data through May 22
+    const modelUsage = (typeof DATA !== 'undefined' ? DATA.modelUsage : {}) || {};
+    const modelCosts = Object.entries(modelCostByModel).map(([model, mtdCost]) => {
+      const dailyCost = mtdCost / daysInMonth;
+      const displayName = model
+        .replace('claude-3-5-sonnet', 'Claude 3.5 Sonnet')
+        .replace('claude-opus', 'Claude 3 Opus')
+        .replace('claude-haiku', 'Claude 3 Haiku')
+        .replace(/-/g, ' ');
+      return {
+        model: displayName,
+        messages: modelUsage[model]?.messages || 0,
+        dailyCost: Math.round(dailyCost * 100) / 100
+      };
+    });
 
   // Calculate model cost aggregates
   const modelDailyTotal = modelCosts.reduce((sum, m) => sum + m.dailyCost, 0);
@@ -1312,9 +1315,12 @@ function populateSpendsTab() {
     ).join('');
   }
 
-  // Render model cost trend chart if canvas exists
-  if (document.getElementById('model-cost-trend-chart')) {
-    renderModelCostTrend(modelCosts);
+    // Render model cost trend chart if canvas exists
+    if (document.getElementById('model-cost-trend-chart')) {
+      renderModelCostTrend(modelCosts);
+    }
+  } catch (e) {
+    console.error('Error populating spends tab:', e);
   }
 }
 
