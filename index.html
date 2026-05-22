@@ -876,9 +876,9 @@
   
   <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px">
     <!-- Claude.ai Card -->
-    <div style="background:var(--surface2);border-radius:8px;padding:16px;border-left:3px solid #a89cff">
+    <div style="background:var(--surface2);border-radius:8px;padding:16px;border-left:3px solid #a89cff;min-width:0">
       <div style="font-size:0.85rem;font-weight:700;color:var(--muted);margin-bottom:12px">CLAUDE.AI</div>
-      <div style="font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:8px" id="spend-claude-mtd">–</div>
+      <div style="font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="spend-claude-mtd">–</div>
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px">Monthly to Date</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem">
         <div><span style="color:var(--muted)">Monthly:</span> <span id="spend-claude-monthly" style="color:#fff;font-weight:700">–</span></div>
@@ -888,9 +888,9 @@
     </div>
     
 <!-- Cursor Card -->
-    <div style="background:var(--surface2);border-radius:8px;padding:16px;border-left:3px solid #81c784">
+    <div style="background:var(--surface2);border-radius:8px;padding:16px;border-left:3px solid #81c784;min-width:0">
       <div style="font-size:0.85rem;font-weight:700;color:var(--muted);margin-bottom:12px">CURSOR</div>
-      <div style="font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:8px" id="spend-cursor-mtd">–</div>
+      <div style="font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="spend-cursor-mtd">–</div>
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px">Monthly to Date</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem">
         <div><span style="color:var(--muted)">Monthly:</span> <span id="spend-cursor-monthly" style="color:#fff;font-weight:700">–</span></div>
@@ -900,9 +900,9 @@
     </div>
     
     <!-- Windsurf Card -->
-    <div style="background:var(--surface2);border-radius:8px;padding:16px;border-left:3px solid #00d4aa">
+    <div style="background:var(--surface2);border-radius:8px;padding:16px;border-left:3px solid #00d4aa;min-width:0">
       <div style="font-size:0.85rem;font-weight:700;color:var(--muted);margin-bottom:12px">WINDSURF</div>
-      <div style="font-size:1.8rem;font-weight:700;color:#fff;margin-bottom:8px" id="spend-windsurf-mtd">–</div>
+      <div style="font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="spend-windsurf-mtd">–</div>
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px">Monthly to Date</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem">
         <div><span style="color:var(--muted)">Monthly:</span> <span id="spend-windsurf-monthly" style="color:#fff;font-weight:700">–</span></div>
@@ -1204,10 +1204,11 @@ function updateSpendData(claudeAiMtd, cursorMtd, windsurfMtd, claudeAiMonthly, c
 
 function populateSpendsTab() {
   // Spend data - Updated from https://claude.ai/analytics/activity
+  // Claude: $1,200 MTD (as per overage alert), Cursor & Windsurf estimated
   const spendData = {
-    claude: { mtd: 3200, monthly: 3200, seats: 160, perSeat: 20 },
-    cursor: { mtd: 1240, monthly: 1240, seats: 62, perSeat: 20 },
-    windsurf: { mtd: 255, monthly: 255, seats: 8, perSeat: 31.875 }
+    claude: { mtd: 1200, monthly: 1200, seats: 160, perSeat: 20 },
+    cursor: { mtd: 440, monthly: 440, seats: 62, perSeat: 20 },
+    windsurf: { mtd: 95, monthly: 95, seats: 8, perSeat: 31.875 }
   };
   
   // Calculate yearly and daily averages (assuming 30-day month)
