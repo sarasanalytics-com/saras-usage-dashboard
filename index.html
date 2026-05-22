@@ -3684,13 +3684,10 @@ function renderDeptScorecardTable() {
       else if(tool==='Cursor')  { html+=cell(cursorCt,hc,inScope); }
       else if(tool==='Windsurf'){ html+=cell(wsCt,hc,inScope); }
       else if(tool==='Cowork')  {
-        // When COWORK_USERS is empty, show N/A — avoid contradicting the org-wide 40% KPI with 0%
-        if (Object.keys(COWORK_USERS||{}).length === 0) {
-          html += '<td class="num-cell"><span style="color:var(--muted);font-size:0.72rem" title="Per-dept breakdown not yet available — see org-wide KPI">N/A</span></td>';
-        } else { html += cell(coworkCt,hc,inScope); }
+        html += '<td class="num-cell"><span style="color:var(--muted);font-size:0.72rem">N/A</span></td>';
       }
       else if(tool==='Claude.ai'){ html+=cell(aiCt,hc,inScope); }
-      else if(tool==='ClickUp') { html+='<td class="num-cell"><span style="color:#ffa726;font-weight:700">'+(cuActive||'—')+'</span></td>'; }
+      else if(tool==='ClickUp') { html+='<td class="num-cell"><span style="color:var(--muted);font-size:0.72rem">N/A</span></td>'; }
     });
     html+=`<td class="num-cell">${cell(anyCt,hc,true).replace(/<\/?td[^>]*>/g,'')}</td>`;
     html+=`<td class="num-cell">${ccActive>0?fmt(ccAvg):'<span class="not-in-scope">–</span>'}</td>`;
