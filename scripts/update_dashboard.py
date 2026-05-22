@@ -243,6 +243,38 @@ new_data_block = f"""const DATA = {{
 html = re.sub(r"const DATA = \{.*?\};", new_data_block, html, count=1, flags=re.DOTALL)
 log(f"  DATA block updated: {total_lines:,} lines, {active_members}/{total_members} members")
 
+# -- Update spendData
+claude_spend = cc.get("claudeSpend", {})
+cursor_spend = cc.get("cursorSpend")
+windsurf_spend = cc.get("windsurfSpend")
+
+spend_data = {
+    "claude": {
+        "mtd": claude_spend.get("mtd", 0),
+        "monthly": claude_spend.get("monthly", 0),
+        "seats": 160,
+        "perSeat": 20,
+    },
+    "cursor": {
+        "mtd": cursor_spend.get("mtd", 0) if cursor_spend else 0,
+        "monthly": cursor_spend.get("monthly", 0) if cursor_spend else 0,
+        "seats": 62,
+        "perSeat": 20,
+    },
+    "windsurf": {
+        "mtd": windsurf_spend.get("mtd", 0) if windsurf_spend else 0,
+        "monthly": windsurf_spend.get("monthly", 0) if windsurf_spend else 0,
+        "seats": 8,
+        "perSeat": 31.875,
+    },
+}
+
+spend_js = json.dumps(spend_data, separators=(",", ":"))
+spend_js = spend_js.replace('"', "'").replace("'mtd'", "mtd").replace("'monthly'", "monthly").replace("'seats'", "seats").replace("'perSeat'", "perSeat").replace("'claude'", "claude").replace("'cursor'", "cursor").replace("'windsurf'", "windsurf")
+new_spend_line = f"const spendData = {spend_js};"
+html = re.sub(r"const spendData = \{.*?\};", new_spend_line, html, count=1, flags=re.DOTALL)
+log(f"  spendData: Claude ${spend_data['claude']['mtd']}, Cursor ${spend_data['cursor']['mtd']}, Windsurf ${spend_data['windsurf']['mtd']}")
+
 
 # ── Update members[] ──────────────────────────────────────────────────────────
 # Build per-member lines list (sorted desc)
@@ -415,5 +447,5 @@ log(f"  ADOPTION_DAYS: {len(last30)} days")
 # ── Write HTML ────────────────────────────────────────────────────────────────
 HTML_PATH.write_text(html, encoding="utf-8")
 log(f"\nDone. index.html updated.")
- 
- 
+
+
