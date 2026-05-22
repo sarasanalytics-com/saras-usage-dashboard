@@ -3643,7 +3643,7 @@ function renderDeptScorecardTable() {
   const allTools = ['Claude Code','Cursor','Windsurf','Claude.ai'];
   const activeCols = allTools.filter(t => depts.some(d => (TEAM_TOOLS[d]||[]).includes(t)));
 
-  const headCols = ['Department','Headcount',...activeCols,'Any AI','CC Lines Avg'];
+  const headCols = ['Department','Headcount',...activeCols,'CC Lines Avg'];
   document.getElementById('dept-scorecard-head').innerHTML = '<tr>' + headCols.map(c => `<th style="text-align:${c==='Department'?'left':'right'}">${c}</th>`).join('') + '</tr>';
 
   function cell(count, total, inScope) {
