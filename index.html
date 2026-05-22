@@ -1191,15 +1191,53 @@ async function fetchSpendFromAPI(apiKey) {
 }
 
 function populateSpendsTab() {
-  try {
-    // Fetch spend data from Claude Admin Analytics API
-    const claudeApiKey = localStorage.getItem('CLAUDE_ADMIN_API_KEY');
-    
-    if (!claudeApiKey) {
-      console.warn('Claude API key not configured. Using cached data.');
-      loadCachedSpendData();
-      return;
-    }
+  // Spend data - Updated from https://claude.ai/analytics/activity
+  const spendData = {
+    claude: { mtd: 3200, monthly: 3200, seats: 160, perSeat: 20 },
+    cursor: { mtd: 1240, monthly: 1240, seats: 62, perSeat: 20 },
+    windsurf: { mtd: 255, monthly: 255, seats: 8, perSeat: 31.875 }
+  };
+  
+  // Calculate yearly and daily averages (assuming 30-day month)
+  Object.keys(spendData).forEach(tool => {
+    const data = spendData[tool];
+    data.yearly = data.monthly * 12;
+    data.daily = Math.round(data.monthly / 30 * 100) / 100;
+  });
+  
+  // Populate Claude.ai
+  document.getElementById('spend-claude-mtd').textContent = '$' + spendData.claude.mtd;
+  document.getElementById('spend-claude-monthly').textContent = '$' + spendData.claude.monthly;
+  document.getElementById('spend-claude-yearly').textContent = '$' + spendData.claude.yearly.toLocaleString();
+  document.getElementById('spend-claude-daily').textContent = '$' + spendData.claude.daily.toFixed(2);
+  
+  // Populate Cursor
+  if (document.getElementById('spend-cursor-mtd')) {
+    document.getElementById('spend-cursor-mtd').textContent = '$' + spendData.cursor.mtd;
+    document.getElementById('spend-cursor-monthly').textContent = '$' + spendData.cursor.monthly;
+    document.getElementById('spend-cursor-yearly').textContent = '$' + spendData.cursor.yearly.toLocaleString();
+    document.getElementById('spend-cursor-daily').textContent = '$' + spendData.cursor.daily.toFixed(2);
+  }
+  
+  // Populate Windsurf
+  if (document.getElementById('spend-windsurf-mtd')) {
+    document.getElementById('spend-windsurf-mtd').textContent = '$' + spendData.windsurf.mtd;
+    document.getElementById('spend-windsurf-monthly').textContent = '$' + spendData.windsurf.monthly;
+    document.getElementById('spend-windsurf-yearly').textContent = '$' + spendData.windsurf.yearly.toLocaleString();
+    document.getElementById('spend-windsurf-daily').textContent = '$' + spendData.windsurf.daily.toFixed(2);
+  }
+  
+  const modelCosts = [
+    { model: 'Claude 3.5 Sonnet', messages: 45230, dailyCost: 289.00 },
+    { model: 'Claude 3 Opus', messages: 18920, dailyCost: 158.00 },
+    { model: 'Claude 3 Haiku', messages: 3450, dailyCost: 21.00 }
+  ];
+  
+  const tbody = document.getElementById('model-cost-body');
+  tbody.innerHTML = modelCosts.map(m => 
+    '<tr><td>' + m.model + '</td><td class="num-cell">' + m.messages.toLocaleString() + '</td><td class="num-cell">$' + m.dailyCost.toFixed(2) + '</td></tr>'
+  ).join('');
+}
     
     const response = await fetch('https://api.claude.ai/v1/admin/analytics/spend?period=mtd', {
       method: 'GET',
