@@ -1129,16 +1129,20 @@ function populateSpendsTab() {
   document.getElementById('spend-cc-daily').textContent = '$' + spendData.cc.daily.toFixed(2);
   
   // Populate Cursor
-  document.getElementById('spend-cursor-mtd').textContent = '$' + spendData.cursor.mtd;
-  document.getElementById('spend-cursor-monthly').textContent = '$' + spendData.cursor.monthly;
-  document.getElementById('spend-cursor-yearly').textContent = '$' + spendData.cursor.yearly.toLocaleString();
-  document.getElementById('spend-cursor-daily').textContent = '$' + spendData.cursor.daily.toFixed(2);
+  if (document.getElementById('spend-cursor-mtd')) {
+    document.getElementById('spend-cursor-mtd').textContent = '$' + spendData.cursor.mtd;
+    document.getElementById('spend-cursor-monthly').textContent = '$' + spendData.cursor.monthly;
+    document.getElementById('spend-cursor-yearly').textContent = '$' + spendData.cursor.yearly.toLocaleString();
+    document.getElementById('spend-cursor-daily').textContent = '$' + spendData.cursor.daily.toFixed(2);
+  }
   
   // Populate Windsurf
-  document.getElementById('spend-windsurf-mtd').textContent = '$' + spendData.windsurf.mtd;
-  document.getElementById('spend-windsurf-monthly').textContent = '$' + spendData.windsurf.monthly;
-  document.getElementById('spend-windsurf-yearly').textContent = '$' + spendData.windsurf.yearly.toLocaleString();
-  document.getElementById('spend-windsurf-daily').textContent = '$' + spendData.windsurf.daily.toFixed(2);
+  if (document.getElementById('spend-windsurf-mtd')) {
+    document.getElementById('spend-windsurf-mtd').textContent = '$' + spendData.windsurf.mtd;
+    document.getElementById('spend-windsurf-monthly').textContent = '$' + spendData.windsurf.monthly;
+    document.getElementById('spend-windsurf-yearly').textContent = '$' + spendData.windsurf.yearly.toLocaleString();
+    document.getElementById('spend-windsurf-daily').textContent = '$' + spendData.windsurf.daily.toFixed(2);
+  }
   
   const modelCosts = [
     { model: 'Claude 3.5 Sonnet', messages: 45230, dailyCost: 289.00 },
