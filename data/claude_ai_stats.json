@@ -468,12 +468,59 @@
     "santhosh@sarasanalytics.com": 0,
     "sushanth.singh@sarasanalytics.com": 0
   },
-  "modelUsage": {},
-  "modelCost": {},
+  "modelUsage": {
+    "claude-haiku-4-5-20251001": {
+      "input_tokens": 16939863,
+      "output_tokens": 1410169,
+      "cache_read_tokens": 274873553
+    },
+    "claude-opus-4-6": {
+      "input_tokens": 3087767,
+      "output_tokens": 2497383,
+      "cache_read_tokens": 461443880
+    },
+    "claude-opus-4-7": {
+      "input_tokens": 12339737,
+      "output_tokens": 17376889,
+      "cache_read_tokens": 4570185603
+    },
+    "claude-sonnet-4-6": {
+      "input_tokens": 69211016,
+      "output_tokens": 23576094,
+      "cache_read_tokens": 3464849057
+    },
+    "claude-sonnet-4-5-20250929": {
+      "input_tokens": 69646,
+      "output_tokens": 45933,
+      "cache_read_tokens": 4451814
+    },
+    "claude-opus-4-5-20251101": {
+      "input_tokens": 83,
+      "output_tokens": 7581,
+      "cache_read_tokens": 1476191
+    }
+  },
+  "modelCost": {
+    "claude-haiku-4-5-20251001": 0.041713,
+    "claude-opus-4-6": 3.1778072500000003,
+    "claude-opus-4-7": 93.161665,
+    "claude-sonnet-4-6": 59.322924900000004,
+    "claude-sonnet-4-5-20250929": 0.0,
+    "claude-opus-4-5-20251101": 0.0,
+    "claude-3-opus": 0.0
+  },
   "claudeSpend": {
-    "mtd": 0,
-    "monthly": 0,
-    "byModel": {}
+    "mtd": 155.7,
+    "monthly": 155.7,
+    "byModel": {
+      "claude-haiku-4-5-20251001": 0.04,
+      "claude-opus-4-6": 3.18,
+      "claude-opus-4-7": 93.16,
+      "claude-sonnet-4-6": 59.32,
+      "claude-sonnet-4-5-20250929": 0.0,
+      "claude-opus-4-5-20251101": 0.0,
+      "claude-3-opus": 0.0
+    }
   },
   "cursorSpend": {
     "mtd": 0.0,
