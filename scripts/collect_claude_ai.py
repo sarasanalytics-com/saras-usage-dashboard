@@ -312,11 +312,24 @@ claude_spend = {
     "byModel": {model: round(cost, 2) for model, cost in model_cost.items()}
 }
 
-# Placeholders for Cursor and Windsurf (to be integrated later)
+# Read Cursor and Windsurf spend from daily_collected.json (populated by collect_data.py)
+from pathlib import Path as PathlibPath
+daily_collected_path = REPO_ROOT / "data" / "daily_collected.json"
 cursor_spend = None
 windsurf_spend = None
 
+if daily_collected_path.exists():
+    try:
+        with open(daily_collected_path, 'r', encoding='utf-8') as f:
+            daily_data = json.load(f)
+            cursor_spend = daily_data.get("cursor_spend")
+            # windsurf_spend = daily_data.get("windsurf_spend")  # To be added later
+    except Exception as e:
+        log(f"  [WARN] Could not read daily_collected.json: {e}")
+
 log(f"  Claude spend MTD: ${claude_spend_mtd:.2f}")
+if cursor_spend:
+    log(f"  Cursor spend MTD: ${cursor_spend.get('mtd', 0):.2f}")
 
 # ── 4c. Write output ──────────────────────────────────────────────────────────
 # Sort members by lines (desc), excluding service/shared accounts

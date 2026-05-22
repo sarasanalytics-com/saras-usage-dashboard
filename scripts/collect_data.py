@@ -283,6 +283,31 @@ while page < 50:
 log(f"  Cursor: {sum(cursor_user_counts.values())} events from {len(cursor_user_counts)} users")
 
 
+# ── Cursor spend API ──────────────────────────────────────────────────────────
+log("Fetching Cursor team spend...")
+cursor_spend_mtd = 0
+cursor_spend_data = None
+try:
+    spend_resp = post_json(
+        "https://api.cursor.com/teams/spend",
+        {"page": 1, "pageSize": 1000},
+        cursor_headers,
+    )
+    # Sum up spend from all team members (spendCents converted to dollars)
+    for member in spend_resp.get("data", []):
+        spend_cents = member.get("spendCents", 0)
+        cursor_spend_mtd += spend_cents
+    cursor_spend_mtd = round(cursor_spend_mtd / 100, 2)  # Convert cents to dollars
+    cursor_spend_data = {
+        "mtd": cursor_spend_mtd,
+        "monthly": cursor_spend_mtd,
+    }
+    log(f"  Cursor MTD spend: ${cursor_spend_mtd}")
+except Exception as e:
+    log(f"  [WARN] Cursor spend fetch failed: {e}")
+    cursor_spend_data = None
+
+
 # ── Windsurf API ──────────────────────────────────────────────────────────────
 log("Fetching Windsurf...")
 windsurf_users = {}
@@ -335,6 +360,7 @@ result = {
         "people": people_data,
     },
     "cursor_today": dict(cursor_user_counts),
+    "cursor_spend": cursor_spend_data,
     "windsurf_today": windsurf_today,
     "windsurf_users": windsurf_users,
 }
