@@ -1218,14 +1218,7 @@ function populateSpendsTab() {
     // DATA may not be defined yet, so check first
     let modelCostByModel = (typeof DATA !== 'undefined' ? DATA.modelCost : null) || {};
 
-  // If no API data yet, use fallback estimates (will auto-update when workflow runs)
-  if (Object.keys(modelCostByModel).length === 0) {
-    modelCostByModel = {
-      'claude-3-5-sonnet': 6358.00,  // ~$289/day through May 22
-      'claude-opus': 3476.00,         // ~$158/day through May 22
-      'claude-haiku': 462.00          // ~$21/day through May 22
-    };
-  }
+  // If no API data yet, model costs will show as $0 until workflow fetches real data
 
     // Convert to display format with calculated daily costs (divide MTD by days in month)
     const daysInMonth = 22; // Days with data through May 22
@@ -1323,13 +1316,11 @@ function renderOverviewAlerts() {
 
   // ── Model spend vs $5,000 budget ─────────────────────────────────────────
   const modelBudget = 5000;
-  let modelCostByModel = (typeof DATA !== 'undefined' ? DATA.modelCost : null) || {};
-  if (Object.keys(modelCostByModel).length === 0) {
-    modelCostByModel = {'claude-3-5-sonnet':6358,'claude-opus':3476,'claude-haiku':462};
-  }
-  const modelMtd      = Math.round(Object.values(modelCostByModel).reduce((s,v) => s+v, 0));
-  const modelOverage  = modelMtd - modelBudget;
-  const modelOveragePct = Math.round(modelOverage / modelBudget * 100);
+  const modelCostByModel = (typeof DATA !== 'undefined' ? DATA.modelCost : null) || {};
+  const hasModelData = Object.keys(modelCostByModel).length > 0;
+  const modelMtd      = hasModelData ? Math.round(Object.values(modelCostByModel).reduce((s,v) => s+v, 0)) : null;
+  const modelOverage  = modelMtd !== null ? modelMtd - modelBudget : null;
+  const modelOveragePct = modelOverage !== null && modelBudget > 0 ? Math.round(modelOverage / modelBudget * 100) : null;
 
   // ── Inactive Claude.ai seats ───────────────────────────────────────────────
   // Licensed = only people in members[] (have Claude Code / Claude.ai seat)
@@ -1379,13 +1370,14 @@ function renderOverviewAlerts() {
   const alerts = [];
 
   // 1. Model spend vs $5,000 budget
-  if (modelMtd > 0) {
-    const overColor = modelOverage > 0 ? '#ef4444' : '#00d4aa';
-    const overText  = modelOverage > 0
+  if (modelMtd !== null) {
+    const overText = modelOverage > 0
       ? `<strong style="color:#ef4444">$${modelOverage.toLocaleString()} over budget (${modelOveragePct}% overage)</strong>`
       : `<strong style="color:#00d4aa">$${Math.abs(modelOverage).toLocaleString()} under budget</strong>`;
     const icon = modelOverage > 0 ? '⚠️' : '✅';
     alerts.push(row(`<span style="color:${modelOverage>0?'#ffa726':'#00d4aa'}">${icon} Model Spend:</span> Total API model cost this month: <strong style="color:#fff">$${modelMtd.toLocaleString()} MTD</strong> vs budgeted <strong style="color:#fff">$${modelBudget.toLocaleString()}</strong> — ${overText}. <span style="color:var(--muted);font-size:0.8rem">Sonnet + Opus + Haiku combined.</span>`));
+  } else {
+    alerts.push(row(`<span style="color:#8b92b8">📊 Model Spend:</span> Budget: <strong style="color:#fff">$${modelBudget.toLocaleString()}/month</strong>. Actual cost data pending — will appear after next workflow run fetches Anthropic Analytics API data. <span style="color:var(--muted);font-size:0.8rem">Requires ANTHROPIC_ANALYTICS_KEY to be valid.</span>`));
   }
 
   // 2. Inactive seats with expandable list
