@@ -3640,9 +3640,8 @@ function renderDeptScorecardTable() {
     coworkByDept[d].add(email);
   });
 
-  const allTools = ['Claude Code','Cursor','Windsurf','Cowork','Claude.ai'];
+  const allTools = ['Claude Code','Cursor','Windsurf','Claude.ai'];
   const activeCols = allTools.filter(t => depts.some(d => (TEAM_TOOLS[d]||[]).includes(t)));
-  activeCols.push('ClickUp');
 
   const headCols = ['Department','Headcount',...activeCols,'Any AI','CC Lines Avg'];
   document.getElementById('dept-scorecard-head').innerHTML = '<tr>' + headCols.map(c => `<th style="text-align:${c==='Department'?'left':'right'}">${c}</th>`).join('') + '</tr>';
