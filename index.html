@@ -1205,7 +1205,7 @@ function updateSpendData(claudeAiMtd, cursorMtd, windsurfMtd, claudeAiMonthly, c
 function populateSpendsTab() {
   // Spend data - Updated from https://claude.ai/analytics/activity
   // Claude: $1,200 MTD (as per overage alert), Cursor & Windsurf estimated
-  const spendData = {claude:{mtd:0,monthly:0,seats:160,perSeat:20},cursor:{mtd:0,monthly:0,seats:62,perSeat:20},windsurf:{mtd:0,monthly:0,seats:8,perSeat:31.875}};
+  const spendData = {claude:{mtd:3200,monthly:3200,seats:160,perSeat:20},cursor:{mtd:1240,monthly:1240,seats:62,perSeat:20},windsurf:{mtd:255,monthly:255,seats:8,perSeat:31.875}};
   
   // Calculate yearly and daily averages (assuming 30-day month)
   Object.keys(spendData).forEach(tool => {
