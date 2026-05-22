@@ -471,16 +471,13 @@
   "modelUsage": {},
   "modelCost": {},
   "claudeSpend": {
-    "mtd": 3200,
-    "monthly": 3200,
+    "mtd": 0,
+    "monthly": 0,
     "byModel": {}
   },
   "cursorSpend": {
-    "mtd": 1240,
-    "monthly": 1240
+    "mtd": 0.0,
+    "monthly": 0.0
   },
-  "windsurfSpend": {
-    "mtd": 255,
-    "monthly": 255
-  }
+  "windsurfSpend": null
 }
