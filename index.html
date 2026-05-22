@@ -1207,10 +1207,11 @@ function populateSpendsTab() {
     const spendData = {claude:{mtd:155.7,monthly:155.7,seats:160,perSeat:20},cursor:{mtd:0.0,monthly:0.0,seats:62,perSeat:20},windsurf:{mtd:0,monthly:0,seats:8,perSeat:31.875}};
 
     // Calculate yearly and daily averages (assuming 30-day month)
+    const daysThisMonth = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
     Object.keys(spendData).forEach(tool => {
       const data = spendData[tool];
       data.yearly = data.monthly * 12;
-      data.daily = Math.round(data.monthly / 30 * 100) / 100;
+      data.daily = Math.round(data.monthly / daysThisMonth * 100) / 100;
     });
 
     // Model costs - read from DATA.modelCost (populated by update_dashboard.py from API)
@@ -1221,7 +1222,7 @@ function populateSpendsTab() {
   // If no API data yet, model costs will show as $0 until workflow fetches real data
 
     // Convert to display format with calculated daily costs (divide MTD by days in month)
-    const daysInMonth = 22; // Days with data through May 22
+    const daysInMonth = new Date().getDate(); // Days elapsed so far this month
     const modelUsage = (typeof DATA !== 'undefined' ? DATA.modelUsage : {}) || {};
     const modelCosts = Object.entries(modelCostByModel).map(([model, mtdCost]) => {
       const dailyCost = mtdCost / daysInMonth;
@@ -1242,10 +1243,12 @@ function populateSpendsTab() {
   const modelMonthlyTotal = Object.values(modelCostByModel).reduce((sum, cost) => sum + cost, 0);
   const modelYearlyTotal = modelMonthlyTotal * 12;
 
-  // Calculate grand totals including model costs
-  const totalMonthly = spendData.claude.monthly + spendData.cursor.monthly + spendData.windsurf.monthly + modelMonthlyTotal;
-  const totalYearly = spendData.claude.yearly + spendData.cursor.yearly + spendData.windsurf.yearly + modelYearlyTotal;
-  const totalDaily = Math.round((totalMonthly / 30) * 100) / 100;
+  // Grand totals: spendData.claude.monthly already IS the sum of model costs (from API).
+  // modelMonthlyTotal is the same value — do NOT add it again or it double-counts.
+  // The model cost table below is a breakdown of the Claude spend, not additional spend.
+  const totalMonthly = spendData.claude.monthly + spendData.cursor.monthly + spendData.windsurf.monthly;
+  const totalYearly  = spendData.claude.yearly  + spendData.cursor.yearly  + spendData.windsurf.yearly;
+  const totalDaily   = Math.round((totalMonthly / daysThisMonth) * 100) / 100;
 
     // Populate total spend in overview (includes model costs)
     const elMonthly = document.getElementById('total-spend-monthly');
