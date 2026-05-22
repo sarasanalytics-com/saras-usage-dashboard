@@ -3665,7 +3665,7 @@ function renderDeptScorecardTable() {
     const ccAvg    = ccActive>0 ? Math.round(ccLines/ccActive) : 0;
     const cursorCt = (cursorByDept[dept]||new Set()).size;
     const wsCt     = (wsByDept[dept]||new Set()).size;
-    const cuActive = (CLICKUP_DATA.people||[]).filter(p=>p.dept===dept&&(p.open>0||p.done>0)).length;
+    const cuActive = [...new Map((CLICKUP_DATA.people||[]).filter(p=>p.dept===dept&&(p.open>0||p.done>0)).map(p=>[p.email,p])).values()].length;
     const aiCt     = (aiByDept[dept]||new Set()).size;
     const coworkCt = (coworkByDept[dept]||new Set()).size;
     const anySet = new Set([
