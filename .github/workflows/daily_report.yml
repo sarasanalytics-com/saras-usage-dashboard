@@ -32,6 +32,7 @@ jobs:
       - name: Collect Claude.ai analytics (API — no browser needed)
         env:
           ANTHROPIC_ANALYTICS_KEY: ${{ secrets.ANTHROPIC_ANALYTICS_KEY }}
+          ANTHROPIC_ADMIN_KEY:     ${{ secrets.ANTHROPIC_ADMIN_KEY }}
         run: python scripts/collect_claude_ai.py
 
       # ── 4. Collect Cursor / Windsurf / ClickUp ────────────────────────────────
