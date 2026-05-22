@@ -55,7 +55,8 @@ existing_name = {}
 clickup_block_match = re.search(r"const CLICKUP_DATA = \{.*?\n\};", html, flags=re.DOTALL)
 if clickup_block_match:
     blk = clickup_block_match.group(0)
-    for m in re.finditer(r"name:'([^']*)',\s*email:'([^']+)',\s*dept:'([^']*)'", blk):
+    # Match both single and double quoted fields for backwards compatibility
+    for m in re.finditer(r'name:["\']([^"\']*)["\'],\s*email:["\']([^"\']+)["\'],\s*dept:["\']([^"\']*)["\']', blk):
         name, email, dept = m.group(1), m.group(2), m.group(3)
         existing_dept[email.lower()] = dept
         existing_name[email.lower()] = name
@@ -63,14 +64,14 @@ if clickup_block_match:
 dept_map = {}
 dept_block = re.search(r"const DEPT_MAP = \{(.*?)\};", html, flags=re.DOTALL)
 if dept_block:
-    for m in re.finditer(r"'([^']+@sarasanalytics\.com)':\s*'([^']+)'", dept_block.group(1)):
+    for m in re.finditer(r'["\']([^"\']+@sarasanalytics\.com)["\']:\s*["\']([^"\']+)["\']', dept_block.group(1)):
         dept_map[m.group(1).lower()] = m.group(2)
 
 # Extract ALL_EMPLOYEES dept (authoritative HR source)
 all_emp_dept = {}
 all_emp_block = re.search(r"const ALL_EMPLOYEES = \[(.*?)\];", html, flags=re.DOTALL)
 if all_emp_block:
-    for m in re.finditer(r"email:'([^']+)'.*?dept:'([^']+)'", all_emp_block.group(1), flags=re.DOTALL):
+    for m in re.finditer(r'email:["\']([^"\']+)["\'].*?dept:["\']([^"\']+)["\']', all_emp_block.group(1), flags=re.DOTALL):
         all_emp_dept[m.group(1).lower()] = m.group(2)
 log(f"  ALL_EMPLOYEES depts: {len(all_emp_dept)} entries")
 
@@ -139,7 +140,7 @@ for email, rec in fresh["clickup"]["people"].items():
     tasks = rec.get("tasks", [])
     safe_tasks = []
     for t in tasks:
-        title_raw = (t.get("title") or "").replace("\\", "\\\\").replace("'", "\\'").replace('[', '(').replace(']', ')')
+        title_raw = (t.get("title") or "").replace("\\", "\\\\").replace('"', '\\"').replace('[', '(').replace(']', ')')
         # Truncate to 80 chars, but ensure we don't leave quotes/parens unbalanced
         title = title_raw[:80]
         # Check for unbalanced quotes
@@ -167,18 +168,18 @@ for email, rec in fresh["clickup"]["people"].items():
                 while title.count(')') > title.count('(') and len(title) > 0:
                     title = title[:-1]
         due      = t.get("due")
-        due_js   = f"'{due}'" if due else "null"
-        url      = (t.get("url") or "").replace("\\", "\\\\").replace("'", "\\'")
+        due_js   = f'"{due}"' if due else "null"
+        url      = (t.get("url") or "").replace("\\", "\\\\").replace('"', '\\"')
         prio     = t.get("priority") or "normal"
-        safe_tasks.append(f"{{title:'{title}',priority:'{prio}',due:{due_js},url:'{url}'}}")
+        safe_tasks.append(f'{{title:"{title}",priority:"{prio}",due:{due_js},url:"{url}"}}')
     tasks_js    = "[" + ",".join(safe_tasks) + "]"
     next_due    = rec.get("nextDue")
-    next_due_js = f"'{next_due}'" if next_due else "null"
-    name_safe   = nm.replace("'", "\\'")
+    next_due_js = f'"{next_due}"' if next_due else "null"
+    name_safe   = nm.replace("\\", "\\\\").replace('"', '\\"')
     people.append({
         "sort_open": rec.get("open", 0),
         "js": (
-            f"    {{name:'{name_safe}', email:'{email}', dept:'{dp}', "
+            f'    {{name:"{name_safe}", email:"{email}", dept:"{dp}", '
             f"open:{rec.get('open',0)}, done:{rec.get('done',0)}, "
             f"urgent:{rec.get('urgent',0)}, high:{rec.get('high',0)}, "
             f"normal:{rec.get('normal',0)}, low:{rec.get('low',0)}, "
@@ -191,7 +192,7 @@ people_js = "\n".join(p["js"] for p in people)
 
 new_clickup_block = (
     "const CLICKUP_DATA = {\n"
-    f"  asOf: '{TODAY}',\n"
+    f'  asOf: "{TODAY}",\n'
     "  people: [\n"
     + people_js + "\n"
     "  ]\n"
