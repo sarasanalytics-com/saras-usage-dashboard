@@ -224,10 +224,12 @@ chats_daily_js  = json.dumps(chats_daily,  separators=(",", ":"))
 cowork_daily_js = json.dumps(cowork_daily, separators=(",", ":"))
 
 # Model usage data (if available)
-model_usage = cc.get("modelUsage", {})
-model_cost  = cc.get("modelCost", {})
-model_usage_json = json.dumps(model_usage, separators=(",", ":"))
-model_cost_json  = json.dumps(model_cost,  separators=(",", ":"))
+model_usage      = cc.get("modelUsage", {})
+model_cost       = cc.get("modelCost", {})
+model_cost_daily = cc.get("modelCostDaily", {})
+model_usage_json      = json.dumps(model_usage,      separators=(",", ":"))
+model_cost_json       = json.dumps(model_cost,       separators=(",", ":"))
+model_cost_daily_json = json.dumps(model_cost_daily, separators=(",", ":"))
 
 new_data_block = f"""const DATA = {{
   asOf: '{TODAY_LABEL}',
@@ -257,6 +259,7 @@ new_data_block = f"""const DATA = {{
   coworkDataAsOf: '{cowork_as_of}',
   modelUsage: {model_usage_json},
   modelCost: {model_cost_json},
+  modelCostDaily: {model_cost_daily_json},
 }};"""
 
 if total_lines > 0 or active_members > 0:

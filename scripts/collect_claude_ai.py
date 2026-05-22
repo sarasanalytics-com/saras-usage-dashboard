@@ -284,28 +284,30 @@ try:
         "starting_at":  month_start.strftime("%Y-%m-%dT00:00:00Z"),
         "ending_at":    (data_until + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z"),
         "bucket_width": "1d",
-        "group_by":     ["product", "model"],
+        "group_by":     ["model"],
     }
     cost_resp = get_json("cost_report", cost_params)
 
-    product_cost = {}   # product → total cost
+    # Also collect per-day costs for trend chart: {date → {model → cost}}
+    model_cost_daily = {}   # date_str → {model → cost_usd}
+
     while True:
         for bucket in cost_resp.get("data", []):
+            date_str = bucket.get("starting_at", "")[:10]  # YYYY-MM-DD
             for item in bucket.get("results", []):
                 mdl        = item.get("model")
-                product    = item.get("product", "unknown")
                 amount_str = item.get("amount", "0") or "0"
-                list_amt   = item.get("list_amount", amount_str) or amount_str
                 if not mdl:
                     continue
                 try:
-                    # amount is in fractional cents → divide by 100 for USD
-                    cost_usd      = float(amount_str) / 100.0
-                    list_cost_usd = float(list_amt)   / 100.0
+                    cost_usd = float(amount_str) / 100.0
                 except (ValueError, TypeError):
-                    cost_usd = list_cost_usd = 0.0
-                model_cost[mdl]   = model_cost.get(mdl, 0)   + cost_usd
-                product_cost[product] = product_cost.get(product, 0) + cost_usd
+                    cost_usd = 0.0
+                model_cost[mdl] = model_cost.get(mdl, 0) + cost_usd
+                if date_str:
+                    if date_str not in model_cost_daily:
+                        model_cost_daily[date_str] = {}
+                    model_cost_daily[date_str][mdl] = model_cost_daily[date_str].get(mdl, 0) + cost_usd
         if not cost_resp.get("has_more"):
             break
         cost_params["page"] = cost_resp.get("next_page")
@@ -313,13 +315,11 @@ try:
         time.sleep(0.2)
 
     if model_cost:
-        log(f"  Cost breakdown by model:")
+        log(f"  Cost breakdown by model (MTD through {data_until}):")
         for mdl, cost in sorted(model_cost.items(), key=lambda x: -x[1]):
             log(f"    {mdl}: ${cost:.2f}")
         log(f"  Total Claude spend MTD: ${sum(model_cost.values()):.2f}")
-        log(f"  Cost breakdown by product:")
-        for prod, cost in sorted(product_cost.items(), key=lambda x: -x[1]):
-            log(f"    {prod}: ${cost:.2f}")
+        log(f"  Daily data points: {len(model_cost_daily)} days")
     else:
         log(f"  [INFO] No cost data for {month_start} → {data_until}")
         log(f"  [INFO] Data available 3+ days ago; chart may show more recent data with higher values")
@@ -435,6 +435,7 @@ result = {
     "members":              members_sorted,
     "modelUsage":           model_usage,
     "modelCost":            model_cost,
+    "modelCostDaily":       model_cost_daily,
     "claudeSpend":          claude_spend,
     "cursorSpend":          cursor_spend,
     "windsurfSpend":        windsurf_spend,

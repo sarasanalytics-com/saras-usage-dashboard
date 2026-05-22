@@ -254,16 +254,16 @@
         <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">Annualized</div>
       </div>
       <div>
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">MODEL COST (Daily)</div>
-        <div style="font-size:2rem;font-weight:700;color:#fff" id="model-cost-daily">$468</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">MODEL COST (MTD)</div>
+        <div style="font-size:2rem;font-weight:700;color:#fff" id="model-cost-daily">-</div>
         <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">All Claude Models</div>
       </div>
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">MODEL BREAKDOWN</div>
         <div style="font-size:0.85rem;color:#fff;line-height:1.5">
-          <div>3.5 Sonnet: <span style="color:#ffa726;font-weight:600" id="model-cost-sonnet">$289</span></div>
-          <div>3 Opus: <span style="color:#81c784;font-weight:600" id="model-cost-opus">$158</span></div>
-          <div>3 Haiku: <span style="color:#00d4aa;font-weight:600" id="model-cost-haiku">$21</span></div>
+          <div>Sonnet: <span style="color:#ffa726;font-weight:600" id="model-cost-sonnet">-</span></div>
+          <div>Opus: <span style="color:#81c784;font-weight:600" id="model-cost-opus">-</span></div>
+          <div>Haiku: <span style="color:#00d4aa;font-weight:600" id="model-cost-haiku">-</span></div>
         </div>
       </div>
     </div>
@@ -1275,21 +1275,25 @@ function populateSpendsTab() {
     const elDaily = document.getElementById('total-spend-daily');
     if (elDaily) elDaily.textContent = '$' + totalDaily.toFixed(2);
 
-  // Populate model cost KPI elements — sum by family, not hardcoded index
-  const familyDaily = (key) => modelCosts
+  // Populate model cost KPI elements — sum MTD by family
+  const familyMtd = (key) => modelCosts
     .filter(m => m.modelKey.includes(key))
-    .reduce((s, m) => s + m.dailyCost, 0);
+    .reduce((s, m) => s + m.mtdCost, 0);
+  const dataAsOf = (typeof DATA !== 'undefined' && DATA.asOf) ? DATA.asOf : '';
   if (document.getElementById('model-cost-daily')) {
-    document.getElementById('model-cost-daily').textContent = '$' + Math.round(modelDailyTotal);
+    document.getElementById('model-cost-daily').textContent = '$' + Math.round(modelMonthlyTotal);
   }
+  // Update label to show data coverage date
+  const mcLabel = document.querySelector('[id="model-cost-daily"] ~ div');
+  if (mcLabel && dataAsOf) mcLabel.textContent = 'Through ' + new Date(dataAsOf + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric'});
   if (document.getElementById('model-cost-sonnet')) {
-    document.getElementById('model-cost-sonnet').textContent = '$' + Math.round(familyDaily('sonnet'));
+    document.getElementById('model-cost-sonnet').textContent = '$' + Math.round(familyMtd('sonnet'));
   }
   if (document.getElementById('model-cost-opus')) {
-    document.getElementById('model-cost-opus').textContent = '$' + Math.round(familyDaily('opus'));
+    document.getElementById('model-cost-opus').textContent = '$' + Math.round(familyMtd('opus'));
   }
   if (document.getElementById('model-cost-haiku')) {
-    document.getElementById('model-cost-haiku').textContent = '$' + Math.round(familyDaily('haiku'));
+    document.getElementById('model-cost-haiku').textContent = '$' + Math.round(familyMtd('haiku'));
   }
 
     // Populate Claude.ai
@@ -1442,105 +1446,58 @@ function renderModelCostTrend(modelCosts) {
   const canvas = document.getElementById('model-cost-trend-chart');
   if (!canvas) return;
 
-  // Generate simulated daily cost trend data for May (based on model costs)
-  // In production, this would come from actual daily spending data
-  const daysInMay = 22; // Data through May 22, 2026
-  const baseCosts = {
-    'Claude 3.5 Sonnet': modelCosts[0].dailyCost,
-    'Claude 3 Opus': modelCosts[1].dailyCost,
-    'Claude 3 Haiku': modelCosts[2].dailyCost
-  };
+  // Use real daily data from DATA.modelCostDaily: {date → {model → cost}}
+  const dailyRaw = (typeof DATA !== 'undefined' && DATA.modelCostDaily) ? DATA.modelCostDaily : {};
+  const dates = Object.keys(dailyRaw).sort();
 
-  // Create trend data with daily variation (±5%)
-  const dates = [];
-  const sonnetData = [];
-  const opusData = [];
-  const haikuData = [];
-  const totalData = [];
-
-  for (let i = 1; i <= daysInMay; i++) {
-    const date = new Date(2026, 4, i); // May is month 4 (0-indexed)
-    if (date.getDay() === 0 || date.getDay() === 6) continue; // Skip weekends
-
-    dates.push('May ' + i);
-
-    // Add slight daily variation (±3%)
-    const variance = 1 + (Math.random() - 0.5) * 0.06;
-    const sonnet = baseCosts['Claude 3.5 Sonnet'] * variance;
-    const opus = baseCosts['Claude 3 Opus'] * variance;
-    const haiku = baseCosts['Claude 3 Haiku'] * variance;
-
-    sonnetData.push(Math.round(sonnet * 100) / 100);
-    opusData.push(Math.round(opus * 100) / 100);
-    haikuData.push(Math.round(haiku * 100) / 100);
-    totalData.push(Math.round((sonnet + opus + haiku) * 100) / 100);
+  if (dates.length === 0) {
+    canvas.parentElement.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px">Daily trend data not yet available — will appear after next workflow run.</div>';
+    return;
   }
 
-  // Destroy existing chart instance if it exists
-  if (window.modelCostChartInstance) {
-    window.modelCostChartInstance.destroy();
-  }
+  // Collect all unique model families present in the data
+  const families = { sonnet: [], opus: [], haiku: [] };
+  const labels = dates.map(d => {
+    const dt = new Date(d + 'T00:00:00');
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
 
-  // Create the chart
+  dates.forEach(d => {
+    const day = dailyRaw[d] || {};
+    let s = 0, o = 0, h = 0;
+    Object.entries(day).forEach(([model, cost]) => {
+      if (model.includes('sonnet')) s += cost;
+      else if (model.includes('opus')) o += cost;
+      else if (model.includes('haiku')) h += cost;
+    });
+    families.sonnet.push(Math.round(s * 100) / 100);
+    families.opus.push(Math.round(o * 100) / 100);
+    families.haiku.push(Math.round(h * 100) / 100);
+  });
+
+  if (window.modelCostChartInstance) window.modelCostChartInstance.destroy();
+
   const ctx = canvas.getContext('2d');
   window.modelCostChartInstance = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: dates,
+      labels,
       datasets: [
-        {
-          label: 'Claude 3.5 Sonnet',
-          data: sonnetData,
-          borderColor: '#ffa726',
-          backgroundColor: 'rgba(255, 167, 38, 0.1)',
-          tension: 0.4,
-          fill: true,
-          borderWidth: 2
-        },
-        {
-          label: 'Claude 3 Opus',
-          data: opusData,
-          borderColor: '#81c784',
-          backgroundColor: 'rgba(129, 199, 132, 0.1)',
-          tension: 0.4,
-          fill: false,
-          borderWidth: 2
-        },
-        {
-          label: 'Claude 3 Haiku',
-          data: haikuData,
-          borderColor: '#00d4aa',
-          backgroundColor: 'rgba(0, 212, 170, 0.1)',
-          tension: 0.4,
-          fill: false,
-          borderWidth: 2
-        }
+        { label: 'Sonnet', data: families.sonnet, borderColor: '#ffa726', backgroundColor: 'rgba(255,167,38,0.08)', tension: 0.3, fill: true,  borderWidth: 2, pointRadius: 3 },
+        { label: 'Opus',   data: families.opus,   borderColor: '#81c784', backgroundColor: 'rgba(129,199,132,0.08)', tension: 0.3, fill: false, borderWidth: 2, pointRadius: 3 },
+        { label: 'Haiku',  data: families.haiku,  borderColor: '#00d4aa', backgroundColor: 'rgba(0,212,170,0.08)',   tension: 0.3, fill: false, borderWidth: 2, pointRadius: 3 }
       ]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: 'top',
-          labels: {
-            color: 'var(--muted)',
-            usePointStyle: true,
-            padding: 15,
-            font: { size: 12 }
-          }
-        }
+        legend: { position: 'top', labels: { color: '#8b92b8', usePointStyle: true, padding: 15, font: { size: 12 } } },
+        tooltip: { callbacks: { label: ctx => ' $' + ctx.parsed.y.toFixed(2) } }
       },
       scales: {
-        y: {
-          beginAtZero: true,
-          ticks: { color: 'var(--muted)', font: { size: 11 } },
-          grid: { color: 'rgba(46, 50, 80, 0.2)' }
-        },
-        x: {
-          ticks: { color: 'var(--muted)', font: { size: 10 }, maxRotation: 45, minRotation: 0 },
-          grid: { display: false }
-        }
+        y: { beginAtZero: true, ticks: { color: '#8b92b8', font: { size: 11 }, callback: v => '$' + v }, grid: { color: 'rgba(139,146,184,0.1)' } },
+        x: { ticks: { color: '#8b92b8', font: { size: 10 }, maxRotation: 45 }, grid: { display: false } }
       }
     }
   });
