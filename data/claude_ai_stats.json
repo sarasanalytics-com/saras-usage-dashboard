@@ -502,12 +502,141 @@
   },
   "modelCost": {
     "claude-haiku-4-5-20251001": 0.041713,
-    "claude-opus-4-6": 3.17780725,
+    "claude-opus-4-6": 3.1778072500000003,
     "claude-opus-4-7": 93.161665,
     "claude-sonnet-4-6": 59.322924900000004,
     "claude-sonnet-4-5-20250929": 0.0,
     "claude-opus-4-5-20251101": 0.0,
     "claude-3-opus": 0.0
+  },
+  "modelCostDaily": {
+    "2026-05-01": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-02": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-03": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-04": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-5-20250929": 0.0,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-05": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-5-20251101": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-5-20250929": 0.0,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-06": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-07": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-5-20250929": 0.0,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-08": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 20.89730225,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-09": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-10": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-11": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-5-20251101": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-5-20250929": 0.0,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-12": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-5-20251101": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-5-20250929": 0.0,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-13": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-6": 3.1778072500000003,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-5-20250929": 0.0,
+      "claude-sonnet-4-6": 26.686388400000002
+    },
+    "2026-05-14": {
+      "claude-3-opus": 0.0,
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-5-20250929": 0.0,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-15": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-16": {
+      "claude-haiku-4-5-20251001": 0.013921,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 14.026482249999999,
+      "claude-sonnet-4-6": 10.621033500000001
+    },
+    "2026-05-17": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 28.185975749999997,
+      "claude-sonnet-4-6": 0.0
+    },
+    "2026-05-18": {
+      "claude-haiku-4-5-20251001": 0.027791999999999997,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 30.05190475,
+      "claude-sonnet-4-6": 22.015503
+    },
+    "2026-05-19": {
+      "claude-haiku-4-5-20251001": 0.0,
+      "claude-opus-4-5-20251101": 0.0,
+      "claude-opus-4-6": 0.0,
+      "claude-opus-4-7": 0.0,
+      "claude-sonnet-4-5-20250929": 0.0,
+      "claude-sonnet-4-6": 0.0
+    }
   },
   "claudeSpend": {
     "mtd": 155.7,
