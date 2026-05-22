@@ -1113,7 +1113,43 @@ document.addEventListener('DOMContentLoaded', () => {
   populateSpendsTab();
 });
 
-async function populateSpendsTab() {
+async function saveApiKeys() {
+  const apiKey = document.getElementById('claude-api-key').value;
+  if (apiKey) {
+    localStorage.setItem('CLAUDE_ADMIN_API_KEY', apiKey);
+    alert('API key saved securely');
+    closeApiConfig();
+    populateSpendsTab();
+  }
+}
+
+function closeApiConfig() {
+  document.getElementById('api-config').style.display = 'none';
+}
+
+function openApiConfig() {
+  const saved = localStorage.getItem('CLAUDE_ADMIN_API_KEY');
+  if (saved) {
+    document.getElementById('claude-api-key').value = saved.substring(0, 10) + '...';
+  }
+  document.getElementById('api-config').style.display = 'block';
+}
+
+async function fetchSpendFromAPI(apiKey) {
+  try {
+    const response = await fetch('https://api.claude.ai/v1/analytics/spend', {
+      headers: { 'Authorization': 'Bearer ' + apiKey }
+    });
+    
+    if (!response.ok) throw new Error('API error: ' + response.status);
+    return await response.json();
+  } catch (error) {
+    console.error('API fetch failed:', error);
+    return null;
+  }
+}
+
+function populateSpendsTab() {
   try {
     // Fetch spend data from Claude Admin Analytics API
     const claudeApiKey = localStorage.getItem('CLAUDE_ADMIN_API_KEY');
