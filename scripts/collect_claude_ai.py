@@ -303,7 +303,22 @@ except Exception as e:
     model_usage = {}
     model_cost = {}
 
-# ── 4. Write output ───────────────────────────────────────────────────────────
+# ── 4b. Extract spend by product ──────────────────────────────────────────────
+# Calculate total Claude spend from model costs
+claude_spend_mtd = sum(model_cost.values()) if model_cost else 0
+claude_spend = {
+    "mtd": round(claude_spend_mtd, 2),
+    "monthly": round(claude_spend_mtd, 2),  # MTD is our best estimate for monthly
+    "byModel": {model: round(cost, 2) for model, cost in model_cost.items()}
+}
+
+# Placeholders for Cursor and Windsurf (to be integrated later)
+cursor_spend = None
+windsurf_spend = None
+
+log(f"  Claude spend MTD: ${claude_spend_mtd:.2f}")
+
+# ── 4c. Write output ──────────────────────────────────────────────────────────
 # Sort members by lines (desc), excluding service/shared accounts
 members_sorted = dict(sorted(
     {k: v for k, v in user_lines_final.items() if k not in BOT_EMAILS}.items(),
@@ -350,6 +365,9 @@ result = {
     "members":              members_sorted,
     "modelUsage":           model_usage,
     "modelCost":            model_cost,
+    "claudeSpend":          claude_spend,
+    "cursorSpend":          cursor_spend,
+    "windsurfSpend":        windsurf_spend,
 }
 
 OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
