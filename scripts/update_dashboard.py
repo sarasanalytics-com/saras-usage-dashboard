@@ -255,6 +255,7 @@ new_data_block = f"""const DATA = {{
   artifactUserPct: {cc.get('artifactUserPct', 0)},
   chatsDailyData: {chats_daily_js},
   coworkDailyData: {cowork_daily_js},
+  dataAsOf: '{cc_as_of}',
   chatsDataAsOf: '{chats_as_of}',
   coworkDataAsOf: '{cowork_as_of}',
   modelUsage: {model_usage_json},
@@ -279,23 +280,27 @@ spend_data = {
         "monthly": claude_spend.get("monthly", 0),
         "seats": 160,
         "perSeat": 20,
+        "subscription": 160 * 20,   # $3,200/mo fixed seat cost
     },
     "cursor": {
         "mtd": cursor_spend.get("mtd", 0) if cursor_spend else 0,
         "monthly": cursor_spend.get("monthly", 0) if cursor_spend else 0,
-        "seats": 62,
+        "seats": 63,
         "perSeat": 20,
+        "subscription": 63 * 20,    # $1,260/mo fixed seat cost
     },
     "windsurf": {
         "mtd": windsurf_spend.get("mtd", 0) if windsurf_spend else 0,
         "monthly": windsurf_spend.get("monthly", 0) if windsurf_spend else 0,
         "seats": 8,
-        "perSeat": 31.875,
+        "perSeat": 30,
+        "subscription": 8 * 30,     # $240/mo fixed seat cost
     },
 }
 
 spend_js = json.dumps(spend_data, separators=(",", ":"))
-spend_js = spend_js.replace('"', "'").replace("'mtd'", "mtd").replace("'monthly'", "monthly").replace("'seats'", "seats").replace("'perSeat'", "perSeat").replace("'claude'", "claude").replace("'cursor'", "cursor").replace("'windsurf'", "windsurf")
+for key in ["mtd", "monthly", "seats", "perSeat", "subscription", "claude", "cursor", "windsurf"]:
+    spend_js = spend_js.replace(f'"{key}"', key)
 new_spend_line = f"const spendData = {spend_js};"
 if spend_data['claude']['mtd'] > 0 or spend_data['cursor']['mtd'] > 0 or spend_data['windsurf']['mtd'] > 0:
     html = re.sub(r"const spendData = \{.*?\};", new_spend_line, html, count=1, flags=re.DOTALL)

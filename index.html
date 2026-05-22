@@ -245,18 +245,19 @@
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">TOTAL MONTHLY SPEND</div>
-        <div style="font-size:2rem;font-weight:700;color:#fff" id="total-spend-monthly">,695</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">All AI Tools + Models</div>
+        <div style="font-size:2rem;font-weight:700;color:#fff" id="total-spend-monthly">-</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">All AI Tools + Subscriptions</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;opacity:0.7" id="kpi-updated-date"></div>
       </div>
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">YEARLY PROJECTION</div>
-        <div style="font-size:2rem;font-weight:700;color:#fff" id="total-spend-yearly">,340</div>
+        <div style="font-size:2rem;font-weight:700;color:#fff" id="total-spend-yearly">-</div>
         <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">Annualized</div>
       </div>
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">MODEL COST (MTD)</div>
         <div style="font-size:2rem;font-weight:700;color:#fff" id="model-cost-daily">-</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">All Claude Models</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px" id="model-cost-date-label">All Claude Models</div>
       </div>
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">MODEL BREAKDOWN</div>
@@ -867,36 +868,57 @@
     <!-- Claude.ai Card -->
     <div style="background:var(--surface2);border-radius:8px;padding:16px;border-left:3px solid #a89cff;min-width:0">
       <div style="font-size:0.85rem;font-weight:700;color:var(--muted);margin-bottom:12px">CLAUDE.AI</div>
-      <div style="font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="spend-claude-mtd">-</div>
-      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px">Monthly to Date</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem">
-        <div><span style="color:var(--muted)">Monthly:</span> <span id="spend-claude-monthly" style="color:#fff;font-weight:700">-</span></div>
+      <div style="font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="spend-claude-mtd">-</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px" id="spend-claude-date">API Model Cost · MTD</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem;margin-bottom:10px">
+        <div><span style="color:var(--muted)">API Monthly:</span> <span id="spend-claude-monthly" style="color:#fff;font-weight:700">-</span></div>
         <div><span style="color:var(--muted)">Yearly:</span> <span id="spend-claude-yearly" style="color:#fff;font-weight:700">-</span></div>
         <div><span style="color:var(--muted)">Daily Avg:</span> <span id="spend-claude-daily" style="color:#fff;font-weight:700">-</span></div>
       </div>
+      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;font-size:0.8rem">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:var(--muted)">Subscription:</span>
+          <span style="color:#a89cff;font-weight:700" id="spend-claude-subscription">-</span>
+        </div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:2px" id="spend-claude-seats-label">160 seats × $20/seat/mo</div>
+      </div>
     </div>
-    
-<!-- Cursor Card -->
+
+    <!-- Cursor Card -->
     <div style="background:var(--surface2);border-radius:8px;padding:16px;border-left:3px solid #81c784;min-width:0">
       <div style="font-size:0.85rem;font-weight:700;color:var(--muted);margin-bottom:12px">CURSOR</div>
-      <div style="font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="spend-cursor-mtd">-</div>
-      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px">Monthly to Date</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem">
-        <div><span style="color:var(--muted)">Monthly:</span> <span id="spend-cursor-monthly" style="color:#fff;font-weight:700">-</span></div>
+      <div style="font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="spend-cursor-mtd">-</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px" id="spend-cursor-date">API Usage Cost · MTD</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem;margin-bottom:10px">
+        <div><span style="color:var(--muted)">API Monthly:</span> <span id="spend-cursor-monthly" style="color:#fff;font-weight:700">-</span></div>
         <div><span style="color:var(--muted)">Yearly:</span> <span id="spend-cursor-yearly" style="color:#fff;font-weight:700">-</span></div>
         <div><span style="color:var(--muted)">Daily Avg:</span> <span id="spend-cursor-daily" style="color:#fff;font-weight:700">-</span></div>
       </div>
+      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;font-size:0.8rem">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:var(--muted)">Subscription:</span>
+          <span style="color:#81c784;font-weight:700" id="spend-cursor-subscription">-</span>
+        </div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:2px" id="spend-cursor-seats-label">63 seats × $20/seat/mo</div>
+      </div>
     </div>
-    
+
     <!-- Windsurf Card -->
     <div style="background:var(--surface2);border-radius:8px;padding:16px;border-left:3px solid #00d4aa;min-width:0">
       <div style="font-size:0.85rem;font-weight:700;color:var(--muted);margin-bottom:12px">WINDSURF</div>
-      <div style="font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="spend-windsurf-mtd">-</div>
-      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:12px">Monthly to Date</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem">
-        <div><span style="color:var(--muted)">Monthly:</span> <span id="spend-windsurf-monthly" style="color:#fff;font-weight:700">-</span></div>
+      <div style="font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="spend-windsurf-mtd">-</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px" id="spend-windsurf-date">API Usage Cost · MTD</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem;margin-bottom:10px">
+        <div><span style="color:var(--muted)">API Monthly:</span> <span id="spend-windsurf-monthly" style="color:#fff;font-weight:700">-</span></div>
         <div><span style="color:var(--muted)">Yearly:</span> <span id="spend-windsurf-yearly" style="color:#fff;font-weight:700">-</span></div>
         <div><span style="color:var(--muted)">Daily Avg:</span> <span id="spend-windsurf-daily" style="color:#fff;font-weight:700">-</span></div>
+      </div>
+      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;font-size:0.8rem">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="color:var(--muted)">Subscription:</span>
+          <span style="color:#00d4aa;font-weight:700" id="spend-windsurf-subscription">-</span>
+        </div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:2px" id="spend-windsurf-seats-label">8 seats × $30/seat/mo</div>
       </div>
     </div>
   </div>
@@ -1204,7 +1226,7 @@ function populateSpendsTab() {
   try {
     // Spend data - Updated from https://claude.ai/analytics/activity
     // Claude: $1,200 MTD (as per overage alert), Cursor & Windsurf estimated
-    const spendData = {claude:{mtd:155.7,monthly:155.7,seats:160,perSeat:20},cursor:{mtd:0.0,monthly:0.0,seats:62,perSeat:20},windsurf:{mtd:0,monthly:0,seats:8,perSeat:31.875}};
+    const spendData = {claude:{mtd:155.7,monthly:155.7,seats:160,perSeat:20,subscription:3200},cursor:{mtd:0.0,monthly:0.0,seats:63,perSeat:20,subscription:1260},windsurf:{mtd:0,monthly:0,seats:8,perSeat:30,subscription:240}};
 
     // Calculate yearly and daily averages (assuming 30-day month)
     const daysThisMonth = new Date(new Date().getFullYear(), new Date().getMonth()+1, 0).getDate();
@@ -1260,11 +1282,17 @@ function populateSpendsTab() {
   const modelMonthlyTotal = Object.values(modelCostByModel).reduce((sum, cost) => sum + cost, 0);
   const modelYearlyTotal = modelMonthlyTotal * 12;
 
-  // Grand totals: spendData.claude.monthly already IS the sum of model costs (from API).
-  // modelMonthlyTotal is the same value — do NOT add it again or it double-counts.
-  // The model cost table below is a breakdown of the Claude spend, not additional spend.
-  const totalMonthly = spendData.claude.monthly + spendData.cursor.monthly + spendData.windsurf.monthly;
-  const totalYearly  = spendData.claude.yearly  + spendData.cursor.yearly  + spendData.windsurf.yearly;
+  // Fixed subscription costs (seats × perSeat) — separate from API model usage costs
+  const claudeSub   = spendData.claude.subscription   || (spendData.claude.seats   * spendData.claude.perSeat);
+  const cursorSub   = spendData.cursor.subscription   || (spendData.cursor.seats   * spendData.cursor.perSeat);
+  const windsurfSub = spendData.windsurf.subscription || (spendData.windsurf.seats * spendData.windsurf.perSeat);
+
+  // Grand totals: API model costs + fixed subscriptions for all tools
+  // spendData.claude.monthly = Claude API model cost (from Anthropic Analytics)
+  // Cursor and Windsurf API costs are $0 until their APIs are integrated
+  const totalMonthly = spendData.claude.monthly + spendData.cursor.monthly + spendData.windsurf.monthly
+                     + claudeSub + cursorSub + windsurfSub;
+  const totalYearly  = totalMonthly * 12;
   const totalDaily   = Math.round((totalMonthly / daysThisMonth) * 100) / 100;
 
     // Populate total spend in overview (includes model costs)
@@ -1279,13 +1307,25 @@ function populateSpendsTab() {
   const familyMtd = (key) => modelCosts
     .filter(m => m.modelKey.includes(key))
     .reduce((s, m) => s + m.mtdCost, 0);
-  const dataAsOf = (typeof DATA !== 'undefined' && DATA.asOf) ? DATA.asOf : '';
+
+  // Data as-of dates from DATA block
+  const dataAsOf    = (typeof DATA !== 'undefined' && DATA.dataAsOf) ? DATA.dataAsOf : '';   // YYYY-MM-DD API data cutoff
+  const updatedDate = (typeof DATA !== 'undefined' && DATA.asOf)     ? DATA.asOf     : '';   // "May 22, 2026" run date
+
+  // Format "data as of" for display
+  const fmtDate = (iso) => iso ? new Date(iso + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}) : '';
+  const dataDateLabel = dataAsOf ? 'Through ' + new Date(dataAsOf + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric'}) : '';
+
+  // Set "updated" text on total spend KPI
+  const elUpdated = document.getElementById('kpi-updated-date');
+  if (elUpdated && updatedDate) elUpdated.textContent = 'Updated ' + updatedDate;
+
   if (document.getElementById('model-cost-daily')) {
     document.getElementById('model-cost-daily').textContent = '$' + Math.round(modelMonthlyTotal);
   }
-  // Update label to show data coverage date
-  const mcLabel = document.querySelector('[id="model-cost-daily"] ~ div');
-  if (mcLabel && dataAsOf) mcLabel.textContent = 'Through ' + new Date(dataAsOf + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric'});
+  // Update model cost date label
+  const mcLabel = document.getElementById('model-cost-date-label');
+  if (mcLabel) mcLabel.textContent = dataDateLabel || 'All Claude Models';
   if (document.getElementById('model-cost-sonnet')) {
     document.getElementById('model-cost-sonnet').textContent = '$' + Math.round(familyMtd('sonnet'));
   }
@@ -1298,26 +1338,38 @@ function populateSpendsTab() {
 
     // Populate Claude.ai
     if (document.getElementById('spend-claude-mtd')) {
-      document.getElementById('spend-claude-mtd').textContent = '$' + spendData.claude.mtd;
-      document.getElementById('spend-claude-monthly').textContent = '$' + spendData.claude.monthly;
+      document.getElementById('spend-claude-mtd').textContent = '$' + spendData.claude.mtd.toFixed(2);
+      document.getElementById('spend-claude-monthly').textContent = '$' + spendData.claude.monthly.toFixed(2);
       document.getElementById('spend-claude-yearly').textContent = '$' + spendData.claude.yearly.toLocaleString();
       document.getElementById('spend-claude-daily').textContent = '$' + spendData.claude.daily.toFixed(2);
+      document.getElementById('spend-claude-subscription').textContent = '$' + claudeSub.toLocaleString() + '/mo';
+      document.getElementById('spend-claude-seats-label').textContent =
+        spendData.claude.seats + ' seats × $' + spendData.claude.perSeat + '/seat/mo';
+      if (dataDateLabel) document.getElementById('spend-claude-date').textContent = 'API Model Cost · ' + dataDateLabel;
     }
 
   // Populate Cursor
   if (document.getElementById('spend-cursor-mtd')) {
-    document.getElementById('spend-cursor-mtd').textContent = '$' + spendData.cursor.mtd;
-    document.getElementById('spend-cursor-monthly').textContent = '$' + spendData.cursor.monthly;
+    document.getElementById('spend-cursor-mtd').textContent = '$' + spendData.cursor.mtd.toFixed(2);
+    document.getElementById('spend-cursor-monthly').textContent = '$' + spendData.cursor.monthly.toFixed(2);
     document.getElementById('spend-cursor-yearly').textContent = '$' + spendData.cursor.yearly.toLocaleString();
     document.getElementById('spend-cursor-daily').textContent = '$' + spendData.cursor.daily.toFixed(2);
+    document.getElementById('spend-cursor-subscription').textContent = '$' + cursorSub.toLocaleString() + '/mo';
+    document.getElementById('spend-cursor-seats-label').textContent =
+      spendData.cursor.seats + ' seats × $' + spendData.cursor.perSeat + '/seat/mo';
+    if (updatedDate) document.getElementById('spend-cursor-date').textContent = 'API Usage Cost · Updated ' + updatedDate;
   }
 
   // Populate Windsurf
   if (document.getElementById('spend-windsurf-mtd')) {
-    document.getElementById('spend-windsurf-mtd').textContent = '$' + spendData.windsurf.mtd;
-    document.getElementById('spend-windsurf-monthly').textContent = '$' + spendData.windsurf.monthly;
+    document.getElementById('spend-windsurf-mtd').textContent = '$' + spendData.windsurf.mtd.toFixed(2);
+    document.getElementById('spend-windsurf-monthly').textContent = '$' + spendData.windsurf.monthly.toFixed(2);
     document.getElementById('spend-windsurf-yearly').textContent = '$' + spendData.windsurf.yearly.toLocaleString();
     document.getElementById('spend-windsurf-daily').textContent = '$' + spendData.windsurf.daily.toFixed(2);
+    document.getElementById('spend-windsurf-subscription').textContent = '$' + windsurfSub.toLocaleString() + '/mo';
+    document.getElementById('spend-windsurf-seats-label').textContent =
+      spendData.windsurf.seats + ' seats × $' + spendData.windsurf.perSeat + '/seat/mo';
+    if (updatedDate) document.getElementById('spend-windsurf-date').textContent = 'API Usage Cost · Updated ' + updatedDate;
   }
 
   // Populate model cost table
