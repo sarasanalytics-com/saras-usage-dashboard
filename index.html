@@ -275,20 +275,7 @@
       <div style="font-size:2rem">🚨</div>
       <div style="flex:1">
         <div style="font-size:1.1rem;font-weight:700;color:#ef4444;margin-bottom:12px">CRITICAL ATTENTION NEEDED</div>
-        <div style="font-size:0.9rem;line-height:1.8;color:var(--muted)" id="critical-alerts-list">
-          <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)">
-            <span style="color:#ffa726">⚠️ Overage Alert:</span> Claude.ai spend exceeded 15% threshold. Current: ,200 MTD vs budgeted ,800
-          </div>
-          <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)">
-            <span style="color:#ffa726">⚠️ Unused Licenses:</span> 12 Claude.ai seats inactive this month. Review allocation with team leads.
-          </div>
-          <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)">
-            <span style="color:#ffa726">⚠️ High Spend Day:</span> May 20 spend peaked at  (24% above daily average). Review usage patterns.
-          </div>
-          <div style="padding:8px 0">
-            <span style="color:#ffa726">⚠️ Low Adoption:</span> Finance and HR teams showing <10% tool adoption. Consider training or re-licensing.
-          </div>
-        </div>
+        <div style="font-size:0.9rem;line-height:1.8;color:var(--muted)" id="critical-alerts-list">Loading alerts...</div>
       </div>
     </div>
   </div>
@@ -1162,6 +1149,7 @@ function populateManagerDropdown() {
 // Initialize all tabs
 document.addEventListener('DOMContentLoaded', () => {
   populateSpendsTab();
+  renderOverviewAlerts();
 });
 
 async function saveApiKeys() {
@@ -1327,6 +1315,100 @@ function populateSpendsTab() {
   } catch (e) {
     console.error('Error populating spends tab:', e);
   }
+}
+
+function renderOverviewAlerts() {
+  const el = document.getElementById('critical-alerts-list');
+  if (!el) return;
+
+  // ── Spend data — read from DOM (already set by populateSpendsTab) ──────────
+  const claudeMtdEl  = document.getElementById('spend-claude-mtd');
+  const claudeMtd    = claudeMtdEl ? parseInt(claudeMtdEl.textContent.replace(/[$,]/g,'')) || 0 : 0;
+  // Budget = seats × $20/seat (standard Claude.ai Team plan)
+  const licensedSeats = (typeof DATA !== 'undefined' ? DATA.licensedSeats : 0) || 150;
+  const claudeBudget  = licensedSeats * 20;
+  const overagePct    = claudeBudget > 0 ? Math.round((claudeMtd - claudeBudget) / claudeBudget * 100) : 0;
+  const overageAmount = claudeMtd - claudeBudget;
+
+  // ── Inactive Claude.ai seats ───────────────────────────────────────────────
+  // Seats = ALL_EMPLOYEES who should have Claude.ai access
+  // Active = anyone in CLAUDE_AI_USERS (had at least 1 chat this month)
+  const activeEmails  = new Set(Object.keys(typeof CLAUDE_AI_USERS !== 'undefined' ? CLAUDE_AI_USERS : {}));
+  const inactiveSeats = (typeof ALL_EMPLOYEES !== 'undefined' ? ALL_EMPLOYEES : [])
+    .filter(e => e.email && !activeEmails.has(e.email));
+  const inactiveCnt   = inactiveSeats.length;
+
+  // ── High activity day (proxy: peak chats day from chatsDailyData) ──────────
+  const chatDaily = (typeof DATA !== 'undefined' && DATA.chatsDailyData) ? DATA.chatsDailyData : [];
+  let peakDay = null, peakChats = 0, avgChats = 0;
+  if (chatDaily.length > 0) {
+    avgChats = Math.round(chatDaily.reduce((s,d) => s+d.chats, 0) / chatDaily.length);
+    chatDaily.forEach(d => { if (d.chats > peakChats) { peakChats = d.chats; peakDay = d.date; } });
+  }
+  const peakPct  = avgChats > 0 ? Math.round((peakChats - avgChats) / avgChats * 100) : 0;
+  const peakLabel = peakDay ? new Date(peakDay+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '—';
+
+  // ── Low adoption departments ───────────────────────────────────────────────
+  const lowAdoptDepts = [];
+  (typeof ALL_EMPLOYEES !== 'undefined' ? ALL_EMPLOYEES : []).reduce((deptMap, emp) => {
+    if (!emp.dept) return deptMap;
+    if (!deptMap[emp.dept]) deptMap[emp.dept] = { total: 0, active: 0 };
+    deptMap[emp.dept].total++;
+    if (activeEmails.has(emp.email)) deptMap[emp.dept].active++;
+    return deptMap;
+  }, {});
+
+  // Use known low-adoption depts from live CLAUDE_AI_USERS data
+  const deptCounts = {};
+  (typeof ALL_EMPLOYEES !== 'undefined' ? ALL_EMPLOYEES : []).forEach(emp => {
+    if (!emp.dept) return;
+    if (!deptCounts[emp.dept]) deptCounts[emp.dept] = { total: 0, active: 0 };
+    deptCounts[emp.dept].total++;
+    if (activeEmails.has(emp.email)) deptCounts[emp.dept].active++;
+  });
+  Object.entries(deptCounts).forEach(([dept, {total, active}]) => {
+    const pct = total > 0 ? Math.round(active/total*100) : 0;
+    if (pct < 10 && total >= 2) lowAdoptDepts.push(dept);
+  });
+
+  // ── Build alerts HTML ──────────────────────────────────────────────────────
+  const row = (content, last) =>
+    `<div style="padding:8px 0;${last?'':'border-bottom:1px solid rgba(255,255,255,0.1)'}">${content}</div>`;
+
+  const alerts = [];
+
+  // 1. Overage
+  if (overagePct > 0) {
+    alerts.push(row(`<span style="color:#ffa726">⚠️ Overage Alert:</span> Claude.ai spend exceeded budget by <strong style="color:#fff">${overagePct}%</strong>. Current: <strong style="color:#fff">$${claudeMtd.toLocaleString()} MTD</strong> vs budgeted <strong style="color:#fff">$${claudeBudget.toLocaleString()}</strong> — overage of <strong style="color:#ef4444">$${overageAmount.toLocaleString()}</strong>. Check the Spends tab for breakdown.`));
+  }
+
+  // 2. Inactive seats with expandable list
+  if (inactiveCnt > 0) {
+    const listId = 'inactive-seats-list';
+    const names  = inactiveSeats.slice(0, 30).map(e =>
+      `<span style="background:rgba(255,167,38,0.12);border-radius:4px;padding:2px 8px;font-size:0.78rem;color:#ffa726">${e.name || e.email.split('@')[0]}</span>`
+    ).join(' ');
+    const more   = inactiveCnt > 30 ? ` <span style="color:var(--muted)">+${inactiveCnt-30} more</span>` : '';
+    alerts.push(row(
+      `<span style="color:#ffa726">⚠️ Unused Licenses:</span> <strong style="color:#fff">${inactiveCnt} Claude.ai seats</strong> with zero chats this month.
+       <a href="#" onclick="document.getElementById('${listId}').style.display=document.getElementById('${listId}').style.display==='none'?'block':'none';return false;" style="color:#6c63ff;font-size:0.8rem;margin-left:8px">▼ Show members</a>
+       <div id="${listId}" style="display:none;margin-top:8px;line-height:2">${names}${more}</div>`
+    ));
+  }
+
+  // 3. Peak activity day
+  if (peakDay && peakPct > 10) {
+    alerts.push(row(`<span style="color:#ffa726">⚠️ Peak Activity Day:</span> <strong style="color:#fff">${peakLabel}</strong> had <strong style="color:#fff">${peakChats} chats</strong> — <strong style="color:#fff">${peakPct}% above daily average</strong> of ${avgChats}. This is Claude.ai chat activity (spend data needs Analytics API for exact $ per day).`));
+  }
+
+  // 4. Low adoption
+  if (lowAdoptDepts.length > 0) {
+    alerts.push(row(`<span style="color:#ffa726">⚠️ Low Adoption:</span> <strong style="color:#fff">${lowAdoptDepts.join(', ')}</strong> ${lowAdoptDepts.length===1?'has':'have'} &lt;10% Claude.ai chat adoption. Consider training sessions or license reallocation.`, true));
+  }
+
+  el.innerHTML = alerts.length > 0
+    ? alerts.join('')
+    : '<div style="color:var(--muted)">No critical alerts at this time.</div>';
 }
 
 function renderModelCostTrend(modelCosts) {
