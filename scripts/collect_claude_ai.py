@@ -284,23 +284,28 @@ try:
         "starting_at":  month_start.strftime("%Y-%m-%dT00:00:00Z"),
         "ending_at":    (data_until + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z"),
         "bucket_width": "1d",
-        "group_by":     ["model"],
+        "group_by":     ["product", "model"],
     }
     cost_resp = get_json("cost_report", cost_params)
 
+    product_cost = {}   # product → total cost
     while True:
         for bucket in cost_resp.get("data", []):
             for item in bucket.get("results", []):
                 mdl        = item.get("model")
+                product    = item.get("product", "unknown")
                 amount_str = item.get("amount", "0") or "0"
+                list_amt   = item.get("list_amount", amount_str) or amount_str
                 if not mdl:
                     continue
                 try:
                     # amount is in fractional cents → divide by 100 for USD
-                    cost_usd = float(amount_str) / 100.0
+                    cost_usd      = float(amount_str) / 100.0
+                    list_cost_usd = float(list_amt)   / 100.0
                 except (ValueError, TypeError):
-                    cost_usd = 0.0
-                model_cost[mdl] = model_cost.get(mdl, 0) + cost_usd
+                    cost_usd = list_cost_usd = 0.0
+                model_cost[mdl]   = model_cost.get(mdl, 0)   + cost_usd
+                product_cost[product] = product_cost.get(product, 0) + cost_usd
         if not cost_resp.get("has_more"):
             break
         cost_params["page"] = cost_resp.get("next_page")
@@ -312,9 +317,12 @@ try:
         for mdl, cost in sorted(model_cost.items(), key=lambda x: -x[1]):
             log(f"    {mdl}: ${cost:.2f}")
         log(f"  Total Claude spend MTD: ${sum(model_cost.values()):.2f}")
+        log(f"  Cost breakdown by product:")
+        for prod, cost in sorted(product_cost.items(), key=lambda x: -x[1]):
+            log(f"    {prod}: ${cost:.2f}")
     else:
         log(f"  [INFO] No cost data for {month_start} → {data_until}")
-        log(f"  [INFO] Data is available 3+ days ago; earliest available: 2026-01-01")
+        log(f"  [INFO] Data available 3+ days ago; chart may show more recent data with higher values")
 
 except Exception as e:
     log(f"  [WARN] cost_report fetch failed: {e}")

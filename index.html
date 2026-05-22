@@ -901,10 +901,10 @@
     </div>
   </div>
   
-  <div class="section-divider" style="margin-top:32px"><span>Model Usage Cost <span class="timeframe-badge tbadge-mtd">Daily Average</span></span></div>
+  <div class="section-divider" style="margin-top:32px"><span>Model Usage Cost <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
   <div style="background:var(--surface2);border-radius:8px;padding:16px;margin-bottom:24px">
     <table class="data-table">
-      <thead><tr><th>Model</th><th style="text-align:right">Messages</th><th style="text-align:right">Daily Cost</th></tr></thead>
+      <thead><tr><th>Model</th><th style="text-align:right">Tokens (MTD)</th><th style="text-align:right">MTD Cost</th></tr></thead>
       <tbody id="model-cost-body"></tbody>
     </table>
   </div>
@@ -1221,22 +1221,39 @@ function populateSpendsTab() {
 
   // If no API data yet, model costs will show as $0 until workflow fetches real data
 
-    // Convert to display format with calculated daily costs (divide MTD by days in month)
-    const daysInMonth = new Date().getDate(); // Days elapsed so far this month
+    // Days elapsed this month (for daily average)
+    const daysInMonth = new Date().getDate();
     const modelUsage = (typeof DATA !== 'undefined' ? DATA.modelUsage : {}) || {};
-    const modelCosts = Object.entries(modelCostByModel).map(([model, mtdCost]) => {
-      const dailyCost = mtdCost / daysInMonth;
-      const displayName = model
-        .replace('claude-3-5-sonnet', 'Claude 3.5 Sonnet')
-        .replace('claude-opus', 'Claude 3 Opus')
-        .replace('claude-haiku', 'Claude 3 Haiku')
-        .replace(/-/g, ' ');
-      return {
-        model: displayName,
-        messages: modelUsage[model]?.messages || 0,
-        dailyCost: Math.round(dailyCost * 100) / 100
-      };
-    });
+
+    // Clean model name: handles both Claude 3 and Claude 4 naming schemes
+    function cleanModelName(model) {
+      if (model.includes('claude-opus-4'))    return 'Claude Opus 4';
+      if (model.includes('claude-sonnet-4'))  return 'Claude Sonnet 4';
+      if (model.includes('claude-haiku-4'))   return 'Claude Haiku 4';
+      if (model.includes('claude-3-5-sonnet')) return 'Claude 3.5 Sonnet';
+      if (model.includes('claude-3-5-haiku'))  return 'Claude 3.5 Haiku';
+      if (model.includes('claude-3-opus'))     return 'Claude 3 Opus';
+      if (model.includes('claude-3-sonnet'))   return 'Claude 3 Sonnet';
+      if (model.includes('claude-3-haiku'))    return 'Claude 3 Haiku';
+      // fallback: clean up dashes/dates
+      return model.replace(/-\d{8,}$/, '').replace(/-/g, ' ')
+                  .replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    const modelCosts = Object.entries(modelCostByModel)
+      .filter(([, cost]) => cost > 0)   // hide $0 models
+      .map(([model, mtdCost]) => {
+        const u = modelUsage[model] || {};
+        return {
+          modelKey:    model,
+          model:       cleanModelName(model),
+          mtdCost:     mtdCost,
+          dailyCost:   Math.round(mtdCost / daysInMonth * 100) / 100,
+          inputTokens:  (u.input_tokens  || 0) + (u.cache_read_tokens || 0),
+          outputTokens:  u.output_tokens || 0,
+        };
+      })
+      .sort((a, b) => b.mtdCost - a.mtdCost);  // sort highest cost first
 
   // Calculate model cost aggregates
   const modelDailyTotal = modelCosts.reduce((sum, m) => sum + m.dailyCost, 0);
@@ -1258,18 +1275,21 @@ function populateSpendsTab() {
     const elDaily = document.getElementById('total-spend-daily');
     if (elDaily) elDaily.textContent = '$' + totalDaily.toFixed(2);
 
-  // Populate model cost KPI elements
+  // Populate model cost KPI elements — sum by family, not hardcoded index
+  const familyDaily = (key) => modelCosts
+    .filter(m => m.modelKey.includes(key))
+    .reduce((s, m) => s + m.dailyCost, 0);
   if (document.getElementById('model-cost-daily')) {
     document.getElementById('model-cost-daily').textContent = '$' + Math.round(modelDailyTotal);
   }
   if (document.getElementById('model-cost-sonnet')) {
-    document.getElementById('model-cost-sonnet').textContent = '$' + Math.round(modelCosts[0].dailyCost);
+    document.getElementById('model-cost-sonnet').textContent = '$' + Math.round(familyDaily('sonnet'));
   }
   if (document.getElementById('model-cost-opus')) {
-    document.getElementById('model-cost-opus').textContent = '$' + Math.round(modelCosts[1].dailyCost);
+    document.getElementById('model-cost-opus').textContent = '$' + Math.round(familyDaily('opus'));
   }
   if (document.getElementById('model-cost-haiku')) {
-    document.getElementById('model-cost-haiku').textContent = '$' + Math.round(modelCosts[2].dailyCost);
+    document.getElementById('model-cost-haiku').textContent = '$' + Math.round(familyDaily('haiku'));
   }
 
     // Populate Claude.ai
@@ -1299,9 +1319,16 @@ function populateSpendsTab() {
   // Populate model cost table
   const tbody = document.getElementById('model-cost-body');
   if (tbody) {
-    tbody.innerHTML = modelCosts.map(m =>
-      '<tr><td>' + m.model + '</td><td class="num-cell">' + m.messages.toLocaleString() + '</td><td class="num-cell">$' + m.dailyCost.toFixed(2) + '</td></tr>'
-    ).join('');
+    if (modelCosts.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:16px">No cost data yet — pending next workflow run</td></tr>';
+    } else {
+      tbody.innerHTML = modelCosts.map(m => {
+        const totalTok = ((m.inputTokens + m.outputTokens) / 1e6).toFixed(1);
+        return '<tr><td>' + m.model + '</td>' +
+               '<td class="num-cell">' + totalTok + 'M</td>' +
+               '<td class="num-cell">$' + m.mtdCost.toFixed(2) + '</td></tr>';
+      }).join('');
+    }
   }
 
     // Render model cost trend chart if canvas exists
