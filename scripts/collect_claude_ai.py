@@ -323,13 +323,15 @@ if daily_collected_path.exists():
         with open(daily_collected_path, 'r', encoding='utf-8') as f:
             daily_data = json.load(f)
             cursor_spend = daily_data.get("cursor_spend")
-            # windsurf_spend = daily_data.get("windsurf_spend")  # To be added later
+            windsurf_spend = daily_data.get("windsurf_spend")
     except Exception as e:
         log(f"  [WARN] Could not read daily_collected.json: {e}")
 
 log(f"  Claude spend MTD: ${claude_spend_mtd:.2f}")
 if cursor_spend:
     log(f"  Cursor spend MTD: ${cursor_spend.get('mtd', 0):.2f}")
+if windsurf_spend:
+    log(f"  Windsurf: {windsurf_spend.get('creditsUsed', 0)} credits used")
 
 # ── 4c. Write output ──────────────────────────────────────────────────────────
 # Sort members by lines (desc), excluding service/shared accounts

@@ -348,6 +348,32 @@ except Exception as e:
 log(f"  Windsurf: {len(windsurf_users)} users, {len(windsurf_today)} active today")
 
 
+# ── Windsurf spend API ────────────────────────────────────────────────────────
+log("Fetching Windsurf team credit balance...")
+windsurf_spend_data = None
+try:
+    windsurf_headers = {"Content-Type": "application/json"}
+    balance_resp = post_json(
+        "https://server.codeium.com/api/v1/GetTeamCreditBalance",
+        {"service_key": WINDSURF_SERVICE_KEY},
+        windsurf_headers,
+    )
+    # Convert credits used to spend estimate
+    # Windsurf uses credit-based pricing; assume credits map roughly to usage cost
+    credits_used = balance_resp.get("creditsUsed", 0)
+    total_credits = balance_resp.get("totalCredits", 0)
+    # Store both usage metrics and credits
+    windsurf_spend_data = {
+        "mtd": round(credits_used, 2) if credits_used else 0,
+        "monthly": round(credits_used, 2) if credits_used else 0,
+        "creditsUsed": credits_used,
+        "totalCredits": total_credits,
+    }
+    log(f"  Windsurf: {credits_used} credits used of {total_credits} total")
+except Exception as e:
+    log(f"  [WARN] Windsurf spend fetch failed: {e}")
+
+
 # ── Write output ──────────────────────────────────────────────────────────────
 result = {
     "today": TODAY_STR,
@@ -363,6 +389,7 @@ result = {
     "cursor_spend": cursor_spend_data,
     "windsurf_today": windsurf_today,
     "windsurf_users": windsurf_users,
+    "windsurf_spend": windsurf_spend_data,
 }
 
 OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
