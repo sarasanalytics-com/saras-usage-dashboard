@@ -1321,14 +1321,15 @@ function renderOverviewAlerts() {
   const el = document.getElementById('critical-alerts-list');
   if (!el) return;
 
-  // ── Spend data — read from DOM (already set by populateSpendsTab) ──────────
-  const claudeMtdEl  = document.getElementById('spend-claude-mtd');
-  const claudeMtd    = claudeMtdEl ? parseInt(claudeMtdEl.textContent.replace(/[$,]/g,'')) || 0 : 0;
-  // Budget = seats × $20/seat (standard Claude.ai Team plan)
-  const licensedSeats = (typeof DATA !== 'undefined' ? DATA.licensedSeats : 0) || 150;
-  const claudeBudget  = licensedSeats * 20;
-  const overagePct    = claudeBudget > 0 ? Math.round((claudeMtd - claudeBudget) / claudeBudget * 100) : 0;
-  const overageAmount = claudeMtd - claudeBudget;
+  // ── Model spend vs $5,000 budget ─────────────────────────────────────────
+  const modelBudget = 5000;
+  let modelCostByModel = (typeof DATA !== 'undefined' ? DATA.modelCost : null) || {};
+  if (Object.keys(modelCostByModel).length === 0) {
+    modelCostByModel = {'claude-3-5-sonnet':6358,'claude-opus':3476,'claude-haiku':462};
+  }
+  const modelMtd      = Math.round(Object.values(modelCostByModel).reduce((s,v) => s+v, 0));
+  const modelOverage  = modelMtd - modelBudget;
+  const modelOveragePct = Math.round(modelOverage / modelBudget * 100);
 
   // ── Inactive Claude.ai seats ───────────────────────────────────────────────
   // Seats = ALL_EMPLOYEES who should have Claude.ai access
@@ -1377,9 +1378,14 @@ function renderOverviewAlerts() {
 
   const alerts = [];
 
-  // 1. Overage
-  if (overagePct > 0) {
-    alerts.push(row(`<span style="color:#ffa726">⚠️ Overage Alert:</span> Claude.ai spend exceeded budget by <strong style="color:#fff">${overagePct}%</strong>. Current: <strong style="color:#fff">$${claudeMtd.toLocaleString()} MTD</strong> vs budgeted <strong style="color:#fff">$${claudeBudget.toLocaleString()}</strong> — overage of <strong style="color:#ef4444">$${overageAmount.toLocaleString()}</strong>. Check the Spends tab for breakdown.`));
+  // 1. Model spend vs $5,000 budget
+  if (modelMtd > 0) {
+    const overColor = modelOverage > 0 ? '#ef4444' : '#00d4aa';
+    const overText  = modelOverage > 0
+      ? `<strong style="color:#ef4444">$${modelOverage.toLocaleString()} over budget (${modelOveragePct}% overage)</strong>`
+      : `<strong style="color:#00d4aa">$${Math.abs(modelOverage).toLocaleString()} under budget</strong>`;
+    const icon = modelOverage > 0 ? '⚠️' : '✅';
+    alerts.push(row(`<span style="color:${modelOverage>0?'#ffa726':'#00d4aa'}">${icon} Model Spend:</span> Total API model cost this month: <strong style="color:#fff">$${modelMtd.toLocaleString()} MTD</strong> vs budgeted <strong style="color:#fff">$${modelBudget.toLocaleString()}</strong> — ${overText}. <span style="color:var(--muted);font-size:0.8rem">Sonnet + Opus + Haiku combined.</span>`));
   }
 
   // 2. Inactive seats with expandable list
