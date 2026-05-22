@@ -22,7 +22,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_PATH = REPO_ROOT / "data" / "claude_ai_stats.json"
 
-API_KEY  = os.environ["ANTHROPIC_ANALYTICS_KEY"]
+API_KEY  = os.environ["ANTHROPIC_ANALYTICS_KEY"].strip()  # strip trailing newline if any
 BASE_URL = "https://api.anthropic.com/v1/organizations/analytics"
 HEADERS  = {
     "x-api-key":          API_KEY,
