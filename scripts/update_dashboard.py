@@ -140,20 +140,32 @@ for email, rec in fresh["clickup"]["people"].items():
     safe_tasks = []
     for t in tasks:
         title_raw = (t.get("title") or "").replace("\\", "\\\\").replace("'", "\\'").replace('[', '(').replace(']', ')')
-        # Truncate to 80 chars, but ensure we don't leave quotes unbalanced
+        # Truncate to 80 chars, but ensure we don't leave quotes/parens unbalanced
         title = title_raw[:80]
+        # Check for unbalanced quotes
         if title.count('"') % 2 == 1:
-            # Odd number of quotes after truncation - trim more carefully
-            # Find the last space before position 80 and use that instead
+            # Odd number of quotes - trim more carefully
             for i in range(79, 0, -1):
                 if title_raw[i] in (' ', '-', ',', '.'):
                     title = title_raw[:i].rstrip()
-                    # Check again
                     if title.count('"') % 2 == 0:
                         break
             # If still odd quotes, just remove characters until balanced
             while title.count('"') % 2 == 1 and len(title) > 0:
                 title = title[:-1]
+        # Check for unbalanced parentheses
+        if title.count('(') != title.count(')'):
+            # Remove extra opening or closing parens
+            open_count = title.count('(')
+            close_count = title.count(')')
+            if open_count > close_count:
+                # More opens than closes - remove trailing opens
+                while title.count('(') > title.count(')') and len(title) > 0:
+                    title = title[:-1]
+            elif close_count > open_count:
+                # More closes than opens - remove trailing closes
+                while title.count(')') > title.count('(') and len(title) > 0:
+                    title = title[:-1]
         due      = t.get("due")
         due_js   = f"'{due}'" if due else "null"
         url      = (t.get("url") or "").replace("\\", "\\\\").replace("'", "\\'")
