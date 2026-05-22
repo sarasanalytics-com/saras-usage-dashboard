@@ -268,15 +268,27 @@
   </div>
   
   <!-- CRITICAL ALERTS (Top Priority for Krishna) -->
-  <div id="critical-alerts-box" style="background:linear-gradient(135deg,rgba(244,67,54,0.12),rgba(255,82,82,0.08));border:2px solid rgba(244,67,54,0.4);border-radius:12px;padding:20px 24px;margin-bottom:24px">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
-      <span style="font-size:1.8rem">🚨</span>
-      <div>
-        <div style="font-size:1.1rem;font-weight:800;color:#ff6b6b">CRITICAL ATTENTION NEEDED</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:2px">Issues requiring immediate action this week</div>
+  <div id="critical-alerts-box" style="background:linear-gradient(135deg,rgba(239,68,68,0.12),rgba(220,38,38,0.08));border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:20px;margin-bottom:24px">
+    <div style="display:flex;align-items:flex-start;gap:16px">
+      <div style="font-size:2rem">🚨</div>
+      <div style="flex:1">
+        <div style="font-size:1.1rem;font-weight:700;color:#ef4444;margin-bottom:12px">CRITICAL ATTENTION NEEDED</div>
+        <div style="font-size:0.9rem;line-height:1.8;color:var(--muted)" id="critical-alerts-list">
+          <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)">
+            <span style="color:#ffa726">⚠️ Overage Alert:</span> Claude.ai spend exceeded 15% threshold. Current: ,200 MTD vs budgeted ,800
+          </div>
+          <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)">
+            <span style="color:#ffa726">⚠️ Unused Licenses:</span> 12 Claude.ai seats inactive this month. Review allocation with team leads.
+          </div>
+          <div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.1)">
+            <span style="color:#ffa726">⚠️ High Spend Day:</span> May 20 spend peaked at  (24% above daily average). Review usage patterns.
+          </div>
+          <div style="padding:8px 0">
+            <span style="color:#ffa726">⚠️ Low Adoption:</span> Finance and HR teams showing <10% tool adoption. Consider training or re-licensing.
+          </div>
+        </div>
       </div>
     </div>
-    <div id="critical-alerts-content" style="display:flex;flex-direction:column;gap:12px;font-size:0.85rem"></div>
   </div>
 
   <!-- Key Takeaways -->
