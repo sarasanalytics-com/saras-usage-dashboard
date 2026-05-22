@@ -1099,6 +1099,11 @@ function populateSpendsTab() {
   ).join('');
 }
 
+// Initialize all tabs
+document.addEventListener('DOMContentLoaded', () => {
+  populateSpendsTab();
+});
+
 function applyGlobalFilters() {
   GF.dept    = document.getElementById('gf-dept').value;
   GF.manager = document.getElementById('gf-manager').value;
