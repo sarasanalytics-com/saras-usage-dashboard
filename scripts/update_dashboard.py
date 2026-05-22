@@ -141,20 +141,11 @@ for email, rec in fresh["clickup"]["people"].items():
     safe_tasks = []
     for t in tasks:
         title_raw = (t.get("title") or "").replace("\\", "\\\\").replace('"', '\\"').replace('[', '(').replace(']', ')')
-        # Truncate to 80 chars, but ensure we don't leave quotes/parens unbalanced
+        # Truncate to 80 chars
+        # NOTE: We don't check for balanced quotes here because they're already escaped
+        # The escaped \" sequence will not cause JavaScript issues
         title = title_raw[:80]
-        # Check for unbalanced quotes
-        if title.count('"') % 2 == 1:
-            # Odd number of quotes - trim more carefully
-            for i in range(79, 0, -1):
-                if title_raw[i] in (' ', '-', ',', '.'):
-                    title = title_raw[:i].rstrip()
-                    if title.count('"') % 2 == 0:
-                        break
-            # If still odd quotes, just remove characters until balanced
-            while title.count('"') % 2 == 1 and len(title) > 0:
-                title = title[:-1]
-        # Check for unbalanced parentheses
+        # Check for unbalanced parentheses (which won't be escaped)
         if title.count('(') != title.count(')'):
             # Remove extra opening or closing parens
             open_count = title.count('(')
