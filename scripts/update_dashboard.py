@@ -259,8 +259,11 @@ new_data_block = f"""const DATA = {{
   modelCost: {model_cost_json},
 }};"""
 
-html = re.sub(r"const DATA = \{.*?\};", new_data_block, html, count=1, flags=re.DOTALL)
-log(f"  DATA block updated: {total_lines:,} lines, {active_members}/{total_members} members")
+if total_lines > 0 or active_members > 0:
+    html = re.sub(r"const DATA = \{.*?\};", new_data_block, html, count=1, flags=re.DOTALL)
+    log(f"  DATA block updated: {total_lines:,} lines, {active_members}/{total_members} members")
+else:
+    log(f"  DATA block: API returned all zeros — keeping existing DATA block in HTML")
 
 # -- Update spendData
 claude_spend = cc.get("claudeSpend", {})
@@ -291,8 +294,11 @@ spend_data = {
 spend_js = json.dumps(spend_data, separators=(",", ":"))
 spend_js = spend_js.replace('"', "'").replace("'mtd'", "mtd").replace("'monthly'", "monthly").replace("'seats'", "seats").replace("'perSeat'", "perSeat").replace("'claude'", "claude").replace("'cursor'", "cursor").replace("'windsurf'", "windsurf")
 new_spend_line = f"const spendData = {spend_js};"
-html = re.sub(r"const spendData = \{.*?\};", new_spend_line, html, count=1, flags=re.DOTALL)
-log(f"  spendData: Claude ${spend_data['claude']['mtd']}, Cursor ${spend_data['cursor']['mtd']}, Windsurf ${spend_data['windsurf']['mtd']}")
+if spend_data['claude']['mtd'] > 0 or spend_data['cursor']['mtd'] > 0 or spend_data['windsurf']['mtd'] > 0:
+    html = re.sub(r"const spendData = \{.*?\};", new_spend_line, html, count=1, flags=re.DOTALL)
+    log(f"  spendData: Claude ${spend_data['claude']['mtd']}, Cursor ${spend_data['cursor']['mtd']}, Windsurf ${spend_data['windsurf']['mtd']}")
+else:
+    log(f"  spendData: all zeros from API — keeping existing spendData in HTML")
 
 
 # ── Update members[] ──────────────────────────────────────────────────────────
@@ -363,22 +369,27 @@ for email, lines in members_sorted:
     member_lines.append(f"  {{name:'{name}', email:'{email}', lines:{lines}, dept:'{dept}'}},")
 
 new_members_block = "const members = [\n" + "\n".join(member_lines) + "\n];"
-html = re.sub(r"const members = \[.*?\];", new_members_block, html, count=1, flags=re.DOTALL)
-log(f"  members[]: {len(member_lines)} entries")
+if len(member_lines) > 0:
+    html = re.sub(r"const members = \[.*?\];", new_members_block, html, count=1, flags=re.DOTALL)
+    log(f"  members[]: {len(member_lines)} entries")
+else:
+    log(f"  members[]: API returned 0 entries — keeping existing members[] in HTML")
 
 
 # ── Update CLAUDE_AI_USERS ────────────────────────────────────────────────────
 chat_users = cc.get("chatUsers", {})
 new_cau_obj  = json.dumps(chat_users, separators=(",", ":"))
 new_cau_line = f"const CLAUDE_AI_USERS={new_cau_obj};"
-html = re.sub(r"const CLAUDE_AI_USERS=\{[^}]*\};", new_cau_line, html, count=1)
+if len(chat_users) > 0:
+    html = re.sub(r"const CLAUDE_AI_USERS=\{[^}]*\};", new_cau_line, html, count=1)
 log(f"  CLAUDE_AI_USERS: {len(chat_users)} entries")
 
 # ── Update COWORK_USERS ───────────────────────────────────────────────────────
 cowork_users = cc.get("coworkUsers", {})
 new_cwu_obj  = json.dumps(cowork_users, separators=(",", ":"))
 new_cwu_line = f"const COWORK_USERS={new_cwu_obj};"
-html = re.sub(r"const COWORK_USERS=\{[^}]*\};", new_cwu_line, html, count=1)
+if len(cowork_users) > 0:
+    html = re.sub(r"const COWORK_USERS=\{[^}]*\};", new_cwu_line, html, count=1)
 log(f"  COWORK_USERS: {len(cowork_users)} entries")
 
 
