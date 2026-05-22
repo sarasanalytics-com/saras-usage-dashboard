@@ -3690,7 +3690,7 @@ function renderDeptScorecardTable() {
         } else { html += cell(coworkCt,hc,inScope); }
       }
       else if(tool==='Claude.ai'){ html+=cell(aiCt,hc,inScope); }
-      else if(tool==='ClickUp') { html+=cell(cuActive,hc,true); }
+      else if(tool==='ClickUp') { html+='<td class="num-cell"><span style="color:#ffa726;font-weight:700">'+(cuActive||'—')+'</span></td>'; }
     });
     html+=`<td class="num-cell">${cell(anyCt,hc,true).replace(/<\/?td[^>]*>/g,'')}</td>`;
     html+=`<td class="num-cell">${ccActive>0?fmt(ccAvg):'<span class="not-in-scope">–</span>'}</td>`;
