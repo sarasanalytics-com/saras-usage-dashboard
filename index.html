@@ -818,6 +818,41 @@
   </div>
 </div>
 
+<!-- SPENDS -->
+<div class="page" id="tab-spends">
+  <div class="section-divider"><span>AI Tool Spending <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="fqq-strip">
+    <div class="fqq-card">
+      <div class="fqq-label">Claude.ai</div>
+      <div class="fqq-value" id="spend-claude">–</div>
+      <div class="fqq-su">estimated cost</div>
+    </div>
+    <div class="fqq-card">
+      <div class="fqq-label">Claude Code</div>
+      <div class="fqq-value" id="spend-cc">–</div>
+      <div class="fqq-su">estimated cost</div>
+    </div>
+    <div class="fqq-card">
+      <div class="fqq-label">Cursor</div>
+      <div class="fqq-value" id="spend-cursor">–</div>
+      <div class="fqq-su">estimated cost</div>
+    </div>
+    <div class="fqq-card">
+      <div class="fqq-label">Windsurf</div>
+      <div class="fqq-value" id="spend-windsurf">–</div>
+      <div class="fqq-su">estimated cost</div>
+    </div>
+  </div>
+  
+  <div class="section-divider" style="margin-top:32px"><span>Model Usage Cost <span class="timeframe-badge tbadge-mtd">Daily Average</span></span></div>
+  <div style="background:var(--surface2);border-radius:8px;padding:16px;margin-bottom:24px">
+    <table class="data-table">
+      <thead><tr><th>Model</th><th style="text-align:right">Messages</th><th style="text-align:right">Daily Cost</th></tr></thead>
+      <tbody id="model-cost-body"></tbody>
+    </table>
+  </div>
+</div>
+
 <!-- CLICKUP -->
 <div class="page" id="tab-clickup">
   <div class="fqq-strip">
