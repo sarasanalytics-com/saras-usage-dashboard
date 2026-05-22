@@ -43,8 +43,9 @@ with HTML_PATH.open(encoding="utf-8") as f:
     html = f.read()
 
 TODAY     = fresh["today"]
-MONTH_LABEL = datetime.strptime(TODAY, "%Y-%m-%d").strftime("%B %Y")
-TODAY_LABEL = datetime.strptime(TODAY, "%Y-%m-%d").strftime("%B %-d, %Y")
+dt = datetime.strptime(TODAY, "%Y-%m-%d")
+MONTH_LABEL = dt.strftime("%B %Y")
+TODAY_LABEL = dt.strftime("%B %d, %Y").replace(" 0", " ")  # Remove leading zero from day
 
 # ── Build CLICKUP_DATA.people ─────────────────────────────────────────────────
 # Extract existing dept / name mappings from HTML so we don't lose them
@@ -138,7 +139,7 @@ for email, rec in fresh["clickup"]["people"].items():
     tasks = rec.get("tasks", [])
     safe_tasks = []
     for t in tasks:
-        title    = (t.get("title") or "").replace("'", "\\'").replace('"', '\\"')[:80]
+        title    = (t.get("title") or "").replace("'", "\\'").replace('"', '\\"').replace('[', '(').replace(']', ')')[:80]
         due      = t.get("due")
         due_js   = f"'{due}'" if due else "null"
         url      = (t.get("url") or "").replace("'", "\\'")
