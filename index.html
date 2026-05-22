@@ -865,62 +865,58 @@
   <div class="section-divider"><span>AI Tool Spending</span></div>
   
   <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px">
+
     <!-- Claude.ai Card -->
     <div style="background:var(--surface2);border-radius:8px;padding:16px;border-left:3px solid #a89cff;min-width:0">
-      <div style="font-size:0.85rem;font-weight:700;color:var(--muted);margin-bottom:12px">CLAUDE.AI</div>
-      <div style="font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="spend-claude-mtd">-</div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px" id="spend-claude-date">API Model Cost · MTD</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem;margin-bottom:10px">
-        <div><span style="color:var(--muted)">API Monthly:</span> <span id="spend-claude-monthly" style="color:#fff;font-weight:700">-</span></div>
-        <div><span style="color:var(--muted)">Yearly:</span> <span id="spend-claude-yearly" style="color:#fff;font-weight:700">-</span></div>
-        <div><span style="color:var(--muted)">Daily Avg:</span> <span id="spend-claude-daily" style="color:#fff;font-weight:700">-</span></div>
-      </div>
-      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;font-size:0.8rem">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="color:var(--muted)">Subscription:</span>
-          <span style="color:#a89cff;font-weight:700" id="spend-claude-subscription">-</span>
+      <div style="font-size:0.85rem;font-weight:700;color:var(--muted);margin-bottom:8px">CLAUDE.AI</div>
+      <!-- Hero: subscription cost -->
+      <div style="font-size:1.8rem;font-weight:700;color:#a89cff;margin-bottom:2px" id="spend-claude-subscription">-</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:12px" id="spend-claude-seats-label">160 seats × $20/seat · Fixed monthly</div>
+      <!-- Secondary: API usage -->
+      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:10px">
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px">API MODEL USAGE</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.8rem">
+          <div><span style="color:var(--muted)">MTD:</span> <span id="spend-claude-mtd" style="color:#fff;font-weight:700">-</span></div>
+          <div><span style="color:var(--muted)">Daily Avg:</span> <span id="spend-claude-daily" style="color:#fff;font-weight:700">-</span></div>
         </div>
-        <div style="font-size:0.7rem;color:var(--muted);margin-top:2px" id="spend-claude-seats-label">160 seats × $20/seat/mo</div>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:4px" id="spend-claude-date">-</div>
       </div>
     </div>
 
     <!-- Cursor Card -->
     <div style="background:var(--surface2);border-radius:8px;padding:16px;border-left:3px solid #81c784;min-width:0">
-      <div style="font-size:0.85rem;font-weight:700;color:var(--muted);margin-bottom:12px">CURSOR</div>
-      <div style="font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="spend-cursor-mtd">-</div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px" id="spend-cursor-date">API Usage Cost · MTD</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem;margin-bottom:10px">
-        <div><span style="color:var(--muted)">API Monthly:</span> <span id="spend-cursor-monthly" style="color:#fff;font-weight:700">-</span></div>
-        <div><span style="color:var(--muted)">Yearly:</span> <span id="spend-cursor-yearly" style="color:#fff;font-weight:700">-</span></div>
-        <div><span style="color:var(--muted)">Daily Avg:</span> <span id="spend-cursor-daily" style="color:#fff;font-weight:700">-</span></div>
-      </div>
-      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;font-size:0.8rem">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="color:var(--muted)">Subscription:</span>
-          <span style="color:#81c784;font-weight:700" id="spend-cursor-subscription">-</span>
+      <div style="font-size:0.85rem;font-weight:700;color:var(--muted);margin-bottom:8px">CURSOR</div>
+      <!-- Hero: subscription cost -->
+      <div style="font-size:1.8rem;font-weight:700;color:#81c784;margin-bottom:2px" id="spend-cursor-subscription">-</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:12px" id="spend-cursor-seats-label">63 seats × $20/seat · Fixed monthly</div>
+      <!-- Secondary: API usage -->
+      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:10px">
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px">API USAGE</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.8rem">
+          <div><span style="color:var(--muted)">MTD:</span> <span id="spend-cursor-mtd" style="color:#fff;font-weight:700">-</span></div>
+          <div><span style="color:var(--muted)">Daily Avg:</span> <span id="spend-cursor-daily" style="color:#fff;font-weight:700">-</span></div>
         </div>
-        <div style="font-size:0.7rem;color:var(--muted);margin-top:2px" id="spend-cursor-seats-label">63 seats × $20/seat/mo</div>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:4px" id="spend-cursor-date">-</div>
       </div>
     </div>
 
     <!-- Windsurf Card -->
     <div style="background:var(--surface2);border-radius:8px;padding:16px;border-left:3px solid #00d4aa;min-width:0">
-      <div style="font-size:0.85rem;font-weight:700;color:var(--muted);margin-bottom:12px">WINDSURF</div>
-      <div style="font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="spend-windsurf-mtd">-</div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px" id="spend-windsurf-date">API Usage Cost · MTD</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.8rem;margin-bottom:10px">
-        <div><span style="color:var(--muted)">API Monthly:</span> <span id="spend-windsurf-monthly" style="color:#fff;font-weight:700">-</span></div>
-        <div><span style="color:var(--muted)">Yearly:</span> <span id="spend-windsurf-yearly" style="color:#fff;font-weight:700">-</span></div>
-        <div><span style="color:var(--muted)">Daily Avg:</span> <span id="spend-windsurf-daily" style="color:#fff;font-weight:700">-</span></div>
-      </div>
-      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:8px;font-size:0.8rem">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="color:var(--muted)">Subscription:</span>
-          <span style="color:#00d4aa;font-weight:700" id="spend-windsurf-subscription">-</span>
+      <div style="font-size:0.85rem;font-weight:700;color:var(--muted);margin-bottom:8px">WINDSURF</div>
+      <!-- Hero: subscription cost -->
+      <div style="font-size:1.8rem;font-weight:700;color:#00d4aa;margin-bottom:2px" id="spend-windsurf-subscription">-</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:12px" id="spend-windsurf-seats-label">8 seats × $30/seat · Fixed monthly</div>
+      <!-- Secondary: API usage -->
+      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:10px">
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px">API USAGE</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.8rem">
+          <div><span style="color:var(--muted)">MTD:</span> <span id="spend-windsurf-mtd" style="color:#fff;font-weight:700">-</span></div>
+          <div><span style="color:var(--muted)">Daily Avg:</span> <span id="spend-windsurf-daily" style="color:#fff;font-weight:700">-</span></div>
         </div>
-        <div style="font-size:0.7rem;color:var(--muted);margin-top:2px" id="spend-windsurf-seats-label">8 seats × $30/seat/mo</div>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:4px" id="spend-windsurf-date">-</div>
       </div>
     </div>
+
   </div>
   
   <div class="section-divider" style="margin-top:32px"><span>Model Usage Cost <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
@@ -1336,41 +1332,32 @@ function populateSpendsTab() {
     document.getElementById('model-cost-haiku').textContent = '$' + Math.round(familyMtd('haiku'));
   }
 
+    // Helper: format subscription hero value
+    const fmtSub = (v) => '$' + v.toLocaleString() + '/mo';
+
     // Populate Claude.ai
-    if (document.getElementById('spend-claude-mtd')) {
-      document.getElementById('spend-claude-mtd').textContent = '$' + spendData.claude.mtd.toFixed(2);
-      document.getElementById('spend-claude-monthly').textContent = '$' + spendData.claude.monthly.toFixed(2);
-      document.getElementById('spend-claude-yearly').textContent = '$' + spendData.claude.yearly.toLocaleString();
-      document.getElementById('spend-claude-daily').textContent = '$' + spendData.claude.daily.toFixed(2);
-      document.getElementById('spend-claude-subscription').textContent = '$' + claudeSub.toLocaleString() + '/mo';
-      document.getElementById('spend-claude-seats-label').textContent =
-        spendData.claude.seats + ' seats × $' + spendData.claude.perSeat + '/seat/mo';
-      if (dataDateLabel) document.getElementById('spend-claude-date').textContent = 'API Model Cost · ' + dataDateLabel;
-    }
+    document.getElementById('spend-claude-subscription').textContent = fmtSub(claudeSub);
+    document.getElementById('spend-claude-seats-label').textContent =
+      spendData.claude.seats + ' seats × $' + spendData.claude.perSeat + '/seat · Fixed monthly';
+    document.getElementById('spend-claude-mtd').textContent   = '$' + spendData.claude.mtd.toFixed(2);
+    document.getElementById('spend-claude-daily').textContent = '$' + spendData.claude.daily.toFixed(2);
+    document.getElementById('spend-claude-date').textContent  = dataDateLabel ? 'Anthropic API · ' + dataDateLabel : 'Anthropic API · awaiting data';
 
-  // Populate Cursor
-  if (document.getElementById('spend-cursor-mtd')) {
-    document.getElementById('spend-cursor-mtd').textContent = '$' + spendData.cursor.mtd.toFixed(2);
-    document.getElementById('spend-cursor-monthly').textContent = '$' + spendData.cursor.monthly.toFixed(2);
-    document.getElementById('spend-cursor-yearly').textContent = '$' + spendData.cursor.yearly.toLocaleString();
-    document.getElementById('spend-cursor-daily').textContent = '$' + spendData.cursor.daily.toFixed(2);
-    document.getElementById('spend-cursor-subscription').textContent = '$' + cursorSub.toLocaleString() + '/mo';
+    // Populate Cursor
+    document.getElementById('spend-cursor-subscription').textContent = fmtSub(cursorSub);
     document.getElementById('spend-cursor-seats-label').textContent =
-      spendData.cursor.seats + ' seats × $' + spendData.cursor.perSeat + '/seat/mo';
-    if (updatedDate) document.getElementById('spend-cursor-date').textContent = 'API Usage Cost · Updated ' + updatedDate;
-  }
+      spendData.cursor.seats + ' seats × $' + spendData.cursor.perSeat + '/seat · Fixed monthly';
+    document.getElementById('spend-cursor-mtd').textContent   = '$' + spendData.cursor.mtd.toFixed(2);
+    document.getElementById('spend-cursor-daily').textContent = '$' + spendData.cursor.daily.toFixed(2);
+    document.getElementById('spend-cursor-date').textContent  = updatedDate ? 'Updated ' + updatedDate : '';
 
-  // Populate Windsurf
-  if (document.getElementById('spend-windsurf-mtd')) {
-    document.getElementById('spend-windsurf-mtd').textContent = '$' + spendData.windsurf.mtd.toFixed(2);
-    document.getElementById('spend-windsurf-monthly').textContent = '$' + spendData.windsurf.monthly.toFixed(2);
-    document.getElementById('spend-windsurf-yearly').textContent = '$' + spendData.windsurf.yearly.toLocaleString();
-    document.getElementById('spend-windsurf-daily').textContent = '$' + spendData.windsurf.daily.toFixed(2);
-    document.getElementById('spend-windsurf-subscription').textContent = '$' + windsurfSub.toLocaleString() + '/mo';
+    // Populate Windsurf
+    document.getElementById('spend-windsurf-subscription').textContent = fmtSub(windsurfSub);
     document.getElementById('spend-windsurf-seats-label').textContent =
-      spendData.windsurf.seats + ' seats × $' + spendData.windsurf.perSeat + '/seat/mo';
-    if (updatedDate) document.getElementById('spend-windsurf-date').textContent = 'API Usage Cost · Updated ' + updatedDate;
-  }
+      spendData.windsurf.seats + ' seats × $' + spendData.windsurf.perSeat + '/seat · Fixed monthly';
+    document.getElementById('spend-windsurf-mtd').textContent   = '$' + spendData.windsurf.mtd.toFixed(2);
+    document.getElementById('spend-windsurf-daily').textContent = '$' + spendData.windsurf.daily.toFixed(2);
+    document.getElementById('spend-windsurf-date').textContent  = updatedDate ? 'Updated ' + updatedDate : '';
 
   // Populate model cost table
   const tbody = document.getElementById('model-cost-body');
