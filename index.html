@@ -1266,10 +1266,13 @@ function populateSpendsTab() {
   const totalYearly = spendData.claude.yearly + spendData.cursor.yearly + spendData.windsurf.yearly + modelYearlyTotal;
   const totalDaily = Math.round((totalMonthly / 30) * 100) / 100;
 
-  // Populate total spend in overview (includes model costs)
-  document.getElementById('total-spend-monthly').textContent = '$' + totalMonthly.toLocaleString();
-  document.getElementById('total-spend-yearly').textContent = '$' + totalYearly.toLocaleString();
-  document.getElementById('total-spend-daily').textContent = '$' + totalDaily.toFixed(2);
+    // Populate total spend in overview (includes model costs)
+    const elMonthly = document.getElementById('total-spend-monthly');
+    if (elMonthly) elMonthly.textContent = '$' + totalMonthly.toLocaleString();
+    const elYearly = document.getElementById('total-spend-yearly');
+    if (elYearly) elYearly.textContent = '$' + totalYearly.toLocaleString();
+    const elDaily = document.getElementById('total-spend-daily');
+    if (elDaily) elDaily.textContent = '$' + totalDaily.toFixed(2);
 
   // Populate model cost KPI elements
   if (document.getElementById('model-cost-daily')) {
@@ -1285,11 +1288,13 @@ function populateSpendsTab() {
     document.getElementById('model-cost-haiku').textContent = '$' + Math.round(modelCosts[2].dailyCost);
   }
 
-  // Populate Claude.ai
-  document.getElementById('spend-claude-mtd').textContent = '$' + spendData.claude.mtd;
-  document.getElementById('spend-claude-monthly').textContent = '$' + spendData.claude.monthly;
-  document.getElementById('spend-claude-yearly').textContent = '$' + spendData.claude.yearly.toLocaleString();
-  document.getElementById('spend-claude-daily').textContent = '$' + spendData.claude.daily.toFixed(2);
+    // Populate Claude.ai
+    if (document.getElementById('spend-claude-mtd')) {
+      document.getElementById('spend-claude-mtd').textContent = '$' + spendData.claude.mtd;
+      document.getElementById('spend-claude-monthly').textContent = '$' + spendData.claude.monthly;
+      document.getElementById('spend-claude-yearly').textContent = '$' + spendData.claude.yearly.toLocaleString();
+      document.getElementById('spend-claude-daily').textContent = '$' + spendData.claude.daily.toFixed(2);
+    }
 
   // Populate Cursor
   if (document.getElementById('spend-cursor-mtd')) {
