@@ -4206,7 +4206,8 @@ function initTrendsTab() {
       const d = emp.dept || 'Unknown';
       deptTotalSeats[d] = (deptTotalSeats[d] || 0) + 1;
     });
-    Object.keys(DATA.chatUsers || {}).forEach(email => {
+    Object.keys(CLAUDE_AI_USERS || {}).forEach(email => {
+      if (BOT_ACCOUNTS && BOT_ACCOUNTS.has(email)) return;
       const d = getDept(email);
       deptChatUsers[d] = (deptChatUsers[d] || 0) + 1;
     });
