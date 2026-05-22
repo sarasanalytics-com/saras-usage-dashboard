@@ -139,10 +139,24 @@ for email, rec in fresh["clickup"]["people"].items():
     tasks = rec.get("tasks", [])
     safe_tasks = []
     for t in tasks:
-        title    = (t.get("title") or "").replace("'", "\\'").replace('"', '\\"').replace('[', '(').replace(']', ')')[:80]
+        title_raw = (t.get("title") or "").replace("\\", "\\\\").replace("'", "\\'").replace('[', '(').replace(']', ')')
+        # Truncate to 80 chars, but ensure we don't leave quotes unbalanced
+        title = title_raw[:80]
+        if title.count('"') % 2 == 1:
+            # Odd number of quotes after truncation - trim more carefully
+            # Find the last space before position 80 and use that instead
+            for i in range(79, 0, -1):
+                if title_raw[i] in (' ', '-', ',', '.'):
+                    title = title_raw[:i].rstrip()
+                    # Check again
+                    if title.count('"') % 2 == 0:
+                        break
+            # If still odd quotes, just remove characters until balanced
+            while title.count('"') % 2 == 1 and len(title) > 0:
+                title = title[:-1]
         due      = t.get("due")
         due_js   = f"'{due}'" if due else "null"
-        url      = (t.get("url") or "").replace("'", "\\'")
+        url      = (t.get("url") or "").replace("\\", "\\\\").replace("'", "\\'")
         prio     = t.get("priority") or "normal"
         safe_tasks.append(f"{{title:'{title}',priority:'{prio}',due:{due_js},url:'{url}'}}")
     tasks_js    = "[" + ",".join(safe_tasks) + "]"
