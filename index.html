@@ -1332,11 +1332,11 @@ function renderOverviewAlerts() {
   const modelOveragePct = Math.round(modelOverage / modelBudget * 100);
 
   // ── Inactive Claude.ai seats ───────────────────────────────────────────────
-  // Seats = ALL_EMPLOYEES who should have Claude.ai access
-  // Active = anyone in CLAUDE_AI_USERS (had at least 1 chat this month)
+  // Licensed = only people in members[] (have Claude Code / Claude.ai seat)
+  // Active   = anyone in CLAUDE_AI_USERS (had at least 1 chat this month)
   const activeEmails  = new Set(Object.keys(typeof CLAUDE_AI_USERS !== 'undefined' ? CLAUDE_AI_USERS : {}));
-  const inactiveSeats = (typeof ALL_EMPLOYEES !== 'undefined' ? ALL_EMPLOYEES : [])
-    .filter(e => e.email && !activeEmails.has(e.email));
+  const licensedMembers = typeof members !== 'undefined' ? members : [];
+  const inactiveSeats = licensedMembers.filter(m => m.email && !activeEmails.has(m.email));
   const inactiveCnt   = inactiveSeats.length;
 
   // ── High activity day (proxy: peak chats day from chatsDailyData) ──────────
@@ -1391,14 +1391,13 @@ function renderOverviewAlerts() {
   // 2. Inactive seats with expandable list
   if (inactiveCnt > 0) {
     const listId = 'inactive-seats-list';
-    const names  = inactiveSeats.slice(0, 30).map(e =>
-      `<span style="background:rgba(255,167,38,0.12);border-radius:4px;padding:2px 8px;font-size:0.78rem;color:#ffa726">${e.name || e.email.split('@')[0]}</span>`
+    const names  = inactiveSeats.map(m =>
+      `<span style="background:rgba(255,167,38,0.12);border-radius:4px;padding:2px 8px;font-size:0.78rem;color:#ffa726">${m.name}</span>`
     ).join(' ');
-    const more   = inactiveCnt > 30 ? ` <span style="color:var(--muted)">+${inactiveCnt-30} more</span>` : '';
     alerts.push(row(
-      `<span style="color:#ffa726">⚠️ Unused Licenses:</span> <strong style="color:#fff">${inactiveCnt} Claude.ai seats</strong> with zero chats this month.
+      `<span style="color:#ffa726">⚠️ Unused Licenses:</span> <strong style="color:#fff">${inactiveCnt} licensed members</strong> have zero Claude.ai chats this month.
        <a href="#" onclick="document.getElementById('${listId}').style.display=document.getElementById('${listId}').style.display==='none'?'block':'none';return false;" style="color:#6c63ff;font-size:0.8rem;margin-left:8px">▼ Show members</a>
-       <div id="${listId}" style="display:none;margin-top:8px;line-height:2">${names}${more}</div>`
+       <div id="${listId}" style="display:none;margin-top:8px;line-height:2">${names}</div>`
     ));
   }
 
