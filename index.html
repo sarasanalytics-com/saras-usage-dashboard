@@ -3167,6 +3167,7 @@ function renderCUTable() {
 
   const activeDept = GF.dept !== 'all' ? GF.dept : cuDeptFilter;
   if (activeDept !== 'all') rows = rows.filter(p => p.dept === activeDept);
+  if (GF.manager !== 'all') { const st = getSubTeam(GF.manager); rows = rows.filter(p => st.has(p.email)); }
 
   // --- KPIs (update with every filter change) ---
   const totalOpen    = rows.reduce((s, p) => s + p.open, 0);
@@ -3469,7 +3470,7 @@ function renderAdoptHeatmap(){
     days.forEach(day=>Object.keys(day.c).forEach(e=>{ if(e.endsWith('@sarasanalytics.com')) usersSet.add(e); }));
   }
   const _adoptActiveDept = GF.dept !== 'all' ? GF.dept : adoptDept;
-  const users=[...usersSet].filter(e=>_adoptActiveDept==='all'||getDept(e)===_adoptActiveDept).filter(e=>!adoptSearch||(nameFromEmail(e)+' '+e).toLowerCase().includes(adoptSearch)).sort((a,b)=>{
+  const users=[...usersSet].filter(e=>(_adoptActiveDept==='all'||getDept(e)===_adoptActiveDept)&&(GF.manager==='all'||getSubTeam(GF.manager).has(e))).filter(e=>!adoptSearch||(nameFromEmail(e)+' '+e).toLowerCase().includes(adoptSearch)).sort((a,b)=>{
     if(adoptView==='overall'){
       // Sort by: total cursor events + bonus for windsurf
       const scoreA=days.reduce((s,d)=>s+(d.c[a]||0),0)+(WINDSURF_USERS[a]?200:0);
@@ -3546,7 +3547,7 @@ function renderAdoptTable(uTotals,uDays){
   ]);
   const dash='<span style="color:var(--muted)">-</span>';
   const rows=[...allEmails]
-    .filter(e=>{ const _d = GF.dept !== 'all' ? GF.dept : adoptDept; return _d==='all'||getDept(e)===_d; })
+    .filter(e=>{ const _d = GF.dept !== 'all' ? GF.dept : adoptDept; return (_d==='all'||getDept(e)===_d)&&(GF.manager==='all'||getSubTeam(GF.manager).has(e)); })
     .filter(e=>!adoptSearch||(nameFromEmail(e)+' '+e).toLowerCase().includes(adoptSearch))
     .sort((a,b)=>{
       const d=adoptSortDir;
@@ -3611,12 +3612,13 @@ function renderWeeklyTab() {
 
   // Collect all users active in this window (Cursor + Windsurf + Claude Code MTD)
   const usersSet = new Set();
-  const _isReal = e => e.endsWith('@sarasanalytics.com') && !BOT_ACCOUNTS.has(e);
-  days7.forEach(day => Object.keys(day.c).forEach(e => { if (_isReal(e)) usersSet.add(e); }));
+  const _isReal   = e => e.endsWith('@sarasanalytics.com') && !BOT_ACCOUNTS.has(e);
+  const _inScope  = e => _isReal(e) && inGFScope(e);   // applies dept + manager filters
+  days7.forEach(day => Object.keys(day.c).forEach(e => { if (_inScope(e)) usersSet.add(e); }));
   Object.entries(WINDSURF_USERS).forEach(([email, lastDate]) => {
-    if (lastDate && lastDate >= d7[0] && lastDate <= d7[6] && _isReal(email)) usersSet.add(email);
+    if (lastDate && lastDate >= d7[0] && lastDate <= d7[6] && _inScope(email)) usersSet.add(email);
   });
-  Object.entries(ADOPTION_CC_MTD).forEach(([email, lines]) => { if (lines > 0 && _isReal(email)) usersSet.add(email); });
+  Object.entries(ADOPTION_CC_MTD).forEach(([email, lines]) => { if (lines > 0 && _inScope(email)) usersSet.add(email); });
 
   // Per-user stats
   const userStats = [...usersSet].map(email => {
@@ -3628,7 +3630,7 @@ function renderWeeklyTab() {
     return {email, events, activeDays, hasCc, hasWs, toolCount};
   }).sort((a, b) => b.events - a.events);
 
-  const totalEv7  = days7.reduce((s, d) => s + Object.values(d.c).reduce((a, v) => a + v, 0), 0);
+  const totalEv7  = days7.reduce((s, d) => s + Object.entries(d.c).filter(([e]) => _inScope(e)).reduce((ss,[,v]) => ss+v, 0), 0);
   const multiTool = userStats.filter(u => u.toolCount >= 2).length;
 
   // Peak day by active users
@@ -3636,8 +3638,8 @@ function renderWeeklyTab() {
   const DOW      = ['Su','Mo','Tu','We','Th','Fr','Sa'];
   const dayRanked = days7.map(day => ({
     date:  day.date,
-    users: Object.keys(day.c).length,
-    total: Object.values(day.c).reduce((a, v) => a + v, 0)
+    users: Object.keys(day.c).filter(e => _inScope(e)).length,
+    total: Object.entries(day.c).filter(([e]) => _inScope(e)).reduce((s,[,v]) => s+v, 0)
   })).sort((a, b) => b.users - a.users);
   const peak = dayRanked[0] || {};
 
@@ -4093,18 +4095,18 @@ function renderCriticalAlerts() {
 }
 
 function renderOverviewKPIs() {
-  const dept = GF.dept;
-  if (dept === 'all') {
+  if (GF.dept === 'all' && GF.manager === 'all') {
     set('kpi-overview-total-lines', fmt(DATA.totalLines));
     set('kpi-overview-lines-month', DATA.monthLabel + ' · Claude Code');
     set('kpi-overview-cowork-sessions', DATA.coworkDailyUsers);
     set('kpi-overview-chats', DATA.chatsPerDay);
     set('kpi-overview-projects', DATA.projectsCreated);
   } else {
-    const deptMembers = members.filter(m => m.dept === dept);
-    const deptLines = deptMembers.reduce((s,m)=>s+m.lines,0);
-    set('kpi-overview-total-lines', fmt(deptLines));
-    set('kpi-overview-lines-month', dept + ' · ' + DATA.monthLabel + ' MTD');
+    const scopeMembers = members.filter(m => inGFScope(m.email));
+    const scopeLines   = scopeMembers.reduce((s,m) => s + m.lines, 0);
+    const scopeLabel   = [GF.dept !== 'all' ? GF.dept : '', GF.manager !== 'all' ? GF.manager : ''].filter(Boolean).join(' / ');
+    set('kpi-overview-total-lines', fmt(scopeLines));
+    set('kpi-overview-lines-month', scopeLabel + ' · ' + DATA.monthLabel + ' MTD');
     set('kpi-overview-cowork-sessions', DATA.coworkDailyUsers);
     set('kpi-overview-chats', DATA.chatsPerDay);
     set('kpi-overview-projects', DATA.projectsCreated);
@@ -4211,27 +4213,25 @@ function renderDeptScorecardTable() {
 }
 
 function renderToolStrips() {
-  const dept = GF.dept;
   const allMayDays = ADOPTION_DAYS.filter(d => d.date.startsWith(MONTH_PREFIX));
 
-  const ccActive = dept==='all' ? DATA.activeMembers : members.filter(m=>m.dept===dept&&m.lines>0).length;
-  const ccTotal  = dept==='all' ? DATA.totalMembers  : members.filter(m=>m.dept===dept).length;
-  const ccLines  = dept==='all' ? DATA.totalLines     : members.filter(m=>m.dept===dept).reduce((s,m)=>s+m.lines,0);
+  // Use inGFScope so both dept and manager filters apply everywhere
+  const unfiltered = GF.dept === 'all' && GF.manager === 'all';
+  const scopeMembers = unfiltered ? null : members.filter(m => inGFScope(m.email));
+  const ccActive = unfiltered ? DATA.activeMembers : scopeMembers.filter(m=>m.lines>0).length;
+  const ccTotal  = unfiltered ? DATA.totalMembers  : scopeMembers.length;
+  const ccLines  = unfiltered ? DATA.totalLines     : scopeMembers.reduce((s,m)=>s+m.lines,0);
   const ccPct    = ccTotal>0 ? Math.round(ccActive/ccTotal*100) : 0;
 
   const cursorUsers = new Set();
-  allMayDays.forEach(d=>Object.keys(d.c||{}).forEach(e=>{
-    if(dept==='all'||getDept(e)===dept) cursorUsers.add(e);
-  }));
-  const cursorEvents = allMayDays.reduce((s,d)=>s+Object.entries(d.c||{}).filter(([e])=>dept==='all'||getDept(e)===dept).reduce((ss,[,v])=>ss+v,0),0);
+  allMayDays.forEach(d=>Object.keys(d.c||{}).forEach(e=>{ if(inGFScope(e)) cursorUsers.add(e); }));
+  const cursorEvents = allMayDays.reduce((s,d)=>s+Object.entries(d.c||{}).filter(([e])=>inGFScope(e)).reduce((ss,[,v])=>ss+v,0),0);
   const cursorPct = Math.round(cursorUsers.size/CURSOR_SEATS*100);
 
   const wsUsers = new Set();
-  allMayDays.forEach(d=>Object.keys(d.w||{}).forEach(e=>{
-    if(dept==='all'||getDept(e)===dept) wsUsers.add(e);
-  }));
+  allMayDays.forEach(d=>Object.keys(d.w||{}).forEach(e=>{ if(inGFScope(e)) wsUsers.add(e); }));
   Object.entries(WINDSURF_USERS||{}).forEach(([e,dt])=>{
-    if(dt&&dt.startsWith(MONTH_PREFIX)&&(dept==='all'||getDept(e)===dept)) wsUsers.add(e);
+    if(dt&&dt.startsWith(MONTH_PREFIX)&&inGFScope(e)) wsUsers.add(e);
   });
   const wsTotal = typeof WINDSURF_SEATS!=='undefined' ? WINDSURF_SEATS : 6;
   const wsPct = wsTotal>0 ? Math.round(wsUsers.size/wsTotal*100) : 0;
