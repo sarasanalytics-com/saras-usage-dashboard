@@ -1224,17 +1224,39 @@ function populateSpendsTab() {
     data.daily = Math.round(data.monthly / 30 * 100) / 100;
   });
 
-  // Model costs (daily)
-  const modelCosts = [
-    { model: 'Claude 3.5 Sonnet', messages: 45230, dailyCost: 289.00 },
-    { model: 'Claude 3 Opus', messages: 18920, dailyCost: 158.00 },
-    { model: 'Claude 3 Haiku', messages: 3450, dailyCost: 21.00 }
-  ];
+  // Model costs - read from DATA.modelCost (populated by update_dashboard.py from API)
+  // Updated daily by the GitHub Actions workflow (collect_claude_ai.py)
+  let modelCostByModel = DATA.modelCost || {};
+
+  // If no API data yet, use fallback estimates (will auto-update when workflow runs)
+  if (Object.keys(modelCostByModel).length === 0) {
+    modelCostByModel = {
+      'claude-3-5-sonnet': 6358.00,  // ~$289/day through May 22
+      'claude-opus': 3476.00,         // ~$158/day through May 22
+      'claude-haiku': 462.00          // ~$21/day through May 22
+    };
+  }
+
+  // Convert to display format with calculated daily costs (divide MTD by days in month)
+  const daysInMonth = 22; // Days with data through May 22
+  const modelCosts = Object.entries(modelCostByModel).map(([model, mtdCost]) => {
+    const dailyCost = mtdCost / daysInMonth;
+    const displayName = model
+      .replace('claude-3-5-sonnet', 'Claude 3.5 Sonnet')
+      .replace('claude-opus', 'Claude 3 Opus')
+      .replace('claude-haiku', 'Claude 3 Haiku')
+      .replace(/-/g, ' ');
+    return {
+      model: displayName,
+      messages: DATA.modelUsage[model]?.messages || 0,
+      dailyCost: Math.round(dailyCost * 100) / 100
+    };
+  });
 
   // Calculate model cost aggregates
   const modelDailyTotal = modelCosts.reduce((sum, m) => sum + m.dailyCost, 0);
-  const modelMonthlyTotal = Math.round(modelDailyTotal * 30);
-  const modelYearlyTotal = modelDailyTotal * 365;
+  const modelMonthlyTotal = Object.values(modelCostByModel).reduce((sum, cost) => sum + cost, 0);
+  const modelYearlyTotal = modelMonthlyTotal * 12;
 
   // Calculate grand totals including model costs
   const totalMonthly = spendData.claude.monthly + spendData.cursor.monthly + spendData.windsurf.monthly + modelMonthlyTotal;
