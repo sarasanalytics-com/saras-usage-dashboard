@@ -35,29 +35,8 @@ def log(msg):
 
 
 def get_json(path, params=None, timeout=60):
+    """Fetch from Analytics API. Handles list params as key[]=val."""
     url = f"{BASE_URL}/{path}"
-    if params:
-        qs  = "&".join(f"{k}={urllib.request.quote(str(v))}" for k, v in params.items())
-        url = f"{url}?{qs}"
-    req = urllib.request.Request(url, headers=HEADERS)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
-        return json.loads(r.read())
-
-
-# ── Admin API (cost_report / usage_report) ────────────────────────────────────
-# Requires a separate Admin API key (sk-ant-admin...) from console.anthropic.com
-# This is different from the Analytics API key used above.
-ADMIN_KEY      = os.environ.get("ANTHROPIC_ADMIN_KEY", "").strip()
-ADMIN_BASE_URL = "https://api.anthropic.com/v1/organizations"
-ADMIN_HEADERS  = {
-    "x-api-key":         ADMIN_KEY,
-    "anthropic-version": "2023-06-01",
-}
-
-
-def get_admin_json(path, params=None, timeout=60):
-    """Fetch from the Anthropic Admin API. Handles list params as key[]=val."""
-    url = f"{ADMIN_BASE_URL}/{path}"
     if params:
         parts = []
         for k, v in params.items():
@@ -67,7 +46,7 @@ def get_admin_json(path, params=None, timeout=60):
             else:
                 parts.append(f"{urllib.request.quote(str(k))}={urllib.request.quote(str(v))}")
         url = f"{url}?{'&'.join(parts)}"
-    req = urllib.request.Request(url, headers=ADMIN_HEADERS)
+    req = urllib.request.Request(url, headers=HEADERS)
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read())
 
@@ -291,94 +270,85 @@ log(f"  Chat users: {len(chat_users_mtd)}  |  Avg chats/day: {avg_chat_per_day}"
 
 
 
-# ── 4. Model-level costs + usage via Admin API ────────────────────────────────
-# Requires ANTHROPIC_ADMIN_KEY (Admin API key, different from Analytics key).
-# Get one at: console.anthropic.com → Settings → API Keys → Create Admin Key
-log("\nFetching model-level costs via Admin API cost_report...")
+# ── 4. Model-level costs + usage (same Analytics API key, no Admin key needed) ─
+# Source: /v1/organizations/analytics/cost_report  — same data as
+# claude.ai/analytics/activity "Spend by model" chart.
+# Amount is in fractional cents (divide by 100 → USD).
+log("\nFetching model-level costs from Analytics API (cost_report)...")
 model_usage = {}
 model_cost  = {}
 
-if not ADMIN_KEY:
-    log("  [WARN] ANTHROPIC_ADMIN_KEY not set — model cost data unavailable")
-    log("  [INFO] Add an Admin API key (sk-ant-admin...) as GitHub secret ANTHROPIC_ADMIN_KEY")
-else:
-    # ── 4a. Cost breakdown per model ─────────────────────────────────────────
-    try:
-        cost_params = {
-            "starting_at":  month_start.strftime("%Y-%m-%dT00:00:00Z"),
-            "ending_at":    (data_until + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z"),
-            "bucket_width": "1d",
-            "group_by":     ["description"],
-        }
-        cost_resp = get_admin_json("cost_report", cost_params)
+# ── 4a. Cost by model (MTD) ──────────────────────────────────────────────────
+try:
+    cost_params = {
+        "starting_at":  month_start.strftime("%Y-%m-%dT00:00:00Z"),
+        "ending_at":    (data_until + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z"),
+        "bucket_width": "1d",
+        "group_by":     ["model"],
+    }
+    cost_resp = get_json("cost_report", cost_params)
 
-        # Paginate through all results
-        all_cost_items = []
-        while True:
-            for bucket in cost_resp.get("data", []):
-                all_cost_items.extend(bucket.get("results", []))
-            if not cost_resp.get("has_more"):
-                break
-            cost_params["page"] = cost_resp.get("next_page")
-            cost_resp = get_admin_json("cost_report", cost_params)
-            time.sleep(0.2)
-
-        # Sum costs by model (only token costs, skip web_search / code_execution)
-        for item in all_cost_items:
-            mdl        = item.get("model")
-            cost_type  = item.get("cost_type", "")
-            amount_str = item.get("amount", "0") or "0"
-            if not mdl or cost_type != "tokens":
-                continue
-            try:
-                # amount is in cents (lowest USD units) as a decimal string
-                # e.g. "123.45" = 123.45 cents = $1.23
-                cost_usd = float(amount_str) / 100.0
-            except (ValueError, TypeError):
-                cost_usd = 0.0
-            model_cost[mdl] = model_cost.get(mdl, 0) + cost_usd
-
-        if model_cost:
-            log(f"  Cost breakdown by model:")
-            for mdl, cost in sorted(model_cost.items(), key=lambda x: -x[1]):
-                log(f"    {mdl}: ${cost:.2f}")
-            log(f"  Total Claude spend MTD: ${sum(model_cost.values()):.2f}")
-        else:
-            log(f"  [INFO] cost_report returned no token costs for {month_start} → {data_until}")
-
-    except Exception as e:
-        log(f"  [WARN] cost_report fetch failed: {e}")
-        model_cost = {}
-
-    # ── 4b. Token usage per model ────────────────────────────────────────────
-    try:
-        usage_params = {
-            "starting_at":  month_start.strftime("%Y-%m-%dT00:00:00Z"),
-            "ending_at":    (data_until + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z"),
-            "bucket_width": "1d",
-            "group_by":     ["model"],
-        }
-        usage_resp = get_admin_json("usage_report/messages", usage_params)
-
-        for bucket in usage_resp.get("data", []):
+    while True:
+        for bucket in cost_resp.get("data", []):
             for item in bucket.get("results", []):
-                mdl = item.get("model")
+                mdl        = item.get("model")
+                amount_str = item.get("amount", "0") or "0"
                 if not mdl:
                     continue
-                if mdl not in model_usage:
-                    model_usage[mdl] = {"input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0}
-                model_usage[mdl]["input_tokens"]     += item.get("uncached_input_tokens", 0)
-                model_usage[mdl]["output_tokens"]     += item.get("output_tokens", 0)
-                model_usage[mdl]["cache_read_tokens"] += item.get("cache_read_input_tokens", 0)
+                try:
+                    # amount is in fractional cents → divide by 100 for USD
+                    cost_usd = float(amount_str) / 100.0
+                except (ValueError, TypeError):
+                    cost_usd = 0.0
+                model_cost[mdl] = model_cost.get(mdl, 0) + cost_usd
+        if not cost_resp.get("has_more"):
+            break
+        cost_params["page"] = cost_resp.get("next_page")
+        cost_resp = get_json("cost_report", cost_params)
+        time.sleep(0.2)
 
-        if model_usage:
-            log(f"  Token usage by model:")
-            for mdl, u in sorted(model_usage.items()):
-                log(f"    {mdl}: in={u['input_tokens']:,}  out={u['output_tokens']:,}  cached={u['cache_read_tokens']:,}")
+    if model_cost:
+        log(f"  Cost breakdown by model:")
+        for mdl, cost in sorted(model_cost.items(), key=lambda x: -x[1]):
+            log(f"    {mdl}: ${cost:.2f}")
+        log(f"  Total Claude spend MTD: ${sum(model_cost.values()):.2f}")
+    else:
+        log(f"  [INFO] No cost data for {month_start} → {data_until}")
+        log(f"  [INFO] Data is available 3+ days ago; earliest available: 2026-01-01")
 
-    except Exception as e:
-        log(f"  [WARN] usage_report/messages fetch failed: {e}")
-        model_usage = {}
+except Exception as e:
+    log(f"  [WARN] cost_report fetch failed: {e}")
+    model_cost = {}
+
+# ── 4b. Token usage by model ─────────────────────────────────────────────────
+try:
+    usage_params = {
+        "starting_at":  month_start.strftime("%Y-%m-%dT00:00:00Z"),
+        "ending_at":    (data_until + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z"),
+        "bucket_width": "1d",
+        "group_by":     ["model"],
+    }
+    usage_resp = get_json("usage_report", usage_params)
+
+    for bucket in usage_resp.get("data", []):
+        for item in bucket.get("results", []):
+            mdl = item.get("model")
+            if not mdl:
+                continue
+            if mdl not in model_usage:
+                model_usage[mdl] = {"input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0}
+            model_usage[mdl]["input_tokens"]     += item.get("uncached_input_tokens", item.get("input_tokens", 0))
+            model_usage[mdl]["output_tokens"]     += item.get("output_tokens", 0)
+            model_usage[mdl]["cache_read_tokens"] += item.get("cache_read_input_tokens", 0)
+
+    if model_usage:
+        log(f"  Token usage by model:")
+        for mdl, u in sorted(model_usage.items()):
+            log(f"    {mdl}: in={u['input_tokens']:,}  out={u['output_tokens']:,}")
+
+except Exception as e:
+    log(f"  [WARN] usage_report fetch failed: {e}")
+    model_usage = {}
 
 # ── 4b. Extract spend by product ──────────────────────────────────────────────
 # Calculate total Claude spend from model costs
