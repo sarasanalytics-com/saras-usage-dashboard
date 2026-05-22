@@ -1190,6 +1190,18 @@ async function fetchSpendFromAPI(apiKey) {
   }
 }
 
+function updateSpendData(claudeAiMtd, cursorMtd, windsurfMtd, claudeAiMonthly, cursorMonthly, windsurfMonthly) {
+  // Update spend data and reload
+  const data = {
+    claude: { mtd: claudeAiMtd, monthly: claudeAiMonthly },
+    cursor: { mtd: cursorMtd, monthly: cursorMonthly },
+    windsurf: { mtd: windsurfMtd, monthly: windsurfMonthly }
+  };
+  localStorage.setItem('SPEND_UPDATE', JSON.stringify(data));
+  alert('Spend data updated! Reloading dashboard...');
+  location.reload();
+}
+
 function populateSpendsTab() {
   // Spend data - Updated from https://claude.ai/analytics/activity
   const spendData = {
