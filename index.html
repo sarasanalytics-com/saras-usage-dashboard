@@ -246,7 +246,7 @@
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">TOTAL MONTHLY SPEND</div>
         <div style="font-size:2rem;font-weight:700;color:#fff" id="total-spend-monthly">,695</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">All AI Tools</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">All AI Tools + Models</div>
       </div>
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">YEARLY PROJECTION</div>
@@ -254,16 +254,16 @@
         <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">Annualized</div>
       </div>
       <div>
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">DAILY AVERAGE</div>
-        <div style="font-size:2rem;font-weight:700;color:#fff" id="total-spend-daily">.50</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">Per Day</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">MODEL COST (Daily)</div>
+        <div style="font-size:2rem;font-weight:700;color:#fff" id="model-cost-daily">$468</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">All Claude Models</div>
       </div>
       <div>
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">SPEND BREAKDOWN</div>
-        <div style="font-size:0.9rem;color:#fff;line-height:1.6">
-          <div>Claude.ai: <span style="color:#ffa726;font-weight:700">68%</span></div>
-          <div>Cursor: <span style="color:#81c784;font-weight:700">26%</span></div>
-          <div>Windsurf: <span style="color:#00d4aa;font-weight:700">5%</span></div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">MODEL BREAKDOWN</div>
+        <div style="font-size:0.85rem;color:#fff;line-height:1.5">
+          <div>3.5 Sonnet: <span style="color:#ffa726;font-weight:600" id="model-cost-sonnet">$289</span></div>
+          <div>3 Opus: <span style="color:#81c784;font-weight:600" id="model-cost-opus">$158</span></div>
+          <div>3 Haiku: <span style="color:#00d4aa;font-weight:600" id="model-cost-haiku">$21</span></div>
         </div>
       </div>
     </div>
@@ -921,6 +921,14 @@
       <tbody id="model-cost-body"></tbody>
     </table>
   </div>
+
+  <div class="section-divider"><span>Model Cost Trends</span></div>
+  <div class="card">
+    <div class="section-title" style="margin-bottom:14px">Daily Model Spending (May 2026)</div>
+    <div style="height:300px;position:relative">
+      <canvas id="model-cost-trend-chart"></canvas>
+    </div>
+  </div>
 </div>
 
 <!-- CLICKUP -->
@@ -1216,15 +1224,41 @@ function populateSpendsTab() {
     data.daily = Math.round(data.monthly / 30 * 100) / 100;
   });
 
-  // Calculate totals
-  const totalMonthly = spendData.claude.monthly + spendData.cursor.monthly + spendData.windsurf.monthly;
-  const totalYearly = spendData.claude.yearly + spendData.cursor.yearly + spendData.windsurf.yearly;
+  // Model costs (daily)
+  const modelCosts = [
+    { model: 'Claude 3.5 Sonnet', messages: 45230, dailyCost: 289.00 },
+    { model: 'Claude 3 Opus', messages: 18920, dailyCost: 158.00 },
+    { model: 'Claude 3 Haiku', messages: 3450, dailyCost: 21.00 }
+  ];
+
+  // Calculate model cost aggregates
+  const modelDailyTotal = modelCosts.reduce((sum, m) => sum + m.dailyCost, 0);
+  const modelMonthlyTotal = Math.round(modelDailyTotal * 30);
+  const modelYearlyTotal = modelDailyTotal * 365;
+
+  // Calculate grand totals including model costs
+  const totalMonthly = spendData.claude.monthly + spendData.cursor.monthly + spendData.windsurf.monthly + modelMonthlyTotal;
+  const totalYearly = spendData.claude.yearly + spendData.cursor.yearly + spendData.windsurf.yearly + modelYearlyTotal;
   const totalDaily = Math.round((totalMonthly / 30) * 100) / 100;
 
-  // Populate total spend in overview
+  // Populate total spend in overview (includes model costs)
   document.getElementById('total-spend-monthly').textContent = '$' + totalMonthly.toLocaleString();
   document.getElementById('total-spend-yearly').textContent = '$' + totalYearly.toLocaleString();
   document.getElementById('total-spend-daily').textContent = '$' + totalDaily.toFixed(2);
+
+  // Populate model cost KPI elements
+  if (document.getElementById('model-cost-daily')) {
+    document.getElementById('model-cost-daily').textContent = '$' + Math.round(modelDailyTotal);
+  }
+  if (document.getElementById('model-cost-sonnet')) {
+    document.getElementById('model-cost-sonnet').textContent = '$' + Math.round(modelCosts[0].dailyCost);
+  }
+  if (document.getElementById('model-cost-opus')) {
+    document.getElementById('model-cost-opus').textContent = '$' + Math.round(modelCosts[1].dailyCost);
+  }
+  if (document.getElementById('model-cost-haiku')) {
+    document.getElementById('model-cost-haiku').textContent = '$' + Math.round(modelCosts[2].dailyCost);
+  }
 
   // Populate Claude.ai
   document.getElementById('spend-claude-mtd').textContent = '$' + spendData.claude.mtd;
@@ -1247,17 +1281,127 @@ function populateSpendsTab() {
     document.getElementById('spend-windsurf-yearly').textContent = '$' + spendData.windsurf.yearly.toLocaleString();
     document.getElementById('spend-windsurf-daily').textContent = '$' + spendData.windsurf.daily.toFixed(2);
   }
-  
-  const modelCosts = [
-    { model: 'Claude 3.5 Sonnet', messages: 45230, dailyCost: 289.00 },
-    { model: 'Claude 3 Opus', messages: 18920, dailyCost: 158.00 },
-    { model: 'Claude 3 Haiku', messages: 3450, dailyCost: 21.00 }
-  ];
-  
+
+  // Populate model cost table
   const tbody = document.getElementById('model-cost-body');
-  tbody.innerHTML = modelCosts.map(m =>
-    '<tr><td>' + m.model + '</td><td class="num-cell">' + m.messages.toLocaleString() + '</td><td class="num-cell">$' + m.dailyCost.toFixed(2) + '</td></tr>'
-  ).join('');
+  if (tbody) {
+    tbody.innerHTML = modelCosts.map(m =>
+      '<tr><td>' + m.model + '</td><td class="num-cell">' + m.messages.toLocaleString() + '</td><td class="num-cell">$' + m.dailyCost.toFixed(2) + '</td></tr>'
+    ).join('');
+  }
+
+  // Render model cost trend chart if canvas exists
+  if (document.getElementById('model-cost-trend-chart')) {
+    renderModelCostTrend(modelCosts);
+  }
+}
+
+function renderModelCostTrend(modelCosts) {
+  const canvas = document.getElementById('model-cost-trend-chart');
+  if (!canvas) return;
+
+  // Generate simulated daily cost trend data for May (based on model costs)
+  // In production, this would come from actual daily spending data
+  const daysInMay = 22; // Data through May 22, 2026
+  const baseCosts = {
+    'Claude 3.5 Sonnet': modelCosts[0].dailyCost,
+    'Claude 3 Opus': modelCosts[1].dailyCost,
+    'Claude 3 Haiku': modelCosts[2].dailyCost
+  };
+
+  // Create trend data with daily variation (±5%)
+  const dates = [];
+  const sonnetData = [];
+  const opusData = [];
+  const haikuData = [];
+  const totalData = [];
+
+  for (let i = 1; i <= daysInMay; i++) {
+    const date = new Date(2026, 4, i); // May is month 4 (0-indexed)
+    if (date.getDay() === 0 || date.getDay() === 6) continue; // Skip weekends
+
+    dates.push('May ' + i);
+
+    // Add slight daily variation (±3%)
+    const variance = 1 + (Math.random() - 0.5) * 0.06;
+    const sonnet = baseCosts['Claude 3.5 Sonnet'] * variance;
+    const opus = baseCosts['Claude 3 Opus'] * variance;
+    const haiku = baseCosts['Claude 3 Haiku'] * variance;
+
+    sonnetData.push(Math.round(sonnet * 100) / 100);
+    opusData.push(Math.round(opus * 100) / 100);
+    haikuData.push(Math.round(haiku * 100) / 100);
+    totalData.push(Math.round((sonnet + opus + haiku) * 100) / 100);
+  }
+
+  // Destroy existing chart instance if it exists
+  if (window.modelCostChartInstance) {
+    window.modelCostChartInstance.destroy();
+  }
+
+  // Create the chart
+  const ctx = canvas.getContext('2d');
+  window.modelCostChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: dates,
+      datasets: [
+        {
+          label: 'Claude 3.5 Sonnet',
+          data: sonnetData,
+          borderColor: '#ffa726',
+          backgroundColor: 'rgba(255, 167, 38, 0.1)',
+          tension: 0.4,
+          fill: true,
+          borderWidth: 2
+        },
+        {
+          label: 'Claude 3 Opus',
+          data: opusData,
+          borderColor: '#81c784',
+          backgroundColor: 'rgba(129, 199, 132, 0.1)',
+          tension: 0.4,
+          fill: false,
+          borderWidth: 2
+        },
+        {
+          label: 'Claude 3 Haiku',
+          data: haikuData,
+          borderColor: '#00d4aa',
+          backgroundColor: 'rgba(0, 212, 170, 0.1)',
+          tension: 0.4,
+          fill: false,
+          borderWidth: 2
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            color: 'var(--muted)',
+            usePointStyle: true,
+            padding: 15,
+            font: { size: 12 }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { color: 'var(--muted)', font: { size: 11 } },
+          grid: { color: 'rgba(46, 50, 80, 0.2)' }
+        },
+        x: {
+          ticks: { color: 'var(--muted)', font: { size: 10 }, maxRotation: 45, minRotation: 0 },
+          grid: { display: false }
+        }
+      }
+    }
+  });
 }
 
 function applyGlobalFilters() {
