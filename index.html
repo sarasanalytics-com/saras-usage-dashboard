@@ -1208,20 +1208,30 @@ function populateSpendsTab() {
   // Spend data - Updated from https://claude.ai/analytics/activity
   // Claude: $1,200 MTD (as per overage alert), Cursor & Windsurf estimated
   const spendData = {claude:{mtd:3200,monthly:3200,seats:160,perSeat:20},cursor:{mtd:1240,monthly:1240,seats:62,perSeat:20},windsurf:{mtd:255,monthly:255,seats:8,perSeat:31.875}};
-  
+
   // Calculate yearly and daily averages (assuming 30-day month)
   Object.keys(spendData).forEach(tool => {
     const data = spendData[tool];
     data.yearly = data.monthly * 12;
     data.daily = Math.round(data.monthly / 30 * 100) / 100;
   });
-  
+
+  // Calculate totals
+  const totalMonthly = spendData.claude.monthly + spendData.cursor.monthly + spendData.windsurf.monthly;
+  const totalYearly = spendData.claude.yearly + spendData.cursor.yearly + spendData.windsurf.yearly;
+  const totalDaily = Math.round((totalMonthly / 30) * 100) / 100;
+
+  // Populate total spend in overview
+  document.getElementById('total-spend-monthly').textContent = '$' + totalMonthly.toLocaleString();
+  document.getElementById('total-spend-yearly').textContent = '$' + totalYearly.toLocaleString();
+  document.getElementById('total-spend-daily').textContent = '$' + totalDaily.toFixed(2);
+
   // Populate Claude.ai
   document.getElementById('spend-claude-mtd').textContent = '$' + spendData.claude.mtd;
   document.getElementById('spend-claude-monthly').textContent = '$' + spendData.claude.monthly;
   document.getElementById('spend-claude-yearly').textContent = '$' + spendData.claude.yearly.toLocaleString();
   document.getElementById('spend-claude-daily').textContent = '$' + spendData.claude.daily.toFixed(2);
-  
+
   // Populate Cursor
   if (document.getElementById('spend-cursor-mtd')) {
     document.getElementById('spend-cursor-mtd').textContent = '$' + spendData.cursor.mtd;
@@ -1229,7 +1239,7 @@ function populateSpendsTab() {
     document.getElementById('spend-cursor-yearly').textContent = '$' + spendData.cursor.yearly.toLocaleString();
     document.getElementById('spend-cursor-daily').textContent = '$' + spendData.cursor.daily.toFixed(2);
   }
-  
+
   // Populate Windsurf
   if (document.getElementById('spend-windsurf-mtd')) {
     document.getElementById('spend-windsurf-mtd').textContent = '$' + spendData.windsurf.mtd;
