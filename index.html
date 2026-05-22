@@ -1552,9 +1552,18 @@ function applyGlobalFilters() {
   lbl.style.display = active ? '' : 'none';
   document.getElementById('gf-clear').style.display = active ? '' : 'none';
   if (active) {
-    const hc = ALL_EMPLOYEES.filter(e => e.dept === GF.dept).length;
+    // Count employees that pass BOTH dept and manager filters
+    const subTeam = GF.manager !== 'all' ? getSubTeam(GF.manager) : null;
+    const hc = ALL_EMPLOYEES.filter(e =>
+      e.email.endsWith('@sarasanalytics.com') &&
+      (GF.dept === 'all' || e.dept === GF.dept) &&
+      (subTeam === null || subTeam.has(e.email))
+    ).length;
+    const parts = [];
+    if (GF.dept !== 'all')    parts.push(GF.dept);
+    if (GF.manager !== 'all') parts.push(GF.manager);
     document.getElementById('gf-active-label').textContent =
-      `Filtered: ${GF.dept} · ${hc} employees`;
+      `Filtered: ${parts.join(' · ')} · ${hc} employees`;
   }
   renderCriticalAlerts();
 renderOverviewKPIs();
@@ -2259,7 +2268,12 @@ let peopleTier = 'all', peopleQ = '', peopleDept = 'all';
 let peopleSortCol = 'ccLines', peopleSortDir = -1; // default: CC lines desc
 function renderPeopleTable() {
   // Base roster: all 209 employees from Employee Data.xlsx
-  let rows = ALL_EMPLOYEES.filter(emp => emp.email.endsWith('@sarasanalytics.com') && (GF.manager === 'all' || getSubTeam(GF.manager).has(emp.email))).map(emp => {
+  // Apply global dept + manager filters upfront before the expensive map
+  let rows = ALL_EMPLOYEES.filter(emp =>
+    emp.email.endsWith('@sarasanalytics.com') &&
+    (GF.dept    === 'all' || emp.dept === GF.dept) &&
+    (GF.manager === 'all' || getSubTeam(GF.manager).has(emp.email))
+  ).map(emp => {
     const email        = emp.email;
     const member       = members.find(m => m.email === email);
     const ccLines      = member ? member.lines : (ADOPTION_CC_MTD[email] || 0);
