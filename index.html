@@ -1113,18 +1113,44 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function populateSpendsTab() {
-  // Hardcoded spend data (will be replaced with API calls later)
-  const spends = {
-    claude: 3200,
-    cc: 360,
-    cursor: 1240,
-    windsurf: 255
+  // Spend data (MTD as of May 20, 2026)
+  const spendData = {
+    claude: { mtd: 3200, monthly: 3200, seats: 160, perSeat: 20 },
+    cc: { mtd: 360, monthly: 400, seats: 150, perSeat: 2.67 },
+    cursor: { mtd: 1240, monthly: 1240, seats: 62, perSeat: 20 },
+    windsurf: { mtd: 255, monthly: 255, seats: 8, perSeat: 31.875 }
   };
   
-  document.getElementById('spend-claude').textContent = '$' + spends.claude;
-  document.getElementById('spend-cc').textContent = '$' + spends.cc;
-  document.getElementById('spend-cursor').textContent = '$' + spends.cursor;
-  document.getElementById('spend-windsurf').textContent = '$' + spends.windsurf;
+  // Calculate yearly and daily averages (assuming 30-day month)
+  Object.keys(spendData).forEach(tool => {
+    const data = spendData[tool];
+    data.yearly = data.monthly * 12;
+    data.daily = Math.round(data.monthly / 30 * 100) / 100;
+  });
+  
+  // Populate Claude.ai
+  document.getElementById('spend-claude-mtd').textContent = '$' + spendData.claude.mtd;
+  document.getElementById('spend-claude-monthly').textContent = '$' + spendData.claude.monthly;
+  document.getElementById('spend-claude-yearly').textContent = '$' + spendData.claude.yearly.toLocaleString();
+  document.getElementById('spend-claude-daily').textContent = '$' + spendData.claude.daily.toFixed(2);
+  
+  // Populate Claude Code
+  document.getElementById('spend-cc-mtd').textContent = '$' + spendData.cc.mtd;
+  document.getElementById('spend-cc-monthly').textContent = '$' + spendData.cc.monthly;
+  document.getElementById('spend-cc-yearly').textContent = '$' + spendData.cc.yearly.toLocaleString();
+  document.getElementById('spend-cc-daily').textContent = '$' + spendData.cc.daily.toFixed(2);
+  
+  // Populate Cursor
+  document.getElementById('spend-cursor-mtd').textContent = '$' + spendData.cursor.mtd;
+  document.getElementById('spend-cursor-monthly').textContent = '$' + spendData.cursor.monthly;
+  document.getElementById('spend-cursor-yearly').textContent = '$' + spendData.cursor.yearly.toLocaleString();
+  document.getElementById('spend-cursor-daily').textContent = '$' + spendData.cursor.daily.toFixed(2);
+  
+  // Populate Windsurf
+  document.getElementById('spend-windsurf-mtd').textContent = '$' + spendData.windsurf.mtd;
+  document.getElementById('spend-windsurf-monthly').textContent = '$' + spendData.windsurf.monthly;
+  document.getElementById('spend-windsurf-yearly').textContent = '$' + spendData.windsurf.yearly.toLocaleString();
+  document.getElementById('spend-windsurf-daily').textContent = '$' + spendData.windsurf.daily.toFixed(2);
   
   const modelCosts = [
     { model: 'Claude 3.5 Sonnet', messages: 12450, dailyCost: 18.50 },
