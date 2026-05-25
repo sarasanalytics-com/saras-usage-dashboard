@@ -4087,11 +4087,12 @@ function renderCriticalAlerts() {
       </div>`);
   }
   
-  const box = document.getElementById('critical-alerts-box');
-  const content = document.getElementById('critical-alerts-content');
-  
+  const box     = document.getElementById('critical-alerts-box');
+  const content = document.getElementById('critical-alerts-list');   // correct ID
+
+  if (!box || !content) return;   // guard: elements may not exist on all tabs
+
   if (alerts.length === 0) {
-    // No critical issues - hide the box
     box.style.display = 'none';
   } else {
     box.style.display = '';
