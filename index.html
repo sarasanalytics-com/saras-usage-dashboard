@@ -4216,6 +4216,7 @@ function renderDeptScorecardTable() {
 }
 
 function renderToolStrips() {
+  const dept = GF.dept;   // kept for inScope() calls below (which tools to show per dept)
   const allMayDays = ADOPTION_DAYS.filter(d => d.date.startsWith(MONTH_PREFIX));
 
   // Use inGFScope so both dept and manager filters apply everywhere
