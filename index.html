@@ -1565,17 +1565,19 @@ function applyGlobalFilters() {
     document.getElementById('gf-active-label').textContent =
       `Filtered: ${parts.join(' · ')} · ${hc} employees`;
   }
-  renderCriticalAlerts();
-renderOverviewKPIs();
-  renderDeptScorecardTable();
-  renderCodeTable();
-  renderPeopleTable();
-  renderAdoptHeatmap();
-  renderAdoptTable(adoptUTotals, adoptUDays);
-  renderCUTable();
-  renderWeeklyTab();
-  renderToolStrips();
-renderModelUsage();
+  // Wrap each render in try/catch so one error never blocks the others
+  const _r = (fn, lbl) => { try { fn(); } catch(e) { console.warn('[filter] ' + lbl + ' failed:', e); } };
+  _r(renderCriticalAlerts,                           'renderCriticalAlerts');
+  _r(renderOverviewKPIs,                             'renderOverviewKPIs');
+  _r(renderDeptScorecardTable,                       'renderDeptScorecardTable');
+  _r(renderCodeTable,                                'renderCodeTable');
+  _r(renderPeopleTable,                              'renderPeopleTable');
+  _r(renderAdoptHeatmap,                             'renderAdoptHeatmap');
+  _r(() => renderAdoptTable(adoptUTotals, adoptUDays),'renderAdoptTable');
+  _r(renderCUTable,                                  'renderCUTable');
+  _r(renderWeeklyTab,                                'renderWeeklyTab');
+  _r(renderToolStrips,                               'renderToolStrips');
+  _r(renderModelUsage,                               'renderModelUsage');
 }
 function clearGlobalFilters() {
   document.getElementById('gf-manager').value = 'all';
