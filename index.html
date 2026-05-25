@@ -934,6 +934,130 @@
       <canvas id="model-cost-trend-chart"></canvas>
     </div>
   </div>
+
+  <!-- Per-User Usage Section -->
+  <div class="section-divider" style="margin-top:32px"><span>Per-User Usage <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="card-full">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Token Usage by User</div>
+        <div class="section-sub">Total tokens consumed per team member this month</div>
+      </div>
+      <input class="search-input" placeholder="Search name or email…" style="width:220px"
+        oninput="searchRows('userUsageTableBody',this.value)">
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>User</th>
+          <th style="text-align:right">Tokens (MTD)</th>
+          <th>Share %</th>
+        </tr>
+      </thead>
+      <tbody id="userUsageTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Per-User Cost Section -->
+  <div class="section-divider" style="margin-top:32px"><span>Per-User Cost <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="card-full">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Cost per User</div>
+        <div class="section-sub">API usage cost breakdown by team member</div>
+      </div>
+      <input class="search-input" placeholder="Search name or email…" style="width:220px"
+        oninput="searchRows('userCostTableBody',this.value)">
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>User</th>
+          <th style="text-align:right">Cost (USD)</th>
+          <th style="text-align:right">Tokens</th>
+          <th>% of Total</th>
+        </tr>
+      </thead>
+      <tbody id="userCostTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Usage by Day + User Section -->
+  <div class="section-divider" style="margin-top:32px"><span>Usage Trends by Day & User</span></div>
+  <div class="two-col">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:14px">Daily Usage (Last 30 Days)</div>
+      <div style="height:300px;position:relative">
+        <canvas id="daily-usage-trend-chart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title" style="margin-bottom:14px">Top 10 Users by Daily Avg</div>
+      <div style="height:300px;position:relative">
+        <canvas id="top-users-daily-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conversation Counts Section -->
+  <div class="section-divider" style="margin-top:32px"><span>Conversation Metrics</span></div>
+  <div class="card-full">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Conversations by User</div>
+        <div class="section-sub">Real conversation counts instead of estimated metrics</div>
+      </div>
+      <input class="search-input" placeholder="Search name or email…" style="width:220px"
+        oninput="searchRows('conversationTableBody',this.value)">
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>User</th>
+          <th style="text-align:right">Conversations (MTD)</th>
+          <th style="text-align:right">Avg per Day</th>
+          <th style="text-align:right">Messages</th>
+        </tr>
+      </thead>
+      <tbody id="conversationTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Product Breakdown Section -->
+  <div class="section-divider" style="margin-top:32px"><span>Usage by Product</span></div>
+  <div class="two-col">
+    <div class="card" style="display:flex;flex-direction:column;align-items:center">
+      <div class="section-title" style="margin-bottom:14px;align-self:flex-start">Claude.ai vs API vs Claude Code Split</div>
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%">
+        <canvas id="productBreakdownChart" width="200" height="200"></canvas>
+      </div>
+      <div id="product-breakdown-legend" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:12px;width:100%"></div>
+    </div>
+    <div class="card">
+      <div class="section-title" style="margin-bottom:14px">Product Metrics</div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(108,99,255,0.1);border-radius:6px">
+          <span style="color:var(--muted)">Claude.ai Tokens</span>
+          <span style="color:#a89cff;font-weight:700" id="product-claude-tokens">-</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(0,212,170,0.1);border-radius:6px">
+          <span style="color:var(--muted)">Claude Code Tokens</span>
+          <span style="color:#00d4aa;font-weight:700" id="product-code-tokens">-</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(255,167,38,0.1);border-radius:6px">
+          <span style="color:var(--muted)">API Usage Tokens</span>
+          <span style="color:#ffa726;font-weight:700" id="product-api-tokens">-</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(76,175,80,0.1);border-radius:6px;border-top:1px solid rgba(255,255,255,0.1);margin-top:6px">
+          <span style="color:var(--muted);font-weight:700">Total</span>
+          <span style="color:#4caf50;font-weight:700" id="product-total-tokens">-</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- CLICKUP -->
@@ -1378,6 +1502,26 @@ function populateSpendsTab() {
     if (document.getElementById('model-cost-trend-chart')) {
       renderModelCostTrend(modelCosts);
     }
+
+    // Render new spend sections
+    if (document.getElementById('userUsageTableBody')) {
+      renderUserUsageTable();
+    }
+    if (document.getElementById('userCostTableBody')) {
+      renderUserCostTable();
+    }
+    if (document.getElementById('daily-usage-trend-chart')) {
+      renderDailyUsageTrend();
+    }
+    if (document.getElementById('top-users-daily-chart')) {
+      renderTopUsersDailyChart();
+    }
+    if (document.getElementById('conversationTableBody')) {
+      renderConversationTable();
+    }
+    if (document.getElementById('productBreakdownChart')) {
+      renderProductBreakdown();
+    }
   } catch (e) {
     console.error('Error populating spends tab:', e);
   }
@@ -1540,6 +1684,228 @@ function renderModelCostTrend(modelCosts) {
       }
     }
   });
+}
+
+function renderUserUsageTable() {
+  const tbody = document.getElementById('userUsageTableBody');
+  if (!tbody) return;
+
+  const userUsage = (typeof DATA !== 'undefined' && DATA.userUsage) ? DATA.userUsage : {};
+  const rows = Object.entries(userUsage)
+    .map(([email, tokens]) => ({ email, tokens: tokens || 0 }))
+    .sort((a, b) => b.tokens - a.tokens);
+
+  const totalTokens = rows.reduce((s, r) => s + r.tokens, 0);
+
+  tbody.innerHTML = rows.map((r, i) => {
+    const pct = totalTokens > 0 ? (r.tokens / totalTokens * 100).toFixed(1) : '0.0';
+    const userDept = getDept(r.email);
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td><div class="name-cell">${r.email.split('@')[0]}</div><div class="email-muted">${r.email}</div></td>
+      <td class="num-cell">${fmt(r.tokens)}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%;background:#a89cff"></div></div><span style="font-size:0.75rem;color:var(--muted)">${pct}%</span></div></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderUserCostTable() {
+  const tbody = document.getElementById('userCostTableBody');
+  if (!tbody) return;
+
+  const userCost = (typeof DATA !== 'undefined' && DATA.userCost) ? DATA.userCost : {};
+  const userTokens = (typeof DATA !== 'undefined' && DATA.userUsage) ? DATA.userUsage : {};
+  const rows = Object.entries(userCost)
+    .map(([email, cost]) => ({ email, cost: cost || 0, tokens: userTokens[email] || 0 }))
+    .sort((a, b) => b.cost - a.cost);
+
+  const totalCost = rows.reduce((s, r) => s + r.cost, 0);
+
+  tbody.innerHTML = rows.map((r, i) => {
+    const pct = totalCost > 0 ? (r.cost / totalCost * 100).toFixed(1) : '0.0';
+    return `<tr>
+      <td class="rank">${i+1}</td>
+      <td><div class="name-cell">${r.email.split('@')[0]}</div><div class="email-muted">${r.email}</div></td>
+      <td class="num-cell">$${r.cost.toFixed(2)}</td>
+      <td class="num-cell">${fmt(r.tokens)}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%;background:#ffa726"></div></div><span style="font-size:0.75rem;color:var(--muted)">${pct}%</span></div></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderDailyUsageTrend() {
+  const canvas = document.getElementById('daily-usage-trend-chart');
+  if (!canvas) return;
+
+  const dailyData = (typeof DATA !== 'undefined' && DATA.modelCostDaily) ? DATA.modelCostDaily : {};
+  const dates = Object.keys(dailyData).sort().slice(-30);
+
+  if (dates.length === 0) {
+    canvas.parentElement.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px">Daily usage data not yet available.</div>';
+    return;
+  }
+
+  const labels = dates.map(d => {
+    const dt = new Date(d + 'T00:00:00');
+    return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  });
+
+  const data = dates.map(d => {
+    const day = dailyData[d] || {};
+    return Object.values(day).reduce((s, v) => s + v, 0);
+  });
+
+  if (window.dailyUsageChartInstance) window.dailyUsageChartInstance.destroy();
+
+  const ctx = canvas.getContext('2d');
+  window.dailyUsageChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Daily Cost',
+        data,
+        borderColor: '#6c63ff',
+        backgroundColor: 'rgba(108,99,255,0.1)',
+        tension: 0.3,
+        fill: true,
+        borderWidth: 2,
+        pointRadius: 3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { color: '#8b92b8', usePointStyle: true, padding: 15, font: { size: 12 } } },
+        tooltip: { callbacks: { label: ctx => '$' + ctx.parsed.y.toFixed(2) } }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { color: '#8b92b8', font: { size: 11 }, callback: v => '$' + v }, grid: { color: 'rgba(139,146,184,0.1)' } },
+        x: { ticks: { color: '#8b92b8', font: { size: 10 }, maxRotation: 45 }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderTopUsersDailyChart() {
+  const canvas = document.getElementById('top-users-daily-chart');
+  if (!canvas) return;
+
+  const userDailyAvg = (typeof DATA !== 'undefined' && DATA.userDailyAvg) ? DATA.userDailyAvg : {};
+  const rows = Object.entries(userDailyAvg)
+    .map(([email, avg]) => ({ email: email.split('@')[0], avg: avg || 0 }))
+    .sort((a, b) => b.avg - a.avg)
+    .slice(0, 10);
+
+  if (rows.length === 0) {
+    canvas.parentElement.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px">User data not yet available.</div>';
+    return;
+  }
+
+  if (window.topUsersChartInstance) window.topUsersChartInstance.destroy();
+
+  const ctx = canvas.getContext('2d');
+  window.topUsersChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.email),
+      datasets: [{
+        label: 'Daily Avg Tokens',
+        data: rows.map(r => r.avg),
+        backgroundColor: '#a89cff',
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#8b92b8', font: { size: 10 } }, grid: { color: 'rgba(139,146,184,0.1)' } },
+        y: { ticks: { color: '#8b92b8', font: { size: 10 } }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+function renderConversationTable() {
+  const tbody = document.getElementById('conversationTableBody');
+  if (!tbody) return;
+
+  const conversations = (typeof DATA !== 'undefined' && DATA.conversations) ? DATA.conversations : {};
+  const rows = Object.entries(conversations)
+    .map(([email, data]) => ({
+      email,
+      conversations: data.count || 0,
+      messages: data.messages || 0,
+      avgPerDay: (data.count || 0) / 31
+    }))
+    .sort((a, b) => b.conversations - a.conversations);
+
+  tbody.innerHTML = rows.map((r, i) => `<tr>
+    <td class="rank">${i+1}</td>
+    <td><div class="name-cell">${r.email.split('@')[0]}</div><div class="email-muted">${r.email}</div></td>
+    <td class="num-cell">${fmt(r.conversations)}</td>
+    <td class="num-cell">${r.avgPerDay.toFixed(1)}</td>
+    <td class="num-cell">${fmt(r.messages)}</td>
+  </tr>`).join('');
+}
+
+function renderProductBreakdown() {
+  const canvas = document.getElementById('productBreakdownChart');
+  if (!canvas) return;
+
+  const claudeTokens = (typeof DATA !== 'undefined' && DATA.claudeAITokens) ? DATA.claudeAITokens : 0;
+  const codeTokens = (typeof DATA !== 'undefined' && DATA.claudeCodeTokens) ? DATA.claudeCodeTokens : 0;
+  const apiTokens = (typeof DATA !== 'undefined' && DATA.apiTokens) ? DATA.apiTokens : 0;
+
+  const total = claudeTokens + codeTokens + apiTokens;
+
+  document.getElementById('product-claude-tokens').textContent = total > 0 ? fmt(claudeTokens) : '-';
+  document.getElementById('product-code-tokens').textContent = total > 0 ? fmt(codeTokens) : '-';
+  document.getElementById('product-api-tokens').textContent = total > 0 ? fmt(apiTokens) : '-';
+  document.getElementById('product-total-tokens').textContent = total > 0 ? fmt(total) : '-';
+
+  if (total === 0) {
+    canvas.parentElement.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px">Product breakdown data not yet available.</div>';
+    return;
+  }
+
+  if (window.productBreakdownChartInstance) window.productBreakdownChartInstance.destroy();
+
+  const ctx = canvas.getContext('2d');
+  window.productBreakdownChartInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Claude.ai', 'Claude Code', 'API'],
+      datasets: [{
+        data: [claudeTokens, codeTokens, apiTokens],
+        backgroundColor: ['#a89cff', '#00d4aa', '#ffa726'],
+        borderColor: '#1a1d27',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#8b92b8', padding: 15, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => fmt(ctx.parsed) + ' tokens' } }
+      }
+    }
+  });
+
+  const legend = document.getElementById('product-breakdown-legend');
+  const total_pct = total > 0 ? [claudeTokens/total*100, codeTokens/total*100, apiTokens/total*100] : [0, 0, 0];
+  legend.innerHTML = `
+    <div style="display:flex;gap:16px;width:100%">
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#a89cff;border-radius:2px"></div><span style="font-size:0.8rem;color:var(--muted)">Claude.ai (${total_pct[0].toFixed(1)}%)</span></div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#00d4aa;border-radius:2px"></div><span style="font-size:0.8rem;color:var(--muted)">Claude Code (${total_pct[1].toFixed(1)}%)</span></div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#ffa726;border-radius:2px"></div><span style="font-size:0.8rem;color:var(--muted)">API (${total_pct[2].toFixed(1)}%)</span></div>
+    </div>
+  `;
 }
 
 function applyGlobalFilters() {
