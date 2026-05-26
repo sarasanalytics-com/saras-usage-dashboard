@@ -18,6 +18,12 @@ const TENANT_ID = process.env.TENANT_ID || 'common';
 const CLIENT_ID = process.env.MICROSOFT_CLIENT_ID;
 const ALLOWED_DOMAIN = process.env.ALLOWED_DOMAIN || '@sarasanalytics.com';
 
+// Allowed users - comma-separated email list (optional)
+// If empty, all users from ALLOWED_DOMAIN can access
+const ALLOWED_USERS = process.env.ALLOWED_USERS
+  ? process.env.ALLOWED_USERS.split(',').map(e => e.trim().toLowerCase())
+  : [];
+
 // JWKS client for Microsoft token verification
 const client = jwksClient({
   jwksUri: `https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys`,
@@ -62,6 +68,11 @@ app.post('/auth/verify', async (req, res) => {
 
     if (!email.endsWith(ALLOWED_DOMAIN)) {
       return res.status(403).json({ error: 'Unauthorized domain' });
+    }
+
+    // Check if user is in whitelist (if whitelist is configured)
+    if (ALLOWED_USERS.length > 0 && !ALLOWED_USERS.includes(email.toLowerCase())) {
+      return res.status(403).json({ error: 'User access denied - not in allowed users list' });
     }
 
     const sessionToken = Buffer.from(
