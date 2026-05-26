@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: saras-usage-dashboard
+    runtime: node
+    plan: starter
+    buildCommand: "cd backend && npm install"
+    startCommand: "cd backend && npm start"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080
+    routes:
+      - path: /
+        destination: /

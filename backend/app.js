@@ -129,12 +129,12 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Serve static files from parent directory
-app.use(express.static(path.join(__dirname, '..')));
+// Serve static files from public directory
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Fallback: serve index.html for all other routes (SPA support)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 const PORT = process.env.PORT || 8080;
