@@ -15,6 +15,7 @@ Writes:
 import json
 import re
 import sys
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -261,6 +262,13 @@ new_data_block = f"""const DATA = {{
   modelUsage: {model_usage_json},
   modelCost: {model_cost_json},
   modelCostDaily: {model_cost_daily_json},
+  userUsage: {{}},
+  userCost: {{}},
+  userDailyAvg: {{}},
+  conversations: {{}},
+  claudeAITokens: 0,
+  claudeCodeTokens: 0,
+  apiTokens: 0,
 }};"""
 
 if total_lines > 0 or active_members > 0:
@@ -480,6 +488,19 @@ adoption_array_js = "[" + ",".join(compact_day(d) for d in last30) + "]"
 new_adoption_line = f"const ADOPTION_DAYS={adoption_array_js};"
 html = re.sub(r"const ADOPTION_DAYS=\[.*?\];", new_adoption_line, html, count=1, flags=re.DOTALL)
 log(f"  ADOPTION_DAYS: {len(last30)} days")
+
+
+# ── Inject OAuth credentials ──────────────────────────────────────────────────
+microsoft_client_id = os.getenv('MICROSOFT_CLIENT_ID', '__MICROSOFT_CLIENT_ID__')
+backend_url = os.getenv('BACKEND_URL', '__BACKEND_URL__')
+
+html = html.replace('__MICROSOFT_CLIENT_ID__', microsoft_client_id)
+html = html.replace('__BACKEND_URL__', backend_url)
+
+if microsoft_client_id != '__MICROSOFT_CLIENT_ID__':
+    log(f"  OAuth: Microsoft Client ID injected")
+if backend_url != '__BACKEND_URL__':
+    log(f"  OAuth: Backend URL injected")
 
 
 # ── Write HTML ────────────────────────────────────────────────────────────────
