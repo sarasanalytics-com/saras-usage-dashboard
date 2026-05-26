@@ -3,7 +3,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const path = require('path');
-const jwkToPem = require('jwk-to-pem');
+const jwksClient = require('jwks-rsa');
 
 const app = express();
 
@@ -18,36 +18,16 @@ const TENANT_ID = process.env.TENANT_ID || 'common';
 const CLIENT_ID = process.env.MICROSOFT_CLIENT_ID;
 const ALLOWED_DOMAIN = process.env.ALLOWED_DOMAIN || '@sarasanalytics.com';
 
-// Cache for JWKS (JSON Web Key Set) from Microsoft
-let jwksCache = null;
-let jwksCacheTime = 0;
+// JWKS client for Microsoft token verification
+const client = jwksClient({
+  jwksUri: `https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys`,
+  cache: true,
+  cacheMaxEntries: 10,
+  cacheMaxAge: 86400000 // 24 hours
+});
 
-async function getJWKS() {
-  const now = Date.now();
-  // Cache for 24 hours
-  if (jwksCache && (now - jwksCacheTime) < 86400000) {
-    return jwksCache;
-  }
-
-  try {
-    const response = await axios.get(
-      `https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys`
-    );
-    jwksCache = response.data;
-    jwksCacheTime = now;
-    return jwksCache;
-  } catch (err) {
-    console.error('Failed to get JWKS:', err);
-    throw err;
-  }
-}
-
-function getKeyFromJWKS(kid, jwks) {
-  const key = jwks.keys.find(k => k.kid === kid);
-  if (!key) throw new Error('Key not found in JWKS');
-
-  // Convert JWK to PEM format for JWT verification
-  return jwkToPem(key);
+function getSigningKey(kid) {
+  return client.getSigningKey(kid);
 }
 
 app.post('/auth/verify', async (req, res) => {
@@ -64,8 +44,10 @@ app.post('/auth/verify', async (req, res) => {
     }
 
     const kid = decoded.header.kid;
-    const jwks = await getJWKS();
-    const key = getKeyFromJWKS(kid, jwks);
+
+    // Get the signing key from JWKS
+    const signingKey = await getSigningKey(kid);
+    const key = signingKey.getPublicKey();
 
     // Verify the token
     const payload = jwt.verify(token, key, {
