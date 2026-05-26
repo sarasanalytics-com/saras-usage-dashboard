@@ -941,14 +941,7 @@
         "sreeram.ravuri@sarasanalytics.com": 1,
         "naveena.kolli@sarasanalytics.com": 1
       },
-      "claudeCodeDaily": {
-        "bheem@sarasanalytics.com": 1350,
-        "bhawna.kumari@sarasanalytics.com": 11713,
-        "kritik.kumar@sarasanalytics.com": 8,
-        "mohammed.muneeb@sarasanalytics.com": 1252,
-        "vignesh.bodiga@sarasanalytics.com": 234,
-        "lakshay.virmani@sarasanalytics.com": 276
-      }
+      "claudeCodeDaily": {}
     }
   ],
   "claudeCodeMTD": {
@@ -1100,5 +1093,5 @@
     "nandhini.ilangovan@sarasanalytics.com": 0,
     "rohit.singh@sarasanalytics.com": 0
   },
-  "lastUpdated": "2026-05-26T02:29:05.942612+00:00"
+  "lastUpdated": "2026-05-26T09:53:01.785443+00:00"
 }
