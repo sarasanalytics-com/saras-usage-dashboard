@@ -1,0 +1,18 @@
+# This file specifies files that are *not* uploaded to Google Cloud
+# using gcloud. See
+# https://cloud.google.com/sdk/gcloud/reference/meta/list-files-for-upload
+# for more information.
+#
+# If you would like to upoad some files that are excluded by the default
+# list, add a custom section at the bottom of the file with the glob pattern
+# to allow the files to be uploaded. For example:
+#     # myfiles
+#     !myfiles/**
+
+node_modules/
+npm-debug.log
+.git
+.gitignore
+README.md
+.env
+.DS_Store
