@@ -3,6 +3,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const axios = require('axios');
 const path = require('path');
+const jwkToPem = require('jwk-to-pem');
 
 const app = express();
 
@@ -45,17 +46,8 @@ function getKeyFromJWKS(kid, jwks) {
   const key = jwks.keys.find(k => k.kid === kid);
   if (!key) throw new Error('Key not found in JWKS');
 
-  const jwk = {
-    kty: key.kty,
-    use: key.use,
-    kid: key.kid,
-    x5c: key.x5c,
-    x5t: key.x5t,
-    n: key.n,
-    e: key.e
-  };
-
-  return require('jsonwebtoken').jwkToPem(jwk);
+  // Convert JWK to PEM format for JWT verification
+  return jwkToPem(key);
 }
 
 app.post('/auth/verify', async (req, res) => {
