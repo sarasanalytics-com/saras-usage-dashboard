@@ -167,24 +167,48 @@
 <body>
 
 <!-- ── LOGIN PAGE ── -->
-<div id="login-container" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg, #0f1117 0%, #1a1d27 100%);display:flex;align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(10px)">
-  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
-    <h2 style="color:#fff;margin:0 0 8px;font-size:1.8rem;font-weight:700;text-align:center">Dashboard Access</h2>
-    <p style="color:var(--muted);text-align:center;margin:0 0 32px;font-size:0.9rem">Sign in with your Microsoft account</p>
+<div id="login-container" style="display:none;position:fixed;inset:0;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);display:flex;align-items:center;justify-content:center;z-index:9999;overflow-y:auto">
+  <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:20px">
+    <div style="background:rgba(255,255,255,0.98);backdrop-filter:blur(20px);border-radius:24px;padding:60px 48px;max-width:480px;width:100%;box-shadow:0 25px 100px rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.3)">
+      <!-- Company Branding -->
+      <div style="text-align:center;margin-bottom:48px">
+        <div style="font-size:2.5rem;font-weight:900;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:12px">Saras Analytics</div>
+        <h2 style="color:#1a1a2e;margin:0 0 12px;font-size:2rem;font-weight:700">AI Usage Dashboard</h2>
+        <p style="color:#666;margin:0;font-size:0.95rem">Track Claude, Cursor & Windsurf usage across your team</p>
+      </div>
 
-    <button id="microsoft-signin-button" onclick="handleMicrosoftSignIn()" style="width:100%;padding:12px 16px;background:linear-gradient(135deg, #0078d4, #0063b1);border:none;border-radius:8px;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px">
-      <svg width="20" height="20" viewBox="0 0 23 23" fill="none">
-        <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
-        <rect x="13" y="1" width="9" height="9" fill="#7FBA00"/>
-        <rect x="1" y="13" width="9" height="9" fill="#00A4EF"/>
-        <rect x="13" y="13" width="9" height="9" fill="#FFB900"/>
-      </svg>
-      Sign in with Microsoft
-    </button>
+      <!-- Information Cards -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:36px">
+        <div style="background:linear-gradient(135deg, #667eea15 0%, #764ba215 100%);border:1px solid rgba(102,126,234,0.2);border-radius:12px;padding:16px;text-align:center">
+          <div style="font-size:1.8rem;font-weight:700;color:#667eea">📊</div>
+          <div style="color:#1a1a2e;font-size:0.85rem;font-weight:600;margin-top:8px">Real-time Analytics</div>
+        </div>
+        <div style="background:linear-gradient(135deg, #764ba215 0%, #667eea15 100%);border:1px solid rgba(118,75,162,0.2);border-radius:12px;padding:16px;text-align:center">
+          <div style="font-size:1.8rem;font-weight:700;color:#764ba2">💰</div>
+          <div style="color:#1a1a2e;font-size:0.85rem;font-weight:600;margin-top:8px">Cost Tracking</div>
+        </div>
+      </div>
 
-    <div id="auth-error" style="display:none;padding:12px;background:rgba(244,67,54,0.15);border:1px solid rgba(244,67,54,0.3);border-radius:8px;color:#ff6b6b;font-size:0.85rem;text-align:center;margin-bottom:12px"></div>
+      <!-- Sign In Button -->
+      <button id="microsoft-signin-button" onclick="handleMicrosoftSignIn()" style="width:100%;padding:16px 20px;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);border:none;border-radius:12px;color:#fff;font-size:1.05rem;font-weight:600;cursor:pointer;transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:24px;box-shadow:0 10px 30px rgba(102,126,234,0.3);hover:box-shadow:0 15px 40px rgba(102,126,234,0.4)">
+        <svg width="20" height="20" viewBox="0 0 23 23" fill="none">
+          <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
+          <rect x="13" y="1" width="9" height="9" fill="#7FBA00"/>
+          <rect x="1" y="13" width="9" height="9" fill="#00A4EF"/>
+          <rect x="13" y="13" width="9" height="9" fill="#FFB900"/>
+        </svg>
+        Sign in with Microsoft
+      </button>
 
-    <p style="color:var(--muted);text-align:center;margin:12px 0 0;font-size:0.75rem">🔐 Authorized users only</p>
+      <!-- Error Message -->
+      <div id="auth-error" style="display:none;padding:14px;background:rgba(239,68,68,0.1);border:1.5px solid rgba(239,68,68,0.3);border-radius:10px;color:#dc2626;font-size:0.9rem;text-align:center;margin-bottom:16px;font-weight:500"></div>
+
+      <!-- Footer Info -->
+      <div style="border-top:1px solid #e5e7eb;padding-top:20px">
+        <p style="color:#666;text-align:center;margin:0;font-size:0.8rem">🔐 Authorized users only • Leadership team access</p>
+        <p style="color:#999;text-align:center;margin:8px 0 0;font-size:0.75rem">Your data is secure and encrypted</p>
+      </div>
+    </div>
   </div>
 </div>
 
