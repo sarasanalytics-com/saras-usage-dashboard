@@ -1791,16 +1791,19 @@ function populateSpendsTab() {
     // Populate API Agents card
     if (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.asOf) {
       const ag = API_AGENTS_DATA;
-      const agMtd     = (ag.totalApiSpendMtd || 0);
-      const agDaily   = (ag.dailyAvg || 0);
-      const agYearly  = (ag.projectedYearly || 0);
-      const fmtA = v => '$' + (v||0).toFixed(2);
-      const fmtAY = v => '$' + Math.round(v||0).toLocaleString();
+      const agAnalytics = ag.analyticsWorking === true;
+      const agMtd    = ag.totalApiSpendMtd || 0;
+      const agDaily  = ag.dailyAvg || 0;
+      const agYearly = ag.projectedYearly || 0;
+      const fmtA  = v => agAnalytics ? '$' + (v||0).toFixed(2) : '—';
+      const fmtAY = v => agAnalytics ? '$' + Math.round(v||0).toLocaleString() : '—';
       const el = id => document.getElementById(id);
       if (el('spend-api-mtd-hero'))  el('spend-api-mtd-hero').textContent  = fmtA(agMtd);
       if (el('spend-api-daily'))     el('spend-api-daily').textContent     = fmtA(agDaily);
       if (el('spend-api-yearly'))    el('spend-api-yearly').textContent    = fmtAY(agYearly);
-      if (el('spend-api-date'))      el('spend-api-date').textContent      = ag.asOf ? `Through ${ag.asOf}` : '';
+      if (el('spend-api-date'))      el('spend-api-date').textContent      = agAnalytics
+        ? (ag.asOf ? `Through ${ag.asOf}` : '')
+        : `${(ag.agents||[]).filter(a=>!a.isAggregate).length} keys tracked · cost data pending`;
     }
 
   // Populate model cost table
@@ -4366,40 +4369,40 @@ function renderAgentsTab() {
   const dailyAvg    = D.dailyAvg || 0;
   const projMo      = D.projectedMonthly || 0;
   const projYr      = D.projectedYearly  || 0;
-  const activeCount = agents.filter(a => (a.costMtd||0) > 0).length;
+  const activeCount = agents.filter(a => (a.costMtd||0) > 0 && !a.isAggregate).length;
+  const analyticsOn = D.analyticsWorking === true;
+  const naCost      = v => analyticsOn ? fmtUSD(v) : '—';
 
-  set('ag-hero-spend',    fmtUSD(totalMtd));
-  set('ag-hero-sub',      `platform API spend MTD · ${agents.length} API keys · as of ${D.asOf||'–'}`);
-  set('ag-kpi-mtd',       fmtUSD(totalMtd));
-  set('ag-kpi-mtd-sub',   D.asOf ? `through ${D.asOf}` : 'this month');
-  set('ag-kpi-daily',     fmtUSD(dailyAvg));
-  set('ag-kpi-proj-mo',   fmtUSD(projMo));
+  set('ag-hero-spend',    analyticsOn ? fmtUSD(totalMtd) : '—');
+  set('ag-hero-sub',      `platform API · ${agents.filter(a=>!a.isAggregate).length} keys · as of ${D.asOf||'–'}` +
+                          (analyticsOn ? '' : ' · cost data pending'));
+  set('ag-kpi-mtd',       naCost(totalMtd));
+  set('ag-kpi-mtd-sub',   analyticsOn ? (D.asOf ? `through ${D.asOf}` : 'this month') : 'analytics access pending');
+  set('ag-kpi-daily',     naCost(dailyAvg));
+  set('ag-kpi-proj-mo',   naCost(projMo));
   set('ag-kpi-proj-mo-sub', `${D.daysElapsed||0}/${D.daysInMonth||30} days elapsed`);
-  set('ag-kpi-proj-yr',   fmtUSD(projYr));
-  set('ag-kpi-agents',    activeCount);
+  set('ag-kpi-proj-yr',   naCost(projYr));
+  set('ag-kpi-agents',    analyticsOn ? activeCount : agents.filter(a=>!a.isAggregate&&a.status==='active').length);
 
   // ── Sortable thead ────────────────────────────────────────────────────────────
   const th = (label, col, align) => _thSort(label, col, agSortCol, agSortDir, 'sortAgentTable', align);
   const theadEl = document.getElementById('ag-agent-thead');
   if (theadEl) theadEl.innerHTML = `<tr>
     ${th('Agent / API Key','name','')}
-    ${th('Cost MTD','cost','right')}
-    ${th('Daily Avg','daily','right')}
-    ${th('Input Tokens','input','right')}
-    ${th('Output Tokens','output','right')}
-    <th>Top Model</th>
-    ${th('% of Total','pct','right')}
+    <th style="color:var(--muted);font-size:0.78rem">Workspace</th>
+    <th style="color:var(--muted);font-size:0.78rem">Status</th>
+    ${analyticsOn ? th('Cost MTD','cost','right') : '<th style="text-align:right;color:var(--muted);font-size:0.78rem">Cost MTD</th>'}
+    ${analyticsOn ? th('% of Total','pct','right') : ''}
   </tr>`;
 
   // ── Build row objects ─────────────────────────────────────────────────────────
-  const rows = agents.map(a => ({
+  // Exclude the aggregate entry from the individual-key table rows
+  const indivAgents = agents.filter(a => !a.isAggregate);
+  const rows = indivAgents.map(a => ({
     name:       a.name || a.id,
+    workspace:  a.workspace || '',
     status:     a.status || 'active',
     cost:       a.costMtd || 0,
-    daily:      (a.costMtd || 0) / daysElapsed,
-    input:      (a.usage && a.usage.input_tokens)  || 0,
-    output:     (a.usage && a.usage.output_tokens) || 0,
-    topModel:   Object.keys(a.modelCosts||{})[0] || '',
     pct:        totalMtd > 0 ? ((a.costMtd||0) / totalMtd * 100) : 0,
     modelCosts: a.modelCosts || {},
     dailyCosts: a.dailyCosts || {},
@@ -4410,11 +4413,8 @@ function renderAgentsTab() {
     switch (agSortCol) {
       case 'name':   va = a.name.toLowerCase(); vb = b.name.toLowerCase(); break;
       case 'cost':   va = a.cost;   vb = b.cost;   break;
-      case 'daily':  va = a.daily;  vb = b.daily;  break;
-      case 'input':  va = a.input;  vb = b.input;  break;
-      case 'output': va = a.output; vb = b.output; break;
       case 'pct':    va = a.pct;    vb = b.pct;    break;
-      default:       va = a.cost;   vb = b.cost;
+      default:       va = a.name.toLowerCase(); vb = b.name.toLowerCase(); return agSortDir * (va < vb ? -1 : va > vb ? 1 : 0);
     }
     if (va < vb) return agSortDir;
     if (va > vb) return -agSortDir;
@@ -4424,28 +4424,27 @@ function renderAgentsTab() {
   // ── Agent summary table ───────────────────────────────────────────────────────
   const tbody = document.getElementById('ag-agent-table');
   if (tbody) {
-    if (rows.length === 0 || totalMtd === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:24px">No API agent data yet — pending first workflow run with ANTHROPIC_ADMIN_KEY</td></tr>';
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:24px">No API key data yet — ensure ANTHROPIC_ADMIN_KEY is set</td></tr>';
     } else {
-      tbody.innerHTML = rows.map(r => {
-        const dot       = r.status === 'inactive' ? '🔴' : '🟢';
-        const topShort  = r.topModel ? cleanMdl(r.topModel) : '–';
-        const barW      = Math.min(100, Math.round(r.pct));
+      const pendingNote = !analyticsOn
+        ? `<tr><td colspan="4" style="background:rgba(206,147,216,0.06);color:#ce93d8;font-size:0.8rem;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.06)">
+            ⚠️ Cost data unavailable — Anthropic platform analytics API does not yet support per-key cost reporting.
+            Keys and workspaces are live from the Admin API.
+           </td></tr>`
+        : '';
+      tbody.innerHTML = pendingNote + rows.map(r => {
+        const dot  = r.status === 'inactive' ? '🔴' : '🟢';
+        const ws   = r.workspace ? `<span style="font-size:0.75rem;color:var(--muted)">${r.workspace}</span>` : '<span style="color:var(--muted);font-size:0.75rem">—</span>';
+        const cost = analyticsOn
+          ? `<td style="text-align:right;color:#ce93d8;font-weight:700">${r.cost > 0 ? fmtUSD(r.cost) : '–'}</td>
+             <td style="text-align:right"><span style="color:var(--muted);font-size:0.8rem">${r.pct.toFixed(1)}%</span></td>`
+          : `<td style="text-align:right;color:var(--muted);font-size:0.8rem">—</td>`;
         return `<tr>
           <td style="font-weight:600">${dot} ${r.name}</td>
-          <td style="text-align:right;color:#ce93d8;font-weight:700">${r.cost > 0 ? fmtUSD(r.cost) : '–'}</td>
-          <td style="text-align:right;color:var(--muted);font-size:0.85rem">${r.daily > 0.001 ? fmtUSD(r.daily) : '–'}</td>
-          <td style="text-align:right;font-size:0.82rem;color:var(--muted)">${fmtTok(r.input)}</td>
-          <td style="text-align:right;font-size:0.82rem;color:var(--muted)">${fmtTok(r.output)}</td>
-          <td style="font-size:0.78rem;color:var(--muted)">${topShort}</td>
-          <td style="text-align:right">
-            <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
-              <div style="background:rgba(206,147,216,0.12);border-radius:3px;height:6px;width:60px">
-                <div style="background:#ce93d8;height:6px;border-radius:3px;width:${barW}%"></div>
-              </div>
-              <span style="color:var(--muted);font-size:0.8rem;min-width:36px;text-align:right">${r.pct.toFixed(1)}%</span>
-            </div>
-          </td>
+          <td>${ws}</td>
+          <td><span style="font-size:0.75rem;padding:2px 6px;border-radius:3px;background:${r.status==='active'?'rgba(165,214,167,0.15)':'rgba(239,154,154,0.15)'};color:${r.status==='active'?'#a5d6a7':'#ef9a9a'}">${r.status}</span></td>
+          ${cost}
         </tr>`;
       }).join('');
     }
