@@ -258,7 +258,7 @@
   <div class="tab" onclick="switchTab('clickup',this)">✅ ClickUp</div>
 </div>
 
-<div id="global-filter-bar" style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;position:sticky;top:156px;z-index:99;flex-wrap:wrap;">
+<div id="global-filter-bar" style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;position:sticky;top:113px;z-index:101;flex-wrap:wrap;width:100%;box-sizing:border-box;">
   <span style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-weight:600">View by:</span>
   <select id="gf-dept" class="dept-select" onchange="applyGlobalFilters()">
     <option value="all">All Departments</option>
@@ -1359,13 +1359,14 @@ async function checkAuthentication() {
     document.getElementById('login-container').style.display = 'flex';
     document.body.style.overflow = 'hidden';
   } else {
+    // Immediately show dashboard based on localStorage (no flash)
+    document.getElementById('login-container').style.display = 'none';
+    document.body.style.overflow = 'auto';
+
+    // Validate session in background, logout if invalid
     const sessionValid = await validateSession();
     if (!sessionValid) {
       logout();
-    } else {
-      // Explicitly hide login container when session is valid
-      document.getElementById('login-container').style.display = 'none';
-      document.body.style.overflow = 'auto';
     }
   }
 }
