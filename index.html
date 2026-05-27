@@ -14,8 +14,8 @@
     --text: #e8eaf6; --muted: #8b92b8; --green: #4caf50; --yellow: #ffc107; --red: #f44336;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { overflow-x: hidden; max-width: 100%; }
-  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; overflow-x: hidden; }
+  html { overflow-x: clip; max-width: 100%; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; overflow-x: clip; }
   header { background: linear-gradient(135deg, #1a1d27 0%, #22263a 100%); border-bottom: 1px solid var(--border); padding: 20px 32px; display: flex; justify-content: space-between; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden; min-width: 0; }
   header h1 { font-size: 1.4rem; font-weight: 700; color: #fff; }
   header h1 span { color: var(--accent); }
@@ -1407,39 +1407,18 @@ window.addEventListener('load', () => {
   setTimeout(initStickyFilterBar, 200);
 });
 
-// ── Sticky Filter Bar Implementation ──────────────────────────────────────────
+// ── Sticky Filter Bar: set top dynamically based on actual header+tabs height ──
 function initStickyFilterBar() {
   const filterBar = document.getElementById('global-filter-bar');
   const header = document.querySelector('header');
   const tabs = document.querySelector('.tabs');
   if (!filterBar || !header || !tabs) return;
 
-  // Record original top position (distance from page top, before any scroll)
-  const filterBarOriginalTop = filterBar.getBoundingClientRect().top + window.pageYOffset;
-  const filterBarHeight = filterBar.offsetHeight;
-
-  // Insert a spacer right after filter bar to prevent content jump when it goes fixed
-  const spacer = document.createElement('div');
-  spacer.id = 'filter-bar-spacer';
-  spacer.style.height = filterBarHeight + 'px';
-  spacer.style.display = 'none';
-  filterBar.parentNode.insertBefore(spacer, filterBar.nextSibling);
-
-  function updateSticky() {
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const stickyTop = header.offsetHeight + tabs.offsetHeight;
-
-    if (scrollTop + stickyTop >= filterBarOriginalTop) {
-      filterBar.style.cssText = 'background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;position:fixed;top:' + stickyTop + 'px;left:0;width:100%;z-index:99;box-sizing:border-box;';
-      spacer.style.display = 'block';
-    } else {
-      filterBar.style.cssText = 'background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;width:100%;box-sizing:border-box;';
-      spacer.style.display = 'none';
-    }
-  }
-
-  window.addEventListener('scroll', updateSticky, { passive: true });
-  window.addEventListener('resize', () => { window.requestAnimationFrame(updateSticky); });
+  const stickyTop = header.offsetHeight + tabs.offsetHeight;
+  filterBar.style.position = 'sticky';
+  filterBar.style.top = stickyTop + 'px';
+  filterBar.style.zIndex = '99';
+  filterBar.style.width = '100%';
 }
 
 // ==================== UPDATE THESE TWO BLOCKS DAILY ====================
