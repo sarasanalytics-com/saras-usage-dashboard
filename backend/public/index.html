@@ -242,19 +242,6 @@
   </div>
 </div>
 
-<div id="global-filter-bar" style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;position:sticky;top:113px;z-index:98;flex-wrap:wrap;">
-  <span style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-weight:600">View by:</span>
-  <select id="gf-dept" class="dept-select" onchange="applyGlobalFilters()">
-    <option value="all">All Departments</option>
-  </select>
-  <select id="gf-manager" class="dept-select" onchange="applyGlobalFilters()">
-    <option value="all">All Managers</option>
-  </select>
-  <span id="gf-active-label" style="font-size:0.75rem;color:var(--accent2);display:none"></span>
-  <button onclick="clearGlobalFilters()" id="gf-clear" style="display:none;padding:4px 12px;background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:0.75rem;cursor:pointer;">✕ Clear filter</button>
-  <span style="font-size:0.68rem;color:rgba(139,146,184,0.4);margin-left:auto">Filter affects all tabs</span>
-</div>
-
 <div class="tabs">
   <div class="tab active" onclick="switchTab('overview',this)">📊 Executive Summary</div>
   <div class="tab" onclick="switchTab('spends',this)">💰 Spends</div>
@@ -269,6 +256,19 @@
   <div class="tab" onclick="switchTab('people',this)">People</div>
   <span class="tab-sep">Work</span>
   <div class="tab" onclick="switchTab('clickup',this)">✅ ClickUp</div>
+</div>
+
+<div id="global-filter-bar" style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;position:sticky;top:170px;z-index:99;flex-wrap:wrap;">
+  <span style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-weight:600">View by:</span>
+  <select id="gf-dept" class="dept-select" onchange="applyGlobalFilters()">
+    <option value="all">All Departments</option>
+  </select>
+  <select id="gf-manager" class="dept-select" onchange="applyGlobalFilters()">
+    <option value="all">All Managers</option>
+  </select>
+  <span id="gf-active-label" style="font-size:0.75rem;color:var(--accent2);display:none"></span>
+  <button onclick="clearGlobalFilters()" id="gf-clear" style="display:none;padding:4px 12px;background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:0.75rem;cursor:pointer;">✕ Clear filter</button>
+  <span style="font-size:0.68rem;color:rgba(139,146,184,0.4);margin-left:auto">Filter affects all tabs</span>
 </div>
 
 <!-- API KEY CONFIG (Hidden) -->
