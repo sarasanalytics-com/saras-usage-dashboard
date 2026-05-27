@@ -5078,7 +5078,7 @@ function renderModelUsage() {
   const mc = DATA.modelCost || {};
 
   if (Object.keys(mu).length === 0) return;
-  
+
   // Model display names
   const modelNames = {
     'claude-opus-4-7': 'Opus 4.7',
@@ -5087,12 +5087,18 @@ function renderModelUsage() {
     'claude-sonnet-4-5': 'Sonnet 4.5',
     'claude-haiku-4-5': 'Haiku 4.5',
   };
-  
-  // Sort models by cost (desc) — only render into Spends tab table
-  const models = Object.keys(mu).sort((a,b) => (mc[b]||0) - (mc[a]||0));
-  const totalCost = Object.values(mc).reduce((s,v)=>s+v, 0);
 
-  const tableHTML = models.map(m => {
+  // Sort models by cost (desc), exclude $0 cost rows
+  const models = Object.keys(mu)
+    .filter(m => (mc[m] || 0) > 0)
+    .sort((a,b) => (mc[b]||0) - (mc[a]||0));
+
+  const totalCost   = models.reduce((s,m) => s + (mc[m]||0), 0);
+  const totalInput  = models.reduce((s,m) => s + (mu[m].input_tokens||0), 0);
+  const totalOutput = models.reduce((s,m) => s + (mu[m].output_tokens||0), 0);
+  const totalTokAll = totalInput + totalOutput;
+
+  const rowsHTML = models.map(m => {
     const d = mu[m];
     const cost = mc[m] || 0;
     const totalTok = (d.input_tokens||0) + (d.output_tokens||0);
@@ -5108,8 +5114,19 @@ function renderModelUsage() {
         <td class="num-cell">${pct}%</td>
       </tr>`;
   }).join('');
+
+  const totalRow = `
+    <tr style="border-top:2px solid var(--border);background:rgba(255,255,255,0.04)">
+      <td><strong style="color:#fff;font-size:0.85rem">TOTAL</strong></td>
+      <td class="num-cell" style="font-weight:700;color:#fff">${fmt(totalInput)}</td>
+      <td class="num-cell" style="font-weight:700;color:#fff">${fmt(totalOutput)}</td>
+      <td class="num-cell" style="font-weight:800;color:#fff">${fmt(totalTokAll)}</td>
+      <td class="num-cell" style="font-weight:800;color:var(--accent2);font-size:1rem">$${totalCost.toFixed(2)}</td>
+      <td class="num-cell" style="font-weight:700;color:#fff">100%</td>
+    </tr>`;
+
   const tbl = document.getElementById('claudeai-model-table');
-  if (tbl) tbl.innerHTML = tableHTML;
+  if (tbl) tbl.innerHTML = rowsHTML + totalRow;
 }
 // ==================== END MODEL USAGE ====================
 
