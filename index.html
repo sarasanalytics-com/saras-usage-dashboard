@@ -1412,28 +1412,34 @@ function initStickyFilterBar() {
   const filterBar = document.getElementById('global-filter-bar');
   const header = document.querySelector('header');
   const tabs = document.querySelector('.tabs');
-
   if (!filterBar || !header || !tabs) return;
 
-  // Calculate positions
-  const headerHeight = header.offsetHeight;
-  const tabsHeight = tabs.offsetHeight;
-  const stickyThreshold = headerHeight + tabsHeight;
+  // Record original top position (distance from page top, before any scroll)
+  const filterBarOriginalTop = filterBar.getBoundingClientRect().top + window.pageYOffset;
+  const filterBarHeight = filterBar.offsetHeight;
 
-  window.addEventListener('scroll', () => {
+  // Insert a spacer right after filter bar to prevent content jump when it goes fixed
+  const spacer = document.createElement('div');
+  spacer.id = 'filter-bar-spacer';
+  spacer.style.height = filterBarHeight + 'px';
+  spacer.style.display = 'none';
+  filterBar.parentNode.insertBefore(spacer, filterBar.nextSibling);
+
+  function updateSticky() {
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const stickyTop = header.offsetHeight + tabs.offsetHeight;
 
-    if (scrollTop >= (filterBar.offsetTop - stickyThreshold)) {
-      filterBar.style.position = 'fixed';
-      filterBar.style.top = stickyThreshold + 'px';
-      filterBar.style.width = '100%';
-      filterBar.style.zIndex = '99';
-      filterBar.style.left = '0';
+    if (scrollTop + stickyTop >= filterBarOriginalTop) {
+      filterBar.style.cssText = 'background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;position:fixed;top:' + stickyTop + 'px;left:0;width:100%;z-index:99;box-sizing:border-box;';
+      spacer.style.display = 'block';
     } else {
-      filterBar.style.position = 'relative';
-      filterBar.style.top = 'auto';
+      filterBar.style.cssText = 'background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;width:100%;box-sizing:border-box;';
+      spacer.style.display = 'none';
     }
-  });
+  }
+
+  window.addEventListener('scroll', updateSticky, { passive: true });
+  window.addEventListener('resize', () => { window.requestAnimationFrame(updateSticky); });
 }
 
 // ==================== UPDATE THESE TWO BLOCKS DAILY ====================
