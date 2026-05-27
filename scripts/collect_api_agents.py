@@ -303,8 +303,8 @@ if "all_api_keys" in key_cost_mtd and key_cost_mtd["all_api_keys"] > 0:
 
 # Then add individual key entries (sorted by workspace then name)
 for kid in sorted(key_names.keys(),
-                  key=lambda k: (key_workspace.get(k, ''), key_names.get(k, ''))):
-    wid  = key_workspace.get(kid, '')
+                  key=lambda k: (key_workspace.get(k) or '', key_names.get(k) or '')):
+    wid  = key_workspace.get(kid) or ''
     name = key_names[kid]
     agents.append({
         "id":          kid,
@@ -335,6 +335,7 @@ result = {
     "costGroupUsed":       cost_group_used or "none",
     "analyticsWorking":    analytics_working,
     "adminKeyValid":       len(key_names) > 0,
+    "analyticsNote":       "Admin key (api:admin scope) cannot access analytics. Need a key with read:analytics scope — see platform.claude.com/settings/api-keys or service accounts." if not analytics_working else "",
     "globalModelCost":     {m: round(c, 6) for m, c in
                             sorted(global_model_cost.items(), key=lambda x: -x[1])},
     "workspaceNames":      workspace_names,
