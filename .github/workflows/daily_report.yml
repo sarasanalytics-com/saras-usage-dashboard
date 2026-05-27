@@ -57,11 +57,14 @@ jobs:
         run: python scripts/post_slack.py
 
       # ── 7. Commit & push ──────────────────────────────────────────────────────
+      - name: Sync index.html → backend/public/index.html
+        run: cp index.html backend/public/index.html
+
       - name: Commit and push changes
         run: |
           git config user.name  "Dashboard Bot"
           git config user.email "dashboard-bot@sarasanalytics.com"
-          git add index.html data/saras-daily-adoption.json data/daily_collected.json data/claude_ai_stats.json
+          git add index.html backend/public/index.html data/saras-daily-adoption.json data/daily_collected.json data/claude_ai_stats.json
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
