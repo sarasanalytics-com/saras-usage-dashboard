@@ -4173,25 +4173,31 @@ function renderWeeklyTab() {
   const usersSet = new Set();
   const _isReal   = e => e.endsWith('@sarasanalytics.com') && !BOT_ACCOUNTS.has(e);
   const _inScope  = e => _isReal(e) && inGFScope(e);   // applies dept + manager filters
-  days7.forEach(day => Object.keys(day.c).forEach(e => { if (_inScope(e)) usersSet.add(e); }));
-  Object.entries(WINDSURF_USERS).forEach(([email, lastDate]) => {
-    if (lastDate && lastDate >= d7[0] && lastDate <= d7[6] && _inScope(email)) usersSet.add(email);
+  // Add users active on ANY tool this week (Cursor, Windsurf, Claude Code, ClickUp per-day data)
+  days7.forEach(day => {
+    Object.keys(day.c).forEach(e        => { if (_inScope(e)) usersSet.add(e); });
+    Object.keys(day.w  || {}).forEach(e => { if (_inScope(e)) usersSet.add(e); });
+    Object.keys(day.cc || {}).forEach(e => { if ((day.cc[e]||0) > 0 && _inScope(e)) usersSet.add(e); });
+    Object.keys(day.cu || {}).forEach(e => { if (_inScope(e)) usersSet.add(e); });
   });
-  Object.entries(ADOPTION_CC_MTD).forEach(([email, lines]) => { if (lines > 0 && _inScope(email)) usersSet.add(email); });
-  // Claude.ai: include users with any chats this month (MTD proxy for weekly)
+  // MTD proxies for Claude.ai (no per-day data available)
   const claudeAiUsers = typeof CLAUDE_AI_USERS !== 'undefined' ? CLAUDE_AI_USERS : {};
   Object.entries(claudeAiUsers).forEach(([email, chats]) => { if (chats > 0 && _inScope(email)) usersSet.add(email); });
 
-  // Per-user stats
+  // Per-user stats — track all tools, sort by any-tool active days then Cursor events
   const userStats = [...usersSet].map(email => {
     const events      = days7.reduce((s, d) => s + (d.c[email] || 0), 0);
-    const activeDays  = days7.filter(d => (d.c[email] || 0) > 0).length;
     const hasCc       = (ADOPTION_CC_MTD[email] || 0) > 0;
     const hasWs       = !!WINDSURF_USERS[email];
     const hasClaudeAi = (claudeAiUsers[email] || 0) > 0;
-    const toolCount   = [events > 0, hasCc, hasWs, hasClaudeAi].filter(Boolean).length;
-    return {email, events, activeDays, hasCc, hasWs, hasClaudeAi, toolCount};
-  }).sort((a, b) => b.events - a.events);
+    // Count days active on ANY tool this week
+    const wkAnyDays = days7.filter(d =>
+      (d.c[email]||0)>0 || (d.w&&d.w[email]) || (d.cc&&(d.cc[email]||0)>0) || (d.cu&&d.cu[email])
+    ).length;
+    const activeDays = wkAnyDays;  // used for engagement tier (power = 5+ active days)
+    const toolCount  = [events > 0, hasCc, hasWs, hasClaudeAi].filter(Boolean).length;
+    return {email, events, activeDays, wkAnyDays, hasCc, hasWs, hasClaudeAi, toolCount};
+  }).sort((a, b) => (b.wkAnyDays - a.wkAnyDays) || (b.events - a.events));
 
   const totalEv7  = days7.reduce((s, d) => s + Object.entries(d.c).filter(([e]) => _inScope(e)).reduce((ss,[,v]) => ss+v, 0), 0);
   const multiTool = userStats.filter(u => u.toolCount >= 2).length;
@@ -4235,13 +4241,14 @@ function renderWeeklyTab() {
   const otDesc = [otCc > 0 ? `${otCc} Claude Code` : '', otAi > 0 ? `${otAi} Claude.ai` : '', otWs > 0 ? `${otWs} Windsurf` : ''].filter(Boolean).join(' · ') || 'Non-Cursor tools';
   const maxCount = Math.max(power.length, regular.length, casual.length, otherTools.length, 1);
 
-  // ── Last-week aggregates for WoW comparison (same definition as current week) ──
+  // ── Last-week aggregates for WoW comparison (same definition: all per-day tools) ──
   const prevUsersSet = new Set();
-  daysPrev.forEach(day => Object.keys(day.c).forEach(e => { if (_isReal(e)) prevUsersSet.add(e); }));
-  Object.entries(WINDSURF_USERS).forEach(([email, lastDate]) => {
-    if (lastDate && lastDate >= d7prev[0] && lastDate <= d7prev[6] && _isReal(email)) prevUsersSet.add(email);
+  daysPrev.forEach(day => {
+    Object.keys(day.c).forEach(e        => { if (_isReal(e)) prevUsersSet.add(e); });
+    Object.keys(day.w  || {}).forEach(e => { if (_isReal(e)) prevUsersSet.add(e); });
+    Object.keys(day.cc || {}).forEach(e => { if ((day.cc[e]||0) > 0 && _isReal(e)) prevUsersSet.add(e); });
+    Object.keys(day.cu || {}).forEach(e => { if (_isReal(e)) prevUsersSet.add(e); });
   });
-  Object.entries(ADOPTION_CC_MTD).forEach(([email, lines]) => { if (lines > 0 && _isReal(email)) prevUsersSet.add(email); });
   Object.keys(claudeAiUsers).forEach(email => { if (_isReal(email)) prevUsersSet.add(email); });
   const totalEvPrev = daysPrev.reduce((s, d) => s + Object.values(d.c).reduce((a, v) => a + v, 0), 0);
   const powerPrev   = [...prevUsersSet].filter(email => {
@@ -4283,7 +4290,7 @@ function renderWeeklyTab() {
         }).join('')}
       </div>
       <div style="font-size:0.72rem;color:var(--muted);border-top:1px solid var(--border);padding-top:10px">
-        ⓘ <em>Cursor Actions = Cursor AI requests (per-day granularity). Active Employees = anyone active on Cursor · Claude Code · Windsurf · Claude.ai this period. Week-on-week variance is normal — sprint cycles and data lag all affect counts.</em>
+        ⓘ <em>Cursor Actions = Cursor AI requests (per-day data). Active Employees = anyone who used any AI tool this period (Cursor · Windsurf · Claude Code · ClickUp per day; Claude.ai MTD). Heatmap cells: purple = Cursor intensity, teal = Windsurf, green = Claude Code. Dots in cell corners show additional tools active on that day.</em>
       </div>
     </div>`;
 
@@ -4334,12 +4341,15 @@ function renderWeeklyTab() {
     </div>`;
   }).join('');
 
-  // Heatmap — weekdays only (Mon–Fri), with dept / manager / active-day counts
-  function cellColor(cnt, wsActive) {
-    if (wsActive && cnt === 0) return 'background:rgba(0,212,170,0.6)';
+  // Heatmap — weekdays only (Mon–Fri), multi-tool cells
+  // Cell bg = Cursor intensity; coloured dots = other tools active that same day
+  function cellBg(cnt, wsDay, ccDay, cuDay) {
     if (cnt >= 50) return 'background:#6c63ff';
     if (cnt >= 15) return 'background:rgba(108,99,255,0.72)';
     if (cnt >= 1)  return 'background:rgba(108,99,255,0.32)';
+    if (wsDay)     return 'background:rgba(0,212,170,0.55)';   // Windsurf (no Cursor)
+    if (ccDay > 0) return 'background:rgba(76,175,80,0.35)';   // Claude Code (no Cursor/WS)
+    if (cuDay)     return 'background:rgba(255,107,107,0.2)';  // ClickUp only
     return 'background:rgba(255,255,255,0.04)';
   }
 
@@ -4370,15 +4380,15 @@ function renderWeeklyTab() {
     h += `<th style="text-align:center;padding:2px 0;width:38px;${isAnchor ? 'color:#a89cff;font-weight:700' : 'color:var(--muted);font-weight:400'}">
       <div style="font-size:0.75rem">${dow}</div><div style="font-size:0.68rem;opacity:0.7">${dd}</div></th>`;
   });
-  h += `<th style="padding:4px 8px;color:var(--muted);font-weight:500;font-size:0.72rem;text-align:center;min-width:72px" title="Number of weekdays (Mon–Fri) this week where the employee made at least one Cursor AI request">
+  h += `<th style="padding:4px 8px;color:var(--muted);font-weight:500;font-size:0.72rem;text-align:center;min-width:72px" title="Days this week (Mon–Fri) where the employee used any AI tool: Cursor · Windsurf · Claude Code · ClickUp">
       <div style="color:var(--text);font-size:0.73rem;font-weight:600">Active Days</div>
       <div style="font-size:0.67rem;color:var(--muted);margin-top:1px">This Week</div>
-      <div style="font-size:0.63rem;color:rgba(108,99,255,0.7);margin-top:1px">(Cursor · of 5)</div>
+      <div style="font-size:0.63rem;color:rgba(255,167,38,0.8);margin-top:1px">(all tools)</div>
     </th>`;
-  h += `<th style="padding:4px 8px;color:var(--muted);font-weight:500;font-size:0.72rem;text-align:center;min-width:72px" title="Number of distinct days this month (MTD) where the employee made at least one Cursor AI request">
+  h += `<th style="padding:4px 8px;color:var(--muted);font-weight:500;font-size:0.72rem;text-align:center;min-width:72px" title="Days this month (MTD) where the employee used any AI tool with per-day data: Cursor · Windsurf · Claude Code · ClickUp">
       <div style="color:var(--text);font-size:0.73rem;font-weight:600">Active Days</div>
       <div style="font-size:0.67rem;color:var(--muted);margin-top:1px">This Month</div>
-      <div style="font-size:0.63rem;color:rgba(108,99,255,0.7);margin-top:1px">(Cursor · MTD)</div>
+      <div style="font-size:0.63rem;color:rgba(255,167,38,0.8);margin-top:1px">(all tools · MTD)</div>
     </th>`;
   h += `<th style="padding:6px 12px;color:var(--muted);font-weight:400;font-size:0.74rem;min-width:150px">Active Tools</th></tr>`;
 
@@ -4390,16 +4400,18 @@ function renderWeeklyTab() {
     const mgr     = empInfo.reportingManager || '–';
     const mgrShort = mgr !== '–' && mgr.length > 16 ? mgr.split(' ').slice(0,2).join(' ') : mgr;
 
-    // Active weekdays this week (Cursor events > 0)
+    // Active days this week — any tool (Cursor + Windsurf + CC + ClickUp)
     const wkActiveDays = d7wk.filter(date => {
       const day = days7.find(x => x.date === date);
-      return day && (day.c[u.email] || 0) > 0;
+      return day && ((day.c[u.email]||0)>0 || (day.w&&day.w[u.email]) || (day.cc&&(day.cc[u.email]||0)>0) || (day.cu&&day.cu[u.email]));
     }).length;
 
-    // Active days this month (Cursor events)
-    const moActiveDays = monthDaysAll.filter(d => (d.c[u.email] || 0) > 0).length;
+    // Active days this month — any tool
+    const moActiveDays = monthDaysAll.filter(d =>
+      (d.c[u.email]||0)>0 || (d.w&&d.w[u.email]) || (d.cc&&(d.cc[u.email]||0)>0) || (d.cu&&d.cu[u.email])
+    ).length;
 
-    // ClickUp: has any open tasks
+    // ClickUp: has any open/done tasks (MTD badge)
     const cuPerson = (CLICKUP_DATA.people || []).find(p => p.email === u.email);
     const hasCu    = !!(cuPerson && (cuPerson.open > 0 || cuPerson.done > 0));
 
@@ -4409,12 +4421,29 @@ function renderWeeklyTab() {
       <td style="padding:4px 10px;font-size:0.73rem;color:var(--muted);white-space:nowrap" title="${mgr}">${mgrShort}</td>`;
 
     d7wk.forEach(date => {
-      const day     = days7.find(x => x.date === date);
-      const cnt     = day ? (day.c[u.email] || 0) : 0;
-      const wsActive= wsLast === date;
-      const style   = cellColor(cnt, wsActive);
-      const tip     = `${label}  ·  ${date}  ·  ${cnt > 0 ? cnt + ' Cursor actions' : wsActive ? 'Windsurf active' : 'no activity'}`;
-      h += `<td style="${style};width:38px;height:34px;border-radius:5px" title="${tip}"></td>`;
+      const day    = days7.find(x => x.date === date);
+      const cnt    = day ? (day.c[u.email] || 0) : 0;
+      const wsDay  = !!(day && day.w  && day.w[u.email]);
+      const ccDay  = day && day.cc ? (day.cc[u.email] || 0) : 0;
+      const cuDay  = !!(day && day.cu && day.cu[u.email]);
+      const bg     = cellBg(cnt, wsDay, ccDay, cuDay);
+
+      // Dot indicators for secondary tools (shown when Cursor is the primary cell)
+      const dots = [];
+      if (wsDay && cnt > 0) dots.push(`<div style="width:5px;height:5px;border-radius:50%;background:#00d4aa" title="Windsurf"></div>`);
+      if (ccDay > 0)        dots.push(`<div style="width:5px;height:5px;border-radius:50%;background:#4caf50" title="CC ${ccDay} lines"></div>`);
+      if (cuDay)            dots.push(`<div style="width:5px;height:5px;border-radius:50%;background:#ff6b6b" title="ClickUp"></div>`);
+
+      const toolParts = [];
+      if (cnt > 0)  toolParts.push(`${cnt} Cursor`);
+      if (wsDay)    toolParts.push('Windsurf');
+      if (ccDay > 0)toolParts.push(`${ccDay.toLocaleString()} CC lines`);
+      if (cuDay)    toolParts.push('ClickUp');
+      const tip = `${label}  ·  ${date}  ·  ${toolParts.length ? toolParts.join(' · ') : 'no activity'}`;
+
+      h += `<td style="${bg};width:38px;height:34px;border-radius:5px;position:relative" title="${tip}">
+        ${dots.length ? `<div style="position:absolute;bottom:3px;right:3px;display:flex;gap:2px">${dots.join('')}</div>` : ''}
+      </td>`;
     });
 
     // Active days this week (Cursor only, Mon–Fri): colour-coded green ≥4, orange 2–3, grey 1, dim 0
