@@ -42,11 +42,19 @@ ADMIN_HEADERS_NO_BETA = {
     "anthropic-version":  "2023-06-01",
 }
 
-# Headers for Analytics API (admin key accesses platform API analytics)
-ANALYTICS_HEADERS = {
+# Headers for Analytics API
+# Try admin key first (to access platform API data); fall back to analytics key.
+# NOTE: If ANTHROPIC_ADMIN_KEY is invalid, ANALYTICS_KEY (claude.ai) will be used
+# as fallback — the data returned may be claude.ai costs rather than API costs.
+ANALYTICS_HEADERS_ADMIN = {
     "x-api-key":          ADMIN_KEY,
     "anthropic-version":  "2023-06-01",
 }
+ANALYTICS_HEADERS_FALLBACK = {
+    "x-api-key":          ANALYTICS_KEY,
+    "anthropic-version":  "2023-06-01",
+}
+ANALYTICS_HEADERS = ANALYTICS_HEADERS_ADMIN  # will be reassigned below if admin key fails
 
 
 def log(msg):
@@ -153,6 +161,40 @@ for attempt_label, headers in [
     except Exception as e:
         log(f"  [WARN] Workspace list failed ({attempt_label}): {e}")
         continue
+
+
+# ── 1c. Probe which key works for analytics ────────────────────────────────
+log("\n── 1c. Probe analytics endpoint with admin key vs analytics key ─────────")
+_probe_params = {
+    "starting_at":  data_until.strftime("%Y-%m-%dT00:00:00Z"),
+    "ending_at":    (data_until + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z"),
+    "bucket_width": "1d",
+    "group_by":     ["model"],
+}
+_analytics_key_source = None
+
+for _label, _hdrs in [
+    ("admin key",    ANALYTICS_HEADERS_ADMIN),
+    ("analytics key (fallback)", ANALYTICS_HEADERS_FALLBACK),
+]:
+    try:
+        _test = analytics_get("cost_report", _probe_params, headers=_hdrs)
+        log(f"  ✓ {_label} → cost_report succeeded (HTTP 200)")
+        ANALYTICS_HEADERS = _hdrs
+        _analytics_key_source = _label
+        break
+    except Exception as e:
+        log(f"  [WARN] {_label} → cost_report failed: {e}")
+
+if _analytics_key_source:
+    log(f"  → Using {_analytics_key_source} for all analytics calls")
+    if "fallback" in _analytics_key_source:
+        log("  ⚠️  ADMIN KEY IS INVALID — using analytics key as fallback.")
+        log("  ⚠️  Data may reflect claude.ai costs, NOT platform API costs.")
+        log("  ⚠️  FIX: Update ANTHROPIC_ADMIN_KEY secret with a valid org admin key")
+        log("  ⚠️  from https://console.anthropic.com/settings/keys")
+else:
+    log("  [ERROR] Both keys failed for analytics — no cost data will be collected.")
 
 
 # ── 2. Cost report: try several group_by strategies ──────────────────────────
@@ -405,6 +447,8 @@ result = {
     "daysElapsed":        days_elapsed,
     "daysInMonth":        days_in_month,
     "costGroupUsed":      cost_group_used or "none",
+    "dataSource":         _analytics_key_source or "none",
+    "adminKeyValid":      _analytics_key_source is not None and "fallback" not in (_analytics_key_source or ""),
     "globalModelCost":    {m: round(c, 6) for m, c in
                            sorted(global_model_cost.items(), key=lambda x: -x[1])},
     "modelTokenTotals":   model_token_totals,
