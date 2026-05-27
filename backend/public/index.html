@@ -936,16 +936,8 @@
 
   </div>
   
-  <div class="section-divider"><span>Model Cost Trends</span></div>
-  <div class="card">
-    <div class="section-title" style="margin-bottom:14px">Daily Model Spending (May 2026)</div>
-    <div style="height:300px;position:relative">
-      <canvas id="model-cost-trend-chart"></canvas>
-    </div>
-  </div>
-
   <!-- Model Breakdown Section -->
-  <div class="section-divider" style="margin-top:32px"><span>🤖 Model Usage <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="section-divider"><span>🤖 Model Usage <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
   <div class="card-full">
     <div class="section-header">
       <div class="section-title">Claude Model Breakdown</div>
@@ -962,6 +954,14 @@
       </tr></thead>
       <tbody id="claudeai-model-table"></tbody>
     </table>
+  </div>
+
+  <div class="section-divider" style="margin-top:32px"><span>Model Cost Trends</span></div>
+  <div class="card">
+    <div class="section-title" style="margin-bottom:14px">Daily Model Spending (May 2026)</div>
+    <div style="height:300px;position:relative">
+      <canvas id="model-cost-trend-chart"></canvas>
+    </div>
   </div>
 
   <!-- Per-User Usage Section -->
@@ -1453,6 +1453,7 @@ document.addEventListener('DOMContentLoaded', () => {
   populateSpendsTab();
   renderOverviewAlerts();
   updateStickyTop();
+  renderModelUsage();
 });
 window.addEventListener('resize', updateStickyTop);
 
