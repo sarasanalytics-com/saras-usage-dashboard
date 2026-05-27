@@ -4329,7 +4329,7 @@ function renderWeeklyTab() {
     </div>`;
   }).join('');
 
-  // Heatmap - top 30, simplified (no numbers, 4 color levels only)
+  // Heatmap — weekdays only (Mon–Fri), with dept / manager / active-day counts
   function cellColor(cnt, wsActive) {
     if (wsActive && cnt === 0) return 'background:rgba(0,212,170,0.6)';
     if (cnt >= 50) return 'background:#6c63ff';
@@ -4338,48 +4338,94 @@ function renderWeeklyTab() {
     return 'background:rgba(255,255,255,0.04)';
   }
 
+  // Build fast lookup: email → ALL_EMPLOYEES record
+  const empLookup = {};
+  (typeof ALL_EMPLOYEES !== 'undefined' ? ALL_EMPLOYEES : []).forEach(e => { empLookup[e.email] = e; });
+
+  // Weekdays only for the heatmap columns
+  const d7wk = d7.filter(date => { const dw = new Date(date + 'T00:00:00Z').getUTCDay(); return dw >= 1 && dw <= 5; });
+
+  // All days this month (for MTD active-day count — Cursor only)
+  const monthDaysAll = ADOPTION_DAYS.filter(d => d.date.startsWith(MONTH_PREFIX));
+
   const heatUsers = wkSearch
     ? userStats.filter(u => (nameFromEmail(u.email)+' '+u.email).toLowerCase().includes(wkSearch))
     : userStats;
-  set('wk-heatmap-sub', `${heatUsers.length} active employees this week · hover any cell for details`);
+  set('wk-heatmap-sub', `${heatUsers.length} active employees this week · weekdays only · hover cells for details`);
   document.getElementById('wk-heatmap-legend').innerHTML = `
     <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1)"></div>No activity</div>
-    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.32)"></div>Light (1-14)</div>
-    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.72)"></div>Moderate (15-49)</div>
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.32)"></div>Light (1–14)</div>
+    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.72)"></div>Moderate (15–49)</div>
     <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#6c63ff"></div>Heavy (50+)</div>
     <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(0,212,170,0.6)"></div>Windsurf</div>`;
 
-  let h = `<table style="border-collapse:separate;border-spacing:4px;min-width:max-content">`;
-  h += `<tr><th style="padding:6px 20px 6px 4px;color:var(--muted);text-align:left;font-weight:500;font-size:0.78rem;min-width:170px">Employee</th>`;
-  d7.forEach(date => {
+  let h = `<table style="border-collapse:separate;border-spacing:3px;min-width:max-content">`;
+  h += `<tr>
+    <th style="padding:6px 14px 6px 4px;color:var(--muted);text-align:left;font-weight:500;font-size:0.78rem;min-width:150px">Employee</th>
+    <th style="padding:6px 10px;color:var(--muted);font-weight:400;font-size:0.74rem;min-width:88px;text-align:left">Dept</th>
+    <th style="padding:6px 10px;color:var(--muted);font-weight:400;font-size:0.74rem;min-width:100px;text-align:left">Manager</th>`;
+  d7wk.forEach(date => {
     const dow = DOW[new Date(date + 'T00:00:00Z').getUTCDay()];
     const dd  = date.slice(8);
     const isAnchor = date === anchor;
-    h += `<th style="text-align:center;padding:2px 0;width:40px;${isAnchor ? 'color:#a89cff;font-weight:700' : 'color:var(--muted);font-weight:400'}">
+    h += `<th style="text-align:center;padding:2px 0;width:38px;${isAnchor ? 'color:#a89cff;font-weight:700' : 'color:var(--muted);font-weight:400'}">
       <div style="font-size:0.75rem">${dow}</div><div style="font-size:0.68rem;opacity:0.7">${dd}</div></th>`;
   });
-  h += `<th style="padding:6px 6px 6px 12px;color:var(--muted);font-weight:400;font-size:0.78rem;text-align:right;min-width:56px">Week</th>`;
-  h += `<th style="padding:6px 12px;color:var(--muted);font-weight:400;font-size:0.78rem;min-width:120px">Active Tools</th></tr>`;
+  h += `<th style="padding:6px 8px;color:var(--muted);font-weight:400;font-size:0.74rem;text-align:center;min-width:54px" title="Active weekdays this week">Wk Days</th>`;
+  h += `<th style="padding:6px 8px;color:var(--muted);font-weight:400;font-size:0.74rem;text-align:center;min-width:58px" title="Active days on Cursor this month">Mo Days</th>`;
+  h += `<th style="padding:6px 12px;color:var(--muted);font-weight:400;font-size:0.74rem;min-width:150px">Active Tools</th></tr>`;
 
   heatUsers.forEach(u => {
-    const wsLast = WINDSURF_USERS[u.email] || null;
-    const label  = nameFromEmail(u.email);
-    h += `<tr><td style="padding:4px 20px 4px 4px;color:var(--text);font-size:0.82rem;font-weight:500;white-space:nowrap">${label}</td>`;
-    d7.forEach(date => {
+    const wsLast  = WINDSURF_USERS[u.email] || null;
+    const label   = nameFromEmail(u.email);
+    const empInfo = empLookup[u.email] || {};
+    const dept    = empInfo.dept || getDept(u.email) || '–';
+    const mgr     = empInfo.reportingManager || '–';
+    const mgrShort = mgr !== '–' && mgr.length > 16 ? mgr.split(' ').slice(0,2).join(' ') : mgr;
+
+    // Active weekdays this week (Cursor events > 0)
+    const wkActiveDays = d7wk.filter(date => {
       const day = days7.find(x => x.date === date);
-      const cnt = day ? (day.c[u.email] || 0) : 0;
-      const wsActive = wsLast === date;
-      const style = cellColor(cnt, wsActive);
-      const tip = `${label}  ·  ${date}  ·  ${cnt > 0 ? cnt + ' AI actions' : wsActive ? 'Windsurf active' : 'no activity'}`;
-      h += `<td style="${style};width:40px;height:36px;border-radius:5px" title="${tip}"></td>`;
+      return day && (day.c[u.email] || 0) > 0;
+    }).length;
+
+    // Active days this month (Cursor events)
+    const moActiveDays = monthDaysAll.filter(d => (d.c[u.email] || 0) > 0).length;
+
+    // ClickUp: has any open tasks
+    const cuPerson = (CLICKUP_DATA.people || []).find(p => p.email === u.email);
+    const hasCu    = !!(cuPerson && (cuPerson.open > 0 || cuPerson.done > 0));
+
+    h += `<tr>
+      <td style="padding:4px 14px 4px 4px;color:var(--text);font-size:0.82rem;font-weight:500;white-space:nowrap">${label}</td>
+      <td style="padding:4px 10px;font-size:0.73rem;color:var(--muted);white-space:nowrap">${dept}</td>
+      <td style="padding:4px 10px;font-size:0.73rem;color:var(--muted);white-space:nowrap" title="${mgr}">${mgrShort}</td>`;
+
+    d7wk.forEach(date => {
+      const day     = days7.find(x => x.date === date);
+      const cnt     = day ? (day.c[u.email] || 0) : 0;
+      const wsActive= wsLast === date;
+      const style   = cellColor(cnt, wsActive);
+      const tip     = `${label}  ·  ${date}  ·  ${cnt > 0 ? cnt + ' Cursor actions' : wsActive ? 'Windsurf active' : 'no activity'}`;
+      h += `<td style="${style};width:38px;height:34px;border-radius:5px" title="${tip}"></td>`;
     });
+
+    // Week active days (colour-coded: green ≥4, orange 2-3, grey 1, dim 0)
+    const wkCol = wkActiveDays >= 4 ? '#4caf50' : wkActiveDays >= 2 ? '#ffa726' : wkActiveDays === 1 ? '#8b92b8' : 'rgba(255,255,255,0.2)';
+    h += `<td style="padding:4px 8px;text-align:center;font-size:0.84rem;font-weight:700;color:${wkCol}">${wkActiveDays}/5</td>`;
+
+    // Month active days
+    const moCol = moActiveDays >= 15 ? '#4caf50' : moActiveDays >= 8 ? '#ffa726' : moActiveDays >= 1 ? '#8b92b8' : 'rgba(255,255,255,0.2)';
+    h += `<td style="padding:4px 8px;text-align:center;font-size:0.84rem;font-weight:700;color:${moCol}">${moActiveDays > 0 ? moActiveDays + 'd' : '–'}</td>`;
+
     const tools = [];
-    if (u.hasCc)       tools.push(`<span style="background:rgba(0,212,170,0.15);color:#00d4aa;border-radius:4px;padding:2px 7px;font-size:0.7rem;font-weight:600">Claude Code</span>`);
-    if (u.events > 0)  tools.push(`<span style="background:rgba(108,99,255,0.15);color:#a89cff;border-radius:4px;padding:2px 7px;font-size:0.7rem;font-weight:600">Cursor AI</span>`);
-    if (u.hasWs)       tools.push(`<span style="background:rgba(38,198,218,0.12);color:#26c6da;border-radius:4px;padding:2px 7px;font-size:0.7rem;font-weight:600">Windsurf</span>`);
-    if (u.hasClaudeAi) tools.push(`<span style="background:rgba(255,167,38,0.12);color:#ffa726;border-radius:4px;padding:2px 7px;font-size:0.7rem;font-weight:600">Claude.ai</span>`);
-    h += `<td style="padding:4px 6px 4px 12px;text-align:right;font-size:0.85rem;font-weight:700;color:#fff">${u.events ? fmt(u.events) : '-'}</td>`;
-    h += `<td style="padding:4px 12px"><div style="display:flex;gap:4px;flex-wrap:wrap">${tools.join('')}</div></td>`;
+    if (u.hasCc)       tools.push(`<span style="background:rgba(0,212,170,0.15);color:#00d4aa;border-radius:4px;padding:2px 6px;font-size:0.67rem;font-weight:600">Claude Code</span>`);
+    if (u.events > 0)  tools.push(`<span style="background:rgba(108,99,255,0.15);color:#a89cff;border-radius:4px;padding:2px 6px;font-size:0.67rem;font-weight:600">Cursor AI</span>`);
+    if (u.hasWs)       tools.push(`<span style="background:rgba(38,198,218,0.12);color:#26c6da;border-radius:4px;padding:2px 6px;font-size:0.67rem;font-weight:600">Windsurf</span>`);
+    if (u.hasClaudeAi) tools.push(`<span style="background:rgba(255,167,38,0.12);color:#ffa726;border-radius:4px;padding:2px 6px;font-size:0.67rem;font-weight:600">Claude.ai</span>`);
+    if (hasCu)         tools.push(`<span style="background:rgba(129,199,132,0.12);color:#81c784;border-radius:4px;padding:2px 6px;font-size:0.67rem;font-weight:600">ClickUp</span>`);
+
+    h += `<td style="padding:4px 12px"><div style="display:flex;gap:3px;flex-wrap:wrap">${tools.join('')}</div></td>`;
     h += `</tr>`;
   });
   h += `</table>`;
