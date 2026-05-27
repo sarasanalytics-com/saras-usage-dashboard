@@ -936,14 +936,6 @@
 
   </div>
   
-  <div class="section-divider" style="margin-top:32px"><span>Model Usage Cost <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
-  <div style="background:var(--surface2);border-radius:8px;padding:16px;margin-bottom:24px">
-    <table class="data-table">
-      <thead><tr><th>Model</th><th style="text-align:right">Tokens (MTD)</th><th style="text-align:right">MTD Cost</th></tr></thead>
-      <tbody id="model-cost-body"></tbody>
-    </table>
-  </div>
-
   <div class="section-divider"><span>Model Cost Trends</span></div>
   <div class="card">
     <div class="section-title" style="margin-bottom:14px">Daily Model Spending (May 2026)</div>
@@ -962,7 +954,6 @@
     <table class="data-table">
       <thead><tr>
         <th>Model</th>
-        <th style="text-align:right">Messages</th>
         <th style="text-align:right">Input Tokens</th>
         <th style="text-align:right">Output Tokens</th>
         <th style="text-align:right">Total Tokens</th>
@@ -5098,7 +5089,6 @@ function renderModelUsage() {
     return `
       <tr>
         <td><strong style="color:#fff">${name}</strong><div style="font-size:0.7rem;color:var(--muted);margin-top:2px">${m}</div></td>
-        <td class="num-cell">${fmt(d.messages || 0)}</td>
         <td class="num-cell">${fmt(d.input_tokens || 0)}</td>
         <td class="num-cell">${fmt(d.output_tokens || 0)}</td>
         <td class="num-cell" style="font-weight:700">${fmt(totalTok)}</td>
