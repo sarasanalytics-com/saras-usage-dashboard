@@ -648,27 +648,6 @@
 <!-- CLAUDE.AI -->
 <div class="page" id="tab-claudeai">
 
-  <!-- Model Breakdown Section -->
-  <div class="section-divider" id="claudeai-model-section" style="display:none"><span>🤖 Model Usage <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
-  <div class="card-full" id="claudeai-model-card" style="display:none">
-    <div class="section-header">
-      <div class="section-title">Claude Model Breakdown</div>
-      <div class="section-sub">Detailed usage and cost per model this month</div>
-    </div>
-    <table class="data-table">
-      <thead><tr>
-        <th>Model</th>
-        <th style="text-align:right">Messages</th>
-        <th style="text-align:right">Input Tokens</th>
-        <th style="text-align:right">Output Tokens</th>
-        <th style="text-align:right">Total Tokens</th>
-        <th style="text-align:right">Est. Cost</th>
-        <th style="text-align:right">% of Total</th>
-      </tr></thead>
-      <tbody id="claudeai-model-table"></tbody>
-    </table>
-  </div>
-
   <div class="fqq-strip">
     <div class="fqq-card">
       <div class="fqq-label fqq-freq">Frequency</div>
@@ -980,6 +959,27 @@
     <div style="height:300px;position:relative">
       <canvas id="model-cost-trend-chart"></canvas>
     </div>
+  </div>
+
+  <!-- Model Breakdown Section -->
+  <div class="section-divider" style="margin-top:32px"><span>🤖 Model Usage <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="card-full">
+    <div class="section-header">
+      <div class="section-title">Claude Model Breakdown</div>
+      <div class="section-sub">Detailed usage and cost per model this month</div>
+    </div>
+    <table class="data-table">
+      <thead><tr>
+        <th>Model</th>
+        <th style="text-align:right">Messages</th>
+        <th style="text-align:right">Input Tokens</th>
+        <th style="text-align:right">Output Tokens</th>
+        <th style="text-align:right">Total Tokens</th>
+        <th style="text-align:right">Est. Cost</th>
+        <th style="text-align:right">% of Total</th>
+      </tr></thead>
+      <tbody id="claudeai-model-table"></tbody>
+    </table>
   </div>
 
   <!-- Per-User Usage Section -->
@@ -1362,6 +1362,10 @@ async function checkAuthentication() {
     const sessionValid = await validateSession();
     if (!sessionValid) {
       logout();
+    } else {
+      // Explicitly hide login container when session is valid
+      document.getElementById('login-container').style.display = 'none';
+      document.body.style.overflow = 'auto';
     }
   }
 }
