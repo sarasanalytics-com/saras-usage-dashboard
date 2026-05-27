@@ -1,11 +1,11 @@
 {
-  "asOf": "",
-  "monthStart": "",
+  "asOf": "2026-05-24",
+  "monthStart": "2026-05-01",
   "totalApiSpendMtd": 0,
-  "dailyAvg": 0,
-  "projectedMonthly": 0,
-  "projectedYearly": 0,
-  "daysElapsed": 0,
+  "dailyAvg": 0.0,
+  "projectedMonthly": 0.0,
+  "projectedYearly": 0.0,
+  "daysElapsed": 24,
   "daysInMonth": 31,
   "globalModelCost": {},
   "agents": []
