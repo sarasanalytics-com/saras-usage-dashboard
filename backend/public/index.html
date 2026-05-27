@@ -242,7 +242,7 @@
   </div>
 </div>
 
-<div id="global-filter-bar" style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;position:sticky;top:150px;z-index:97;flex-wrap:wrap;">
+<div id="global-filter-bar" style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;position:sticky;top:113px;z-index:98;flex-wrap:wrap;">
   <span style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-weight:600">View by:</span>
   <select id="gf-dept" class="dept-select" onchange="applyGlobalFilters()">
     <option value="all">All Departments</option>
@@ -1318,10 +1318,10 @@ async function handleMicrosoftSignIn() {
 
     const data = await result.json();
     if (result.ok && data.success) {
-      sessionStorage.setItem('dashboard-auth', 'true');
+      localStorage.setItem('dashboard-auth', 'true');
       localStorage.setItem('session-token', data.sessionToken);
-      sessionStorage.setItem('user-email', data.email);
-      sessionStorage.setItem('user-name', data.name);
+      localStorage.setItem('user-email', data.email);
+      localStorage.setItem('user-name', data.name);
       document.getElementById('login-container').style.display = 'none';
       document.body.style.overflow = 'auto';
     } else {
@@ -1354,7 +1354,7 @@ async function validateSession() {
 }
 
 async function checkAuthentication() {
-  const isAuthenticated = sessionStorage.getItem('dashboard-auth') === 'true';
+  const isAuthenticated = localStorage.getItem('dashboard-auth') === 'true';
   if (!isAuthenticated) {
     document.getElementById('login-container').style.display = 'flex';
     document.body.style.overflow = 'hidden';
@@ -1367,10 +1367,10 @@ async function checkAuthentication() {
 }
 
 function logout() {
-  sessionStorage.removeItem('dashboard-auth');
-  sessionStorage.removeItem('session-token');
-  sessionStorage.removeItem('user-email');
-  sessionStorage.removeItem('user-name');
+  localStorage.removeItem('dashboard-auth');
+  localStorage.removeItem('session-token');
+  localStorage.removeItem('user-email');
+  localStorage.removeItem('user-name');
   location.reload();
 }
 
