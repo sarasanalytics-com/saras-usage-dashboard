@@ -247,7 +247,8 @@
 <div class="tabs">
   <div class="tab active" onclick="switchTab('overview',this)">📊 Executive Summary</div>
   <div class="tab" onclick="switchTab('spends',this)">💰 Spends</div>
-  <div class="tab" onclick="switchTab('weekly',this)">📅 This Week</div>
+  <div class="tab" onclick="switchTab('daily',this)">📅 Daily</div>
+  <div class="tab" onclick="switchTab('weekly',this)">📅 Weekly</div>
   <div class="tab" onclick="switchTab('trends',this)">📈 Monthly Trends</div>
   <span class="tab-sep">Claude</span>
   <div class="tab" onclick="switchTab('claude-code',this)">Claude Code</div>
@@ -475,12 +476,47 @@
   </div>
 </div>
 
+<!-- DAILY -->
+<div class="page" id="tab-daily">
+  <div style="text-align:center;padding:28px 0 32px;border-bottom:1px solid var(--border);margin-bottom:28px">
+    <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">AI Tool Adoption · Yesterday</div>
+    <div style="font-size:2.4rem;font-weight:800;color:#fff;line-height:1.2" id="dy-hero-date">-</div>
+    <div style="font-size:1rem;color:var(--muted);margin-top:8px">Cursor AI · Claude Code · Windsurf · ClickUp</div>
+  </div>
+
+  <div class="section-divider"><span>Activity Summary <span class="timeframe-badge tbadge-7d">Yesterday</span></span></div>
+  <div class="kpi-grid" style="margin-bottom:28px">
+    <div class="kpi c1"><div class="kpi-label">Employees Active</div><div class="kpi-value" id="dy-active-users">-</div><div class="kpi-sub">on any AI tool yesterday</div></div>
+    <div class="kpi c2"><div class="kpi-label">Cursor Requests</div><div class="kpi-value" id="dy-cursor-req">-</div><div class="kpi-sub">Cursor AI actions</div></div>
+    <div class="kpi c3"><div class="kpi-label">CC Lines Written</div><div class="kpi-value" id="dy-cc-lines">-</div><div class="kpi-sub">Claude Code lines</div></div>
+    <div class="kpi c4"><div class="kpi-label">Windsurf Sessions</div><div class="kpi-value" id="dy-ws-count">-</div><div class="kpi-sub">active Windsurf users</div></div>
+    <div class="kpi c5"><div class="kpi-label">ClickUp Active</div><div class="kpi-value" id="dy-cu-count">-</div><div class="kpi-sub">users with ClickUp activity</div></div>
+  </div>
+
+  <div class="section-divider"><span>All Activity Yesterday</span></div>
+  <div class="card-full">
+    <table class="data-table">
+      <thead><tr>
+        <th>Employee</th>
+        <th>Dept</th>
+        <th>Manager</th>
+        <th style="text-align:right">Cursor Requests</th>
+        <th style="text-align:right">CC Lines</th>
+        <th style="text-align:center">Windsurf</th>
+        <th style="text-align:center">ClickUp</th>
+        <th>Active Tools</th>
+      </tr></thead>
+      <tbody id="dy-table"></tbody>
+    </table>
+  </div>
+</div>
+
 <!-- THIS WEEK -->
 <div class="page" id="tab-weekly">
 
   <!-- Hero -->
   <div style="text-align:center;padding:28px 0 32px;border-bottom:1px solid var(--border);margin-bottom:28px">
-    <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">AI Tool Adoption · Last 7 Days</div>
+    <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">AI Tool Adoption · Last Week</div>
     <div id="wk-hero-headline" style="font-size:2.4rem;font-weight:800;color:#fff;line-height:1.2">-</div>
     <div id="wk-hero-sub" style="font-size:1rem;color:var(--muted);margin-top:8px">-</div>
   </div>
@@ -489,7 +525,7 @@
   <div id="wk-compare" style="margin-bottom:24px"></div>
 
   <!-- KPIs -->
-  <div class="section-divider"><span>Activity Summary <span class="timeframe-badge tbadge-7d">Last 7 Days</span></span></div>
+  <div class="section-divider"><span>Activity Summary <span class="timeframe-badge tbadge-7d">Last Week</span></span></div>
   <div class="kpi-grid" style="margin-bottom:28px">
     <div class="kpi c1">
       <div class="kpi-label">Employees Active</div>
@@ -2136,6 +2172,7 @@ function applyGlobalFilters() {
   _r(renderAdoptHeatmap,                             'renderAdoptHeatmap');
   _r(() => renderAdoptTable(adoptUTotals, adoptUDays),'renderAdoptTable');
   _r(renderCUTable,                                  'renderCUTable');
+  _r(renderDailyTab,                                 'renderDailyTab');
   _r(renderWeeklyTab,                                'renderWeeklyTab');
   _r(renderToolStrips,                               'renderToolStrips');
   _r(renderModelUsage,                               'renderModelUsage');
@@ -4166,6 +4203,90 @@ function renderAdoptTable(uTotals,uDays){
 function sortAdoptTable(col) { if(adoptSortCol===col)adoptSortDir*=-1;else{adoptSortCol=col;adoptSortDir=-1;} renderAdoptTable(adoptUTotals,adoptUDays); }
 function filterAdoptSearch(val) { adoptSearch = val.toLowerCase(); renderAdoptHeatmap(); renderAdoptTable(adoptUTotals, adoptUDays); }
 
+// ==================== DAILY TAB ====================
+function renderDailyTab() {
+  const sortedDates = ADOPTION_DAYS.map(d => d.date).sort();
+  if (!sortedDates.length) return;
+  const yesterday = sortedDates[sortedDates.length - 1];
+
+  const DAYS_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const yDate = new Date(yesterday + 'T00:00:00Z');
+  const dateLabel = `${DAYS_FULL[yDate.getUTCDay()]}, ${MONTHS[yDate.getUTCMonth()]} ${yDate.getUTCDate()}, ${yDate.getUTCFullYear()}`;
+  set('dy-hero-date', dateLabel);
+
+  const _isReal = e => e.endsWith('@sarasanalytics.com') && !BOT_ACCOUNTS.has(e);
+  const dayData = ADOPTION_DAYS.find(d => d.date === yesterday) || {date: yesterday, c:{}, w:{}, cc:{}, cu:{}};
+
+  const cursorMap  = dayData.c  || {};
+  const wsMap      = dayData.w  || {};
+  const ccMap      = dayData.cc || {};
+  const cuMap      = dayData.cu || {};
+
+  // Collect all active users
+  const usersSet = new Set();
+  Object.keys(cursorMap).forEach(e => { if (_isReal(e)) usersSet.add(e); });
+  Object.keys(wsMap).forEach(e     => { if (_isReal(e)) usersSet.add(e); });
+  Object.keys(ccMap).forEach(e     => { if ((ccMap[e]||0) > 0 && _isReal(e)) usersSet.add(e); });
+  Object.keys(cuMap).forEach(e     => { if (_isReal(e)) usersSet.add(e); });
+
+  // KPIs
+  const totalCursor = Object.entries(cursorMap).filter(([e]) => _isReal(e)).reduce((s,[,v]) => s+v, 0);
+  const totalCC     = Object.entries(ccMap).filter(([e]) => _isReal(e)).reduce((s,[,v]) => s+v, 0);
+  const wsCount     = Object.keys(wsMap).filter(e => _isReal(e)).length;
+  const cuCount     = Object.keys(cuMap).filter(e => _isReal(e)).length;
+
+  set('dy-active-users', usersSet.size);
+  set('dy-cursor-req',   fmt(totalCursor));
+  set('dy-cc-lines',     fmt(totalCC));
+  set('dy-ws-count',     wsCount);
+  set('dy-cu-count',     cuCount);
+
+  // Build emp lookup
+  const empLookup = {};
+  (typeof ALL_EMPLOYEES !== 'undefined' ? ALL_EMPLOYEES : []).forEach(e => { empLookup[e.email] = e; });
+
+  // Sort users by total activity (Cursor desc, then CC lines)
+  const userRows = [...usersSet].map(email => {
+    const cursor = cursorMap[email] || 0;
+    const cc     = ccMap[email] || 0;
+    const ws     = !!wsMap[email];
+    const cu     = !!cuMap[email];
+    return {email, cursor, cc, ws, cu};
+  }).sort((a, b) => (b.cursor + b.cc/100) - (a.cursor + a.cc/100));
+
+  // Table
+  const claudeAiUsers = typeof CLAUDE_AI_USERS !== 'undefined' ? CLAUDE_AI_USERS : {};
+  const tbody = document.getElementById('dy-table');
+  if (!tbody) return;
+
+  tbody.innerHTML = userRows.map(u => {
+    const empInfo  = empLookup[u.email] || {};
+    const dept     = empInfo.dept || getDept(u.email) || '–';
+    const mgr      = empInfo.reportingManager || '–';
+    const mgrShort = mgr !== '–' && mgr.length > 18 ? mgr.split(' ').slice(0,2).join(' ') : mgr;
+    const name     = nameFromEmail(u.email);
+
+    const tools = [];
+    if (u.cursor > 0) tools.push(`<span style="background:rgba(108,99,255,0.15);color:#a89cff;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">Cursor AI</span>`);
+    if (u.cc > 0)     tools.push(`<span style="background:rgba(0,212,170,0.15);color:#00d4aa;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">Claude Code</span>`);
+    if (u.ws)         tools.push(`<span style="background:rgba(38,198,218,0.12);color:#26c6da;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">Windsurf</span>`);
+    if (u.cu)         tools.push(`<span style="background:rgba(129,199,132,0.12);color:#81c784;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">ClickUp</span>`);
+    if ((claudeAiUsers[u.email]||0) > 0) tools.push(`<span style="background:rgba(255,167,38,0.12);color:#ffa726;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">Claude.ai</span>`);
+
+    return `<tr>
+      <td style="font-weight:600">${name}</td>
+      <td style="font-size:0.8rem;color:var(--muted)">${dept}</td>
+      <td style="font-size:0.8rem;color:var(--muted)" title="${mgr}">${mgrShort}</td>
+      <td style="text-align:right;font-weight:${u.cursor>0?'700':'400'};color:${u.cursor>0?'#a89cff':'var(--muted)'}">${u.cursor > 0 ? fmt(u.cursor) : '–'}</td>
+      <td style="text-align:right;font-weight:${u.cc>0?'700':'400'};color:${u.cc>0?'#00d4aa':'var(--muted)'}">${u.cc > 0 ? fmt(u.cc) : '–'}</td>
+      <td style="text-align:center;color:${u.ws?'#26c6da':'var(--muted)'}">${u.ws ? '✓' : '–'}</td>
+      <td style="text-align:center;color:${u.cu?'#81c784':'var(--muted)'}">${u.cu ? '✓' : '–'}</td>
+      <td><div style="display:flex;gap:3px;flex-wrap:wrap">${tools.join('')}</div></td>
+    </tr>`;
+  }).join('');
+}
+
 // ==================== THIS WEEK TAB ====================
 let wkSearch = '';
 function filterWeekSearch(val) { wkSearch = val.toLowerCase(); renderWeeklyTab(); }
@@ -4173,18 +4294,26 @@ function renderWeeklyTab() {
   const sortedDates = ADOPTION_DAYS.map(d => d.date).sort();
   const anchor = sortedDates.length ? sortedDates[sortedDates.length - 1] : new Date().toISOString().slice(0,10);
 
-  const d7 = [];
+  // Last complete Mon–Sun week
   const base = new Date(anchor + 'T00:00:00Z');
-  for (let i = 6; i >= 0; i--) {
-    const dt = new Date(base); dt.setUTCDate(dt.getUTCDate() - i);
+  const anchorDow = base.getUTCDay();  // 0=Sun,1=Mon,...,6=Sat
+  // Days since this Monday
+  const daysSinceMonday = anchorDow === 0 ? 6 : anchorDow - 1;
+  // This week's Monday
+  const thisMonday = new Date(base);
+  thisMonday.setUTCDate(base.getUTCDate() - daysSinceMonday);
+  // Last week = 7 days of Mon–Sun ending last Sunday
+  const d7 = [];
+  for (let i = 7; i >= 1; i--) {
+    const dt = new Date(thisMonday); dt.setUTCDate(thisMonday.getUTCDate() - i);
     d7.push(dt.toISOString().slice(0,10));
   }
   const days7 = d7.map(date => ADOPTION_DAYS.find(d => d.date === date) || {date, c:{}, w:{}});
 
-  // Previous week (7-13 days before anchor)
+  // Previous week (week before last)
   const d7prev = [];
-  for (let i = 13; i >= 7; i--) {
-    const dt = new Date(base); dt.setUTCDate(dt.getUTCDate() - i);
+  for (let i = 14; i >= 8; i--) {
+    const dt = new Date(thisMonday); dt.setUTCDate(thisMonday.getUTCDate() - i);
     d7prev.push(dt.toISOString().slice(0,10));
   }
   const daysPrev = d7prev.map(date => ADOPTION_DAYS.find(d => d.date === date) || {date, c:{}, w:{}});
