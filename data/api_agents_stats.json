@@ -1,14 +1,69 @@
 {
   "asOf": "2026-05-24",
   "monthStart": "2026-05-01",
-  "totalApiSpendMtd": 0,
-  "dailyAvg": 0.0,
-  "projectedMonthly": 0.0,
-  "projectedYearly": 0.0,
+  "totalApiSpendMtd": 2256.6768,
+  "dailyAvg": 94.028198,
+  "projectedMonthly": 2914.87,
+  "projectedYearly": 34978.49,
   "daysElapsed": 24,
   "daysInMonth": 31,
-  "costGroupUsed": "none",
-  "globalModelCost": {},
+  "costGroupUsed": "aggregate_model",
+  "dataSource": "analytics key (fallback)",
+  "adminKeyValid": false,
+  "globalModelCost": {
+    "claude-sonnet-4-6": 1077.881498,
+    "claude-opus-4-7": 845.743742,
+    "claude-opus-4-6": 149.045236,
+    "claude-haiku-4-5-20251001": 123.936421,
+    "claude-sonnet-4-5-20250929": 60.069858,
+    "unknown": 0.0,
+    "claude-opus-4-5-20251101": 0.0,
+    "claude-3-opus": 0.0
+  },
   "modelTokenTotals": {},
-  "agents": []
+  "agents": [
+    {
+      "id": "all_api_keys",
+      "name": "All API Keys (aggregate)",
+      "status": "active",
+      "costMtd": 2256.6768,
+      "usage": {},
+      "modelCosts": {
+        "claude-sonnet-4-6": 1077.881498,
+        "claude-opus-4-7": 845.743742,
+        "claude-opus-4-6": 149.045236,
+        "claude-haiku-4-5-20251001": 123.936421,
+        "claude-sonnet-4-5-20250929": 60.069858,
+        "unknown": 0.0,
+        "claude-opus-4-5-20251101": 0.0,
+        "claude-3-opus": 0.0
+      },
+      "dailyCosts": {
+        "2026-05-01": 0.0,
+        "2026-05-02": 0.0,
+        "2026-05-03": 0.0,
+        "2026-05-04": 0.0,
+        "2026-05-05": 0.0,
+        "2026-05-06": 0.0,
+        "2026-05-07": 0.0,
+        "2026-05-08": 20.897302,
+        "2026-05-09": 0.0,
+        "2026-05-10": 0.0,
+        "2026-05-11": 0.0,
+        "2026-05-12": 0.0,
+        "2026-05-13": 29.864196,
+        "2026-05-14": 0.0,
+        "2026-05-15": 0.0,
+        "2026-05-16": 24.661437,
+        "2026-05-17": 28.185976,
+        "2026-05-18": 52.0952,
+        "2026-05-19": 0.0,
+        "2026-05-20": 907.09656,
+        "2026-05-21": 491.337252,
+        "2026-05-22": 538.685208,
+        "2026-05-23": 75.447076,
+        "2026-05-24": 88.406549
+      }
+    }
+  ]
 }
