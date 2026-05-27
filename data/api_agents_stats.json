@@ -7,6 +7,8 @@
   "projectedYearly": 0.0,
   "daysElapsed": 24,
   "daysInMonth": 31,
+  "costGroupUsed": "none",
   "globalModelCost": {},
+  "modelTokenTotals": {},
   "agents": []
 }
