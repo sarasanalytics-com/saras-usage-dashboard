@@ -258,7 +258,8 @@
   <div class="tab" onclick="switchTab('clickup',this)">✅ ClickUp</div>
 </div>
 
-<div id="global-filter-bar" style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;width:100%;box-sizing:border-box;position:sticky;top:160px;z-index:99;">
+<div id="filter-bar-spacer" style="display:none;"></div>
+<div id="global-filter-bar" style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;width:100%;box-sizing:border-box;">
   <span style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-weight:600">View by:</span>
   <select id="gf-dept" class="dept-select" onchange="applyGlobalFilters()">
     <option value="all">All Departments</option>
@@ -1395,14 +1396,45 @@ window.addEventListener('load', () => {
   setTimeout(initStickyFilterBar, 200);
 });
 
-// ── Sticky Filter Bar: fine-tune top based on actual rendered heights ──────────
+// ── Sticky Filter Bar: position:fixed approach (works in all browsers) ─────────
 function initStickyFilterBar() {
   const filterBar = document.getElementById('global-filter-bar');
-  const header = document.querySelector('header');
-  const tabs = document.querySelector('.tabs');
-  if (!filterBar || !header || !tabs) return;
-  // Measure real heights and set exact top value
-  filterBar.style.top = (header.offsetHeight + tabs.offsetHeight) + 'px';
+  const spacer    = document.getElementById('filter-bar-spacer');
+  const header    = document.querySelector('header');
+  const tabs      = document.querySelector('.tabs');
+  if (!filterBar || !spacer || !header || !tabs) return;
+
+  const stickyTop    = header.offsetHeight + tabs.offsetHeight;
+  const barHeight    = filterBar.offsetHeight;
+  // Store the natural page-top position of the bar before it goes fixed
+  const naturalTop   = filterBar.getBoundingClientRect().top + window.pageYOffset;
+
+  // Pre-size the spacer so layout doesn't jump when bar goes fixed
+  spacer.style.height = barHeight + 'px';
+
+  function onScroll() {
+    const scrolled = window.pageYOffset >= (naturalTop - stickyTop);
+    if (scrolled) {
+      // Go fixed — lock bar at top under header+tabs
+      filterBar.style.position = 'fixed';
+      filterBar.style.top      = stickyTop + 'px';
+      filterBar.style.left     = '0';
+      filterBar.style.width    = '100%';
+      filterBar.style.zIndex   = '99';
+      spacer.style.display     = 'block'; // fill the gap
+    } else {
+      // Back to normal flow
+      filterBar.style.position = '';
+      filterBar.style.top      = '';
+      filterBar.style.left     = '';
+      filterBar.style.width    = '';
+      filterBar.style.zIndex   = '';
+      spacer.style.display     = 'none';
+    }
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll(); // run once on load in case page is already scrolled
 }
 
 // ==================== UPDATE THESE TWO BLOCKS DAILY ====================
