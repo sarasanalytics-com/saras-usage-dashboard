@@ -541,6 +541,18 @@
     <div id="wk-heatmap" style="overflow-x:auto;margin-top:16px"></div>
   </div>
 
+  <!-- Inactive Users -->
+  <div class="card-full" style="margin-top:24px">
+    <div class="section-header">
+      <div>
+        <div class="section-title" style="color:#f44336">⚠ Inactive This Week</div>
+        <div class="section-sub">Licensed members with zero activity on Claude Code · Claude.ai · Cursor · Windsurf this week</div>
+      </div>
+      <span id="wk-inactive-count" style="font-size:1.6rem;font-weight:800;color:#f44336">-</span>
+    </div>
+    <div id="wk-inactive-list" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"></div>
+  </div>
+
 </div>
 
 <!-- CLAUDE CODE -->
@@ -4158,7 +4170,7 @@ function renderWeeklyTab() {
   }
   const daysPrev = d7prev.map(date => ADOPTION_DAYS.find(d => d.date === date) || {date, c:{}, w:{}});
 
-  // Collect all users active in this window (Cursor + Windsurf + Claude Code MTD)
+  // Collect all users active in this window (Cursor + Windsurf + Claude Code MTD + Claude.ai MTD)
   const usersSet = new Set();
   const _isReal   = e => e.endsWith('@sarasanalytics.com') && !BOT_ACCOUNTS.has(e);
   const _inScope  = e => _isReal(e) && inGFScope(e);   // applies dept + manager filters
@@ -4167,15 +4179,19 @@ function renderWeeklyTab() {
     if (lastDate && lastDate >= d7[0] && lastDate <= d7[6] && _inScope(email)) usersSet.add(email);
   });
   Object.entries(ADOPTION_CC_MTD).forEach(([email, lines]) => { if (lines > 0 && _inScope(email)) usersSet.add(email); });
+  // Claude.ai: include users with any chats this month (MTD proxy for weekly)
+  const claudeAiUsers = typeof CLAUDE_AI_USERS !== 'undefined' ? CLAUDE_AI_USERS : {};
+  Object.entries(claudeAiUsers).forEach(([email, chats]) => { if (chats > 0 && _inScope(email)) usersSet.add(email); });
 
   // Per-user stats
   const userStats = [...usersSet].map(email => {
-    const events    = days7.reduce((s, d) => s + (d.c[email] || 0), 0);
-    const activeDays= days7.filter(d => (d.c[email] || 0) > 0).length;
-    const hasCc     = (ADOPTION_CC_MTD[email] || 0) > 0;
-    const hasWs     = !!WINDSURF_USERS[email];
-    const toolCount = [events > 0, hasCc, hasWs].filter(Boolean).length;
-    return {email, events, activeDays, hasCc, hasWs, toolCount};
+    const events      = days7.reduce((s, d) => s + (d.c[email] || 0), 0);
+    const activeDays  = days7.filter(d => (d.c[email] || 0) > 0).length;
+    const hasCc       = (ADOPTION_CC_MTD[email] || 0) > 0;
+    const hasWs       = !!WINDSURF_USERS[email];
+    const hasClaudeAi = (claudeAiUsers[email] || 0) > 0;
+    const toolCount   = [events > 0, hasCc, hasWs, hasClaudeAi].filter(Boolean).length;
+    return {email, events, activeDays, hasCc, hasWs, hasClaudeAi, toolCount};
   }).sort((a, b) => b.events - a.events);
 
   const totalEv7  = days7.reduce((s, d) => s + Object.entries(d.c).filter(([e]) => _inScope(e)).reduce((ss,[,v]) => ss+v, 0), 0);
@@ -4194,7 +4210,7 @@ function renderWeeklyTab() {
   // Hero
   const dateLabel = `${d7[0].slice(5).replace('-','/')} - ${d7[6].slice(5).replace('-','/')}`;
   set('wk-hero-headline', `${usersSet.size} employees active on AI tools this week`);
-  set('wk-hero-sub', `${dateLabel}, ${anchor.slice(0,4)}  ·  Cursor AI · Claude Code · Windsurf`);
+  set('wk-hero-sub', `${dateLabel}, ${anchor.slice(0,4)}  ·  Cursor AI · Claude Code · Windsurf · Claude.ai`);
 
   // KPIs
   const total = DATA.orgSize || 209;
@@ -4358,15 +4374,44 @@ function renderWeeklyTab() {
       h += `<td style="${style};width:40px;height:36px;border-radius:5px" title="${tip}"></td>`;
     });
     const tools = [];
-    if (u.hasCc)     tools.push(`<span style="background:rgba(0,212,170,0.15);color:#00d4aa;border-radius:4px;padding:2px 7px;font-size:0.7rem;font-weight:600">Claude Code</span>`);
-    if (u.events > 0)tools.push(`<span style="background:rgba(108,99,255,0.15);color:#a89cff;border-radius:4px;padding:2px 7px;font-size:0.7rem;font-weight:600">Cursor AI</span>`);
-    if (u.hasWs)     tools.push(`<span style="background:rgba(38,198,218,0.12);color:#26c6da;border-radius:4px;padding:2px 7px;font-size:0.7rem;font-weight:600">Windsurf</span>`);
+    if (u.hasCc)       tools.push(`<span style="background:rgba(0,212,170,0.15);color:#00d4aa;border-radius:4px;padding:2px 7px;font-size:0.7rem;font-weight:600">Claude Code</span>`);
+    if (u.events > 0)  tools.push(`<span style="background:rgba(108,99,255,0.15);color:#a89cff;border-radius:4px;padding:2px 7px;font-size:0.7rem;font-weight:600">Cursor AI</span>`);
+    if (u.hasWs)       tools.push(`<span style="background:rgba(38,198,218,0.12);color:#26c6da;border-radius:4px;padding:2px 7px;font-size:0.7rem;font-weight:600">Windsurf</span>`);
+    if (u.hasClaudeAi) tools.push(`<span style="background:rgba(255,167,38,0.12);color:#ffa726;border-radius:4px;padding:2px 7px;font-size:0.7rem;font-weight:600">Claude.ai</span>`);
     h += `<td style="padding:4px 6px 4px 12px;text-align:right;font-size:0.85rem;font-weight:700;color:#fff">${u.events ? fmt(u.events) : '-'}</td>`;
     h += `<td style="padding:4px 12px"><div style="display:flex;gap:4px;flex-wrap:wrap">${tools.join('')}</div></td>`;
     h += `</tr>`;
   });
   h += `</table>`;
   document.getElementById('wk-heatmap').innerHTML = h;
+
+  // ── Inactive licensed members ──────────────────────────────────────────────
+  const allLicensed = new Set();
+  if (typeof members !== 'undefined') {
+    members.forEach(m => {
+      if (m.email && _isReal(m.email) && _inScope(m.email)) allLicensed.add(m.email);
+    });
+  }
+  // Also pull from CLAUDE_AI_USERS in case some licensed users are only there
+  Object.keys(claudeAiUsers).forEach(email => {
+    if (_isReal(email) && _inScope(email)) allLicensed.add(email);
+  });
+
+  const inactiveUsers = [...allLicensed].filter(e => !usersSet.has(e)).sort();
+  const inactiveCountEl = document.getElementById('wk-inactive-count');
+  const inactiveListEl  = document.getElementById('wk-inactive-list');
+  if (inactiveCountEl) inactiveCountEl.textContent = inactiveUsers.length;
+  if (inactiveListEl) {
+    inactiveListEl.innerHTML = inactiveUsers.length === 0
+      ? `<span style="color:var(--muted)">🎉 All licensed members were active this week!</span>`
+      : inactiveUsers.map(e => {
+          const name = nameFromEmail(e);
+          const dept = getDept(e);
+          return `<span title="${e} · ${dept}" style="background:rgba(244,67,54,0.08);border:1px solid rgba(244,67,54,0.28);border-radius:6px;padding:5px 12px;font-size:0.78rem;color:#ff6b6b;cursor:default">
+            ${name}
+          </span>`;
+        }).join('');
+  }
 }
 // =======================================================
 
