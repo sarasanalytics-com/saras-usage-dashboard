@@ -1713,8 +1713,7 @@ function renderOverviewAlerts() {
   const modelOverage  = modelMtd !== null ? modelMtd - modelBudget : null;
   const modelOveragePct = modelOverage !== null && modelBudget > 0 ? Math.round(modelOverage / modelBudget * 100) : null;
 
-  // ── Truly inactive seats: zero activity across ALL tools ──────────────────
-  // A member is considered active if they used ANY of: Claude.ai, Claude Code, Cursor
+  // ── Truly inactive seats: zero activity across Claude.ai AND Claude Code ──
   const activeEmails = new Set();
 
   // 1. Claude.ai — any chat this month
@@ -1725,14 +1724,7 @@ function renderOverviewAlerts() {
   const licensedMembers = typeof members !== 'undefined' ? members : [];
   licensedMembers.forEach(m => { if (m.email && m.lines > 0) activeEmails.add(m.email); });
 
-  // 3. Cursor — any events this month
-  if (typeof ADOPTION_DAYS !== 'undefined' && typeof MONTH_PREFIX !== 'undefined') {
-    ADOPTION_DAYS.filter(d => d.date >= MONTH_PREFIX + '-01').forEach(day => {
-      Object.keys(day.c || {}).filter(e => e.endsWith('@sarasanalytics.com')).forEach(e => activeEmails.add(e));
-    });
-  }
-
-  // Only flag members with zero activity across every tool
+  // Only flag members with zero activity in both Claude.ai and Claude Code
   const inactiveSeats = licensedMembers.filter(m => m.email && !activeEmails.has(m.email));
   const inactiveCnt   = inactiveSeats.length;
 
@@ -1793,7 +1785,7 @@ function renderOverviewAlerts() {
       `<span style="background:rgba(255,167,38,0.12);border-radius:4px;padding:2px 8px;font-size:0.78rem;color:#ffa726">${m.name}</span>`
     ).join(' ');
     alerts.push(row(
-      `<span style="color:#ffa726">⚠️ Unused Licenses:</span> <strong style="color:#fff">${inactiveCnt} licensed members</strong> have zero activity across Claude.ai, Claude Code, and Cursor this month.
+      `<span style="color:#ffa726">⚠️ Unused Licenses:</span> <strong style="color:#fff">${inactiveCnt} licensed members</strong> have zero activity across Claude.ai and Claude Code this month.
        <a href="#" onclick="document.getElementById('${listId}').style.display=document.getElementById('${listId}').style.display==='none'?'block':'none';return false;" style="color:#6c63ff;font-size:0.8rem;margin-left:8px">▼ Show members</a>
        <div id="${listId}" style="display:none;margin-top:8px;line-height:2">${names}</div>`
     ));
