@@ -4448,7 +4448,7 @@ function renderWeeklyTab() {
 
     // Active days this week (Cursor only, Mon–Fri): colour-coded green ≥4, orange 2–3, grey 1, dim 0
     const wkCol  = wkActiveDays >= 4 ? '#4caf50' : wkActiveDays >= 2 ? '#ffa726' : wkActiveDays === 1 ? '#8b92b8' : 'rgba(255,255,255,0.25)';
-    const wkTip  = `${label} · Active on Cursor ${wkActiveDays} out of ${d7wk.length} weekdays this week`;
+    const wkTip  = `${label} · Active on any AI tool (Cursor / Windsurf / Claude Code / ClickUp) on ${wkActiveDays} of ${d7wk.length} weekdays this week`;
     h += `<td style="padding:4px 8px;text-align:center;font-weight:700;color:${wkCol}" title="${wkTip}">
       <div style="font-size:0.92rem;line-height:1.1">${wkActiveDays}/${d7wk.length}</div>
       <div style="font-size:0.62rem;color:var(--muted);font-weight:400">days</div>
@@ -4457,7 +4457,7 @@ function renderWeeklyTab() {
     // Active days this month — Cursor MTD: colour-coded green ≥15, orange ≥8, grey ≥1
     const moCol  = moActiveDays >= 15 ? '#4caf50' : moActiveDays >= 8 ? '#ffa726' : moActiveDays >= 1 ? '#8b92b8' : 'rgba(255,255,255,0.25)';
     const moDays = monthDaysAll.length;
-    const moTip  = `${label} · Used Cursor on ${moActiveDays} of ${moDays} days in ${DATA.monthLabel}`;
+    const moTip  = `${label} · Active on any AI tool on ${moActiveDays} of ${moDays} days in ${DATA.monthLabel}`;
     h += `<td style="padding:4px 8px;text-align:center;font-weight:700;color:${moCol}" title="${moTip}">
       <div style="font-size:0.92rem;line-height:1.1">${moActiveDays > 0 ? moActiveDays + '/' + moDays : '–'}</div>
       <div style="font-size:0.62rem;color:var(--muted);font-weight:400">days</div>
