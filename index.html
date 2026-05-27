@@ -533,7 +533,6 @@
         <div class="section-sub" id="wk-heatmap-sub">Top active employees this week · hover any cell for details</div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <div id="wk-heatmap-legend" style="display:flex;gap:12px;align-items:center;font-size:0.73rem;color:var(--muted);flex-wrap:wrap"></div>
         <input class="search-input" placeholder="Search employee…" style="width:190px;margin-left:auto"
           oninput="filterWeekSearch(this.value)">
       </div>
@@ -4358,28 +4357,6 @@ function renderWeeklyTab() {
     ? userStats.filter(u => (nameFromEmail(u.email)+' '+u.email).toLowerCase().includes(wkSearch))
     : userStats;
   set('wk-heatmap-sub', `${heatUsers.length} active employees · Mon–Fri only shown · hover a cell to see exact Cursor request count`);
-  document.getElementById('wk-heatmap-legend').innerHTML = `
-    <div style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-right:6px">Day Cell Color =</div>
-    <div style="display:flex;align-items:center;gap:5px" title="No Cursor AI requests on this day">
-      <div style="width:14px;height:14px;border-radius:3px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1)"></div>
-      <span>No Cursor activity</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:5px" title="1 to 14 Cursor AI requests on this day">
-      <div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.32)"></div>
-      <span>Cursor · 1–14 requests</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:5px" title="15 to 49 Cursor AI requests on this day">
-      <div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.72)"></div>
-      <span>Cursor · 15–49 requests</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:5px" title="50 or more Cursor AI requests on this day">
-      <div style="width:14px;height:14px;border-radius:3px;background:#6c63ff"></div>
-      <span>Cursor · 50+ requests</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:5px" title="User had a Windsurf session on this day (no Cursor that day)">
-      <div style="width:14px;height:14px;border-radius:3px;background:rgba(0,212,170,0.6)"></div>
-      <span>Windsurf active (no Cursor)</span>
-    </div>`;
 
   let h = `<table style="border-collapse:separate;border-spacing:3px;min-width:max-content">`;
   h += `<tr>
