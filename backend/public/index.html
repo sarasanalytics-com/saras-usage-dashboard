@@ -1287,6 +1287,17 @@
 const MICROSOFT_CLIENT_ID = '8aa784a6-c466-4749-88a8-bc4579d6c143';
 const BACKEND_URL = 'https://saras-usage-dashboard.onrender.com';
 
+// EARLY CHECK: Hide login immediately if user has cached auth (prevent flash)
+(function() {
+  if (localStorage.getItem('dashboard-auth') === 'true') {
+    const loginContainer = document.getElementById('login-container');
+    if (loginContainer) {
+      loginContainer.style.display = 'none';
+      document.body.style.overflow = 'auto';
+    }
+  }
+})();
+
 async function handleMicrosoftSignIn() {
   const errorDiv = document.getElementById('auth-error');
   errorDiv.style.display = 'none';
