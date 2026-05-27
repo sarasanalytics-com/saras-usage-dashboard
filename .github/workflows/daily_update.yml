@@ -2,7 +2,8 @@ name: Daily Dashboard Update
 
 on:
   workflow_dispatch:   # manual "Run workflow" button in GitHub UI (backup use only)
-  # schedule disabled — daily update is handled by the local Claude Code scheduled task
+  schedule:
+    - cron: '30 1 * * *'  # 7:00 AM IST / 1:30 AM UTC daily
 
 jobs:
   update-clickup:
