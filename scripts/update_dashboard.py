@@ -24,6 +24,7 @@ HTML_PATH    = REPO_ROOT / "index.html"
 ADOPTION_PATH = REPO_ROOT / "data" / "saras-daily-adoption.json"
 COLLECTED_PATH = REPO_ROOT / "data" / "daily_collected.json"
 CLAUDE_STATS_PATH = REPO_ROOT / "data" / "claude_ai_stats.json"
+API_AGENTS_PATH   = REPO_ROOT / "data" / "api_agents_stats.json"
 
 
 def log(msg):
@@ -36,6 +37,15 @@ with COLLECTED_PATH.open(encoding="utf-8") as f:
 
 with CLAUDE_STATS_PATH.open(encoding="utf-8") as f:
     cc = json.load(f)
+
+# Load API agents stats (may not exist on first run)
+api_agents = {}
+if API_AGENTS_PATH.exists():
+    try:
+        with API_AGENTS_PATH.open(encoding="utf-8") as f:
+            api_agents = json.load(f)
+    except Exception as e:
+        log(f"  [WARN] Could not load api_agents_stats.json: {e}")
 
 with ADOPTION_PATH.open(encoding="utf-8") as f:
     adoption = json.load(f)
@@ -516,6 +526,18 @@ new_adoption_line = f"const ADOPTION_DAYS={adoption_array_js};"
 html = re.sub(r"const ADOPTION_DAYS=\[.*?\];", new_adoption_line, html, count=1, flags=re.DOTALL)
 log(f"  ADOPTION_DAYS: {len(last30)} days")
 
+
+# ── Update API_AGENTS_DATA in HTML ───────────────────────────────────────────
+if api_agents:
+    agents_json = json.dumps(api_agents, separators=(",", ":"))
+    new_agents_line = f"const API_AGENTS_DATA={agents_json};"
+    if re.search(r"const API_AGENTS_DATA=\{.*?\};", html, flags=re.DOTALL):
+        html = re.sub(r"const API_AGENTS_DATA=\{.*?\};", new_agents_line, html, count=1, flags=re.DOTALL)
+        log(f"  API_AGENTS_DATA: {len(api_agents.get('agents', []))} agents, MTD=${api_agents.get('totalApiSpendMtd', 0):.2f}")
+    else:
+        log("  [WARN] API_AGENTS_DATA placeholder not found in HTML")
+else:
+    log("  API_AGENTS_DATA: no data file yet — placeholder kept as-is")
 
 # ── Inject OAuth credentials ──────────────────────────────────────────────────
 microsoft_client_id = os.getenv('MICROSOFT_CLIENT_ID', '__MICROSOFT_CLIENT_ID__')

@@ -247,6 +247,7 @@
 <div class="tabs">
   <div class="tab active" onclick="switchTab('overview',this)">📊 Executive Summary</div>
   <div class="tab" onclick="switchTab('spends',this)">💰 Spends</div>
+  <div class="tab" onclick="switchTab('agents',this)">🤖 AI Agents</div>
   <div class="tab" onclick="switchTab('daily',this)">📅 Daily</div>
   <div class="tab" onclick="switchTab('weekly',this)">📅 Weekly</div>
   <div class="tab" onclick="switchTab('trends',this)">📈 Monthly Trends</div>
@@ -473,6 +474,82 @@
       <div class="section-title" style="margin-bottom:12px">All-Tool Adoption at a Glance</div>
       <div style="height:220px"><canvas id="ovAllToolChart"></canvas></div>
     </div>
+  </div>
+</div>
+
+<!-- AI AGENTS -->
+<div class="page" id="tab-agents">
+  <!-- Hero -->
+  <div style="text-align:center;padding:28px 0 32px;border-bottom:1px solid var(--border);margin-bottom:28px">
+    <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">Platform API · AI Agent Costs</div>
+    <div style="font-size:2.4rem;font-weight:800;color:#ce93d8;line-height:1.2" id="ag-hero-spend">$0.00</div>
+    <div style="font-size:1rem;color:var(--muted);margin-top:8px" id="ag-hero-sub">platform API spend this month</div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid" style="margin-bottom:28px">
+    <div class="kpi c1"><div class="kpi-label">API Spend MTD</div><div class="kpi-value" id="ag-kpi-mtd">$0</div><div class="kpi-sub" id="ag-kpi-mtd-sub">this month</div></div>
+    <div class="kpi c3"><div class="kpi-label">Daily Average</div><div class="kpi-value" id="ag-kpi-daily">$0</div><div class="kpi-sub">per day MTD</div></div>
+    <div class="kpi c2"><div class="kpi-label">Projected Month</div><div class="kpi-value" id="ag-kpi-proj-mo">$0</div><div class="kpi-sub" id="ag-kpi-proj-mo-sub">full month estimate</div></div>
+    <div class="kpi c4"><div class="kpi-label">Projected Yearly</div><div class="kpi-value" id="ag-kpi-proj-yr">$0</div><div class="kpi-sub">annualised run rate</div></div>
+    <div class="kpi c5"><div class="kpi-label">Active Agents</div><div class="kpi-value" id="ag-kpi-agents">0</div><div class="kpi-sub">keys with spend this month</div></div>
+  </div>
+
+  <!-- Agent Summary Table -->
+  <div class="section-divider"><span>Agent Breakdown <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="card-full">
+    <table class="data-table">
+      <thead id="ag-agent-thead"><tr>
+        <th>Agent / API Key</th>
+        <th style="text-align:right">Cost MTD</th>
+        <th style="text-align:right">Daily Avg</th>
+        <th style="text-align:right">Input Tokens</th>
+        <th style="text-align:right">Output Tokens</th>
+        <th>Top Model</th>
+        <th style="text-align:right">% of Total</th>
+      </tr></thead>
+      <tbody id="ag-agent-table"></tbody>
+    </table>
+  </div>
+
+  <!-- Daily Spend Chart -->
+  <div class="section-divider" style="margin-top:32px"><span>Daily Spend Trend <span class="timeframe-badge tbadge-7d">Last 30 Days</span></span></div>
+  <div class="card-full">
+    <div style="height:280px;position:relative">
+      <canvas id="ag-daily-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Weekly + Model Donut -->
+  <div class="section-divider" style="margin-top:32px"><span>Weekly &amp; Model Summary</span></div>
+  <div class="two-col">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:14px">This Week vs Last Week</div>
+      <div style="height:240px;position:relative">
+        <canvas id="ag-weekly-chart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title" style="margin-bottom:6px">Model Distribution</div>
+      <div class="section-sub" style="margin-bottom:14px">MTD spend across all agents</div>
+      <div style="height:240px;position:relative;display:flex;align-items:center;justify-content:center">
+        <canvas id="ag-model-donut"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Model Breakdown Table -->
+  <div class="section-divider" style="margin-top:32px"><span>Model Spend Detail <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="card-full">
+    <table class="data-table">
+      <thead><tr>
+        <th>Model</th>
+        <th style="text-align:right">Cost MTD</th>
+        <th style="text-align:right">% of API Total</th>
+        <th>Used by Agents</th>
+      </tr></thead>
+      <tbody id="ag-model-table"></tbody>
+    </table>
   </div>
 </div>
 
@@ -999,8 +1076,28 @@
       </div>
     </div>
 
+    <!-- Anthropic API Agents Card -->
+    <div style="background:var(--surface2);border-radius:8px;padding:16px;border-left:3px solid #ce93d8;min-width:0">
+      <div style="font-size:0.85rem;font-weight:700;color:var(--muted);margin-bottom:8px">ANTHROPIC API (AGENTS)</div>
+      <!-- Hero: MTD cost -->
+      <div style="font-size:1.8rem;font-weight:700;color:#ce93d8;margin-bottom:2px" id="spend-api-mtd-hero">-</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:12px">Platform API · 10 agent keys</div>
+      <!-- Secondary: projections -->
+      <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:10px">
+        <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px">PROJECTIONS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.8rem">
+          <div><span style="color:var(--muted)">Daily Avg:</span> <span id="spend-api-daily" style="color:#fff;font-weight:700">-</span></div>
+          <div><span style="color:var(--muted)">Proj. Year:</span> <span id="spend-api-yearly" style="color:#fff;font-weight:700">-</span></div>
+        </div>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:4px" id="spend-api-date">-</div>
+        <div style="margin-top:8px">
+          <span onclick="switchTab('agents',document.querySelector('.tab[onclick*=agents]'))" style="font-size:0.72rem;color:#ce93d8;cursor:pointer;text-decoration:underline">View AI Agents tab →</span>
+        </div>
+      </div>
+    </div>
+
   </div>
-  
+
   <!-- Model Breakdown Section -->
   <div class="section-divider"><span>🤖 Model Usage <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
   <div class="card-full">
@@ -1491,6 +1588,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderOverviewAlerts();
   updateStickyTop();
   renderModelUsage();
+  try { renderAgentsTab(); } catch(e) { console.warn('renderAgentsTab init failed:', e); }
   try { renderDailyTab();  } catch(e) { console.warn('renderDailyTab init failed:', e); }
   try { renderWeeklyTab(); } catch(e) { console.warn('renderWeeklyTab init failed:', e); }
 });
@@ -1689,6 +1787,21 @@ function populateSpendsTab() {
     document.getElementById('spend-windsurf-mtd').textContent   = '$' + spendData.windsurf.mtd.toFixed(2);
     document.getElementById('spend-windsurf-daily').textContent = '$' + spendData.windsurf.daily.toFixed(2);
     document.getElementById('spend-windsurf-date').textContent  = updatedDate ? 'Updated ' + updatedDate : '';
+
+    // Populate API Agents card
+    if (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.asOf) {
+      const ag = API_AGENTS_DATA;
+      const agMtd     = (ag.totalApiSpendMtd || 0);
+      const agDaily   = (ag.dailyAvg || 0);
+      const agYearly  = (ag.projectedYearly || 0);
+      const fmtA = v => '$' + (v||0).toFixed(2);
+      const fmtAY = v => '$' + Math.round(v||0).toLocaleString();
+      const el = id => document.getElementById(id);
+      if (el('spend-api-mtd-hero'))  el('spend-api-mtd-hero').textContent  = fmtA(agMtd);
+      if (el('spend-api-daily'))     el('spend-api-daily').textContent     = fmtA(agDaily);
+      if (el('spend-api-yearly'))    el('spend-api-yearly').textContent    = fmtAY(agYearly);
+      if (el('spend-api-date'))      el('spend-api-date').textContent      = ag.asOf ? `Through ${ag.asOf}` : '';
+    }
 
   // Populate model cost table
   const tbody = document.getElementById('model-cost-body');
@@ -2213,6 +2326,9 @@ const TEAM_TOOLS = {
   'CEO Office':          ['Claude.ai'],
 };
 // All teams use ClickUp
+
+// ── API Agents spend data — injected daily by update_dashboard.py ─────────────
+const API_AGENTS_DATA={asOf:"",monthStart:"",totalApiSpendMtd:0,dailyAvg:0,projectedMonthly:0,projectedYearly:0,daysElapsed:0,daysInMonth:31,globalModelCost:{},agents:[]};
 
 const DATA = {
   asOf: 'May 27, 2026',
@@ -2789,6 +2905,7 @@ function switchTab(id, el) {
     _trendsInited = true;
     setTimeout(initTrendsTab, 50);
   }
+  if (id === 'agents') { try { renderAgentsTab(); } catch(e) { console.warn('renderAgentsTab:', e); } }
   if (id === 'daily')  { try { renderDailyTab();  } catch(e) { console.warn('renderDailyTab:', e); } }
   if (id === 'weekly') { try { renderWeeklyTab(); } catch(e) { console.warn('renderWeeklyTab:', e); } }
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -4213,6 +4330,291 @@ function renderAdoptTable(uTotals,uDays){
 function sortAdoptTable(col) { if(adoptSortCol===col)adoptSortDir*=-1;else{adoptSortCol=col;adoptSortDir=-1;} renderAdoptTable(adoptUTotals,adoptUDays); }
 function filterAdoptSearch(val) { adoptSearch = val.toLowerCase(); renderAdoptHeatmap(); renderAdoptTable(adoptUTotals, adoptUDays); }
 
+// ==================== AI AGENTS TAB ====================
+let agSortCol = 'cost', agSortDir = -1;
+let _agDailyChart = null, _agWeeklyChart = null, _agDonutChart = null;
+
+function sortAgentTable(col) {
+  if (agSortCol === col) agSortDir *= -1;
+  else { agSortCol = col; agSortDir = -1; }
+  renderAgentsTab();
+}
+
+function renderAgentsTab() {
+  if (typeof API_AGENTS_DATA === 'undefined') return;
+  const D = API_AGENTS_DATA;
+  const agents = D.agents || [];
+  const daysElapsed = Math.max(1, D.daysElapsed || 1);
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+  const fmtUSD  = v => '$' + (v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtTok  = n => n >= 1e6 ? (n/1e6).toFixed(1)+'M' : n >= 1000 ? Math.round(n/1000)+'K' : String(n||0);
+  const cleanMdl = m => {
+    const m4 = m.match(/claude-(opus|sonnet|haiku)-4-(\d+)/i);
+    if (m4) return `Claude ${m4[1][0].toUpperCase()+m4[1].slice(1)} 4.${m4[2]}`;
+    if (m.includes('claude-3-5-sonnet')) return 'Claude 3.5 Sonnet';
+    if (m.includes('claude-3-5-haiku'))  return 'Claude 3.5 Haiku';
+    if (m.includes('claude-3-opus'))     return 'Claude 3 Opus';
+    if (m.includes('claude-3-haiku'))    return 'Claude 3 Haiku';
+    return m.replace(/-\d{8,}$/,'').replace(/-/g,' ').replace(/\b\w/g,l=>l.toUpperCase());
+  };
+  const MONTHS_S = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtDate  = ds => { const dt = new Date(ds+'T00:00:00Z'); return `${MONTHS_S[dt.getUTCMonth()]} ${dt.getUTCDate()}`; };
+
+  // ── KPIs ──────────────────────────────────────────────────────────────────────
+  const totalMtd    = D.totalApiSpendMtd || 0;
+  const dailyAvg    = D.dailyAvg || 0;
+  const projMo      = D.projectedMonthly || 0;
+  const projYr      = D.projectedYearly  || 0;
+  const activeCount = agents.filter(a => (a.costMtd||0) > 0).length;
+
+  set('ag-hero-spend',    fmtUSD(totalMtd));
+  set('ag-hero-sub',      `platform API spend MTD · ${agents.length} API keys · as of ${D.asOf||'–'}`);
+  set('ag-kpi-mtd',       fmtUSD(totalMtd));
+  set('ag-kpi-mtd-sub',   D.asOf ? `through ${D.asOf}` : 'this month');
+  set('ag-kpi-daily',     fmtUSD(dailyAvg));
+  set('ag-kpi-proj-mo',   fmtUSD(projMo));
+  set('ag-kpi-proj-mo-sub', `${D.daysElapsed||0}/${D.daysInMonth||30} days elapsed`);
+  set('ag-kpi-proj-yr',   fmtUSD(projYr));
+  set('ag-kpi-agents',    activeCount);
+
+  // ── Sortable thead ────────────────────────────────────────────────────────────
+  const th = (label, col, align) => _thSort(label, col, agSortCol, agSortDir, 'sortAgentTable', align);
+  const theadEl = document.getElementById('ag-agent-thead');
+  if (theadEl) theadEl.innerHTML = `<tr>
+    ${th('Agent / API Key','name','')}
+    ${th('Cost MTD','cost','right')}
+    ${th('Daily Avg','daily','right')}
+    ${th('Input Tokens','input','right')}
+    ${th('Output Tokens','output','right')}
+    <th>Top Model</th>
+    ${th('% of Total','pct','right')}
+  </tr>`;
+
+  // ── Build row objects ─────────────────────────────────────────────────────────
+  const rows = agents.map(a => ({
+    name:       a.name || a.id,
+    status:     a.status || 'active',
+    cost:       a.costMtd || 0,
+    daily:      (a.costMtd || 0) / daysElapsed,
+    input:      (a.usage && a.usage.input_tokens)  || 0,
+    output:     (a.usage && a.usage.output_tokens) || 0,
+    topModel:   Object.keys(a.modelCosts||{})[0] || '',
+    pct:        totalMtd > 0 ? ((a.costMtd||0) / totalMtd * 100) : 0,
+    modelCosts: a.modelCosts || {},
+    dailyCosts: a.dailyCosts || {},
+  }));
+
+  rows.sort((a, b) => {
+    let va, vb;
+    switch (agSortCol) {
+      case 'name':   va = a.name.toLowerCase(); vb = b.name.toLowerCase(); break;
+      case 'cost':   va = a.cost;   vb = b.cost;   break;
+      case 'daily':  va = a.daily;  vb = b.daily;  break;
+      case 'input':  va = a.input;  vb = b.input;  break;
+      case 'output': va = a.output; vb = b.output; break;
+      case 'pct':    va = a.pct;    vb = b.pct;    break;
+      default:       va = a.cost;   vb = b.cost;
+    }
+    if (va < vb) return agSortDir;
+    if (va > vb) return -agSortDir;
+    return 0;
+  });
+
+  // ── Agent summary table ───────────────────────────────────────────────────────
+  const tbody = document.getElementById('ag-agent-table');
+  if (tbody) {
+    if (rows.length === 0 || totalMtd === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:24px">No API agent data yet — pending first workflow run with ANTHROPIC_ADMIN_KEY</td></tr>';
+    } else {
+      tbody.innerHTML = rows.map(r => {
+        const dot       = r.status === 'inactive' ? '🔴' : '🟢';
+        const topShort  = r.topModel ? cleanMdl(r.topModel) : '–';
+        const barW      = Math.min(100, Math.round(r.pct));
+        return `<tr>
+          <td style="font-weight:600">${dot} ${r.name}</td>
+          <td style="text-align:right;color:#ce93d8;font-weight:700">${r.cost > 0 ? fmtUSD(r.cost) : '–'}</td>
+          <td style="text-align:right;color:var(--muted);font-size:0.85rem">${r.daily > 0.001 ? fmtUSD(r.daily) : '–'}</td>
+          <td style="text-align:right;font-size:0.82rem;color:var(--muted)">${fmtTok(r.input)}</td>
+          <td style="text-align:right;font-size:0.82rem;color:var(--muted)">${fmtTok(r.output)}</td>
+          <td style="font-size:0.78rem;color:var(--muted)">${topShort}</td>
+          <td style="text-align:right">
+            <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+              <div style="background:rgba(206,147,216,0.12);border-radius:3px;height:6px;width:60px">
+                <div style="background:#ce93d8;height:6px;border-radius:3px;width:${barW}%"></div>
+              </div>
+              <span style="color:var(--muted);font-size:0.8rem;min-width:36px;text-align:right">${r.pct.toFixed(1)}%</span>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
+  // ── Model breakdown table ─────────────────────────────────────────────────────
+  const globalModel = D.globalModelCost || {};
+  const modelTotal  = Object.values(globalModel).reduce((s,v)=>s+v,0);
+  const modelAgentCount = {};
+  agents.forEach(a => Object.keys(a.modelCosts||{}).forEach(m => {
+    modelAgentCount[m] = (modelAgentCount[m]||0) + 1;
+  }));
+
+  const modelTbody = document.getElementById('ag-model-table');
+  if (modelTbody) {
+    const mRows = Object.entries(globalModel).filter(([,c])=>c>0).sort(([,a],[,b])=>b-a);
+    if (mRows.length === 0) {
+      modelTbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:24px">No model cost data yet</td></tr>';
+    } else {
+      modelTbody.innerHTML = mRows.map(([mdl, cost]) => {
+        const pct = modelTotal > 0 ? (cost/modelTotal*100).toFixed(1) : '0.0';
+        const cnt = modelAgentCount[mdl] || 0;
+        return `<tr>
+          <td style="font-weight:600">${cleanMdl(mdl)}</td>
+          <td style="text-align:right;color:#ce93d8;font-weight:700">${fmtUSD(cost)}</td>
+          <td style="text-align:right">
+            <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
+              <div style="background:rgba(206,147,216,0.12);border-radius:3px;height:6px;width:80px">
+                <div style="background:#ce93d8;height:6px;border-radius:3px;width:${parseFloat(pct)}%"></div>
+              </div>
+              <span style="color:var(--muted);font-size:0.8rem;min-width:40px;text-align:right">${pct}%</span>
+            </div>
+          </td>
+          <td style="font-size:0.78rem;color:var(--muted)">${cnt} agent${cnt!==1?'s':''}</td>
+        </tr>`;
+      }).join('');
+    }
+  }
+
+  // ── Charts ─────────────────────────────────────────────────────────────────────
+  _renderAgentDailyChart(rows);
+  _renderAgentWeeklyChart(rows);
+  _renderAgentModelDonut(globalModel);
+}
+
+// Agent colours palette (cycles through 10 distinct hues)
+const AG_COLORS = [
+  '#ce93d8','#80cbc4','#ffcc80','#90caf9','#ef9a9a',
+  '#a5d6a7','#f48fb1','#ffe082','#80deea','#b39ddb'
+];
+
+function _renderAgentDailyChart(rows) {
+  const el = document.getElementById('ag-daily-chart');
+  if (!el) return;
+  if (_agDailyChart) { _agDailyChart.destroy(); _agDailyChart = null; }
+
+  // Gather all unique dates across all agents (last 30 days)
+  const dateSet = new Set();
+  rows.forEach(r => Object.keys(r.dailyCosts).forEach(d => dateSet.add(d)));
+  const allDates = [...dateSet].sort().slice(-30);
+  if (allDates.length === 0) return;
+
+  // Only show agents with any spend in the window
+  const activeRows = rows.filter(r => allDates.some(d => (r.dailyCosts[d]||0) > 0));
+  if (activeRows.length === 0) return;
+
+  const datasets = activeRows.map((r, i) => ({
+    label:           r.name,
+    data:            allDates.map(d => parseFloat((r.dailyCosts[d]||0).toFixed(4))),
+    backgroundColor: AG_COLORS[i % AG_COLORS.length] + '99',
+    borderColor:     AG_COLORS[i % AG_COLORS.length],
+    borderWidth:     1,
+    stack:           'stack',
+  }));
+
+  _agDailyChart = new Chart(el, {
+    type: 'bar',
+    data: { labels: allDates.map(d => { const dt=new Date(d+'T00:00:00Z'); return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.getUTCMonth()]+' '+dt.getUTCDate(); }), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8b92b8', font: { size: 11 } } } },
+      scales: {
+        x: { stacked: true, ticks: { color: '#8b92b8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { stacked: true, ticks: { color: '#8b92b8', callback: v => '$'+v.toFixed(2) }, grid: { color: 'rgba(255,255,255,0.06)' } },
+      },
+    },
+  });
+}
+
+function _renderAgentWeeklyChart(rows) {
+  const el = document.getElementById('ag-weekly-chart');
+  if (!el) return;
+  if (_agWeeklyChart) { _agWeeklyChart.destroy(); _agWeeklyChart = null; }
+
+  // Compute this week (Mon–today) and last week (Mon–Sun)
+  const today = new Date(); today.setHours(0,0,0,0);
+  const dow   = today.getDay();   // 0=Sun
+  const dSinceMonday = dow === 0 ? 6 : dow - 1;
+  const thisMonday   = new Date(today); thisMonday.setDate(today.getDate() - dSinceMonday);
+
+  const inWeek = (ds, offsetWeeks) => {
+    const dt = new Date(ds+'T00:00:00Z');
+    dt.setUTCHours(12);
+    const wStart = new Date(thisMonday); wStart.setDate(thisMonday.getDate() - offsetWeeks*7);
+    const wEnd   = new Date(wStart); wEnd.setDate(wStart.getDate() + 7);
+    return dt >= wStart && dt < wEnd;
+  };
+
+  const activeRows = rows.filter(r => Object.keys(r.dailyCosts).length > 0);
+  if (activeRows.length === 0) return;
+
+  const labels   = activeRows.map(r => r.name.length > 14 ? r.name.slice(0,14)+'…' : r.name);
+  const thisWeek = activeRows.map(r => Object.entries(r.dailyCosts).filter(([d])=>inWeek(d,0)).reduce((s,[,v])=>s+v,0));
+  const lastWeek = activeRows.map(r => Object.entries(r.dailyCosts).filter(([d])=>inWeek(d,1)).reduce((s,[,v])=>s+v,0));
+
+  _agWeeklyChart = new Chart(el, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Last Week', data: lastWeek, backgroundColor: 'rgba(206,147,216,0.35)', borderColor: '#ce93d8', borderWidth: 1 },
+        { label: 'This Week', data: thisWeek, backgroundColor: 'rgba(206,147,216,0.75)', borderColor: '#ce93d8', borderWidth: 1 },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8b92b8', font: { size: 11 } } } },
+      scales: {
+        x: { ticks: { color: '#8b92b8', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#8b92b8', callback: v => '$'+v.toFixed(2) }, grid: { color: 'rgba(255,255,255,0.06)' } },
+      },
+    },
+  });
+}
+
+function _renderAgentModelDonut(globalModel) {
+  const el = document.getElementById('ag-model-donut');
+  if (!el) return;
+  if (_agDonutChart) { _agDonutChart.destroy(); _agDonutChart = null; }
+
+  const entries = Object.entries(globalModel).filter(([,c])=>c>0).sort(([,a],[,b])=>b-a);
+  if (entries.length === 0) return;
+
+  const cleanMdl = m => {
+    const m4 = m.match(/claude-(opus|sonnet|haiku)-4-(\d+)/i);
+    if (m4) return `Claude ${m4[1][0].toUpperCase()+m4[1].slice(1)} 4.${m4[2]}`;
+    if (m.includes('claude-3-5-sonnet')) return 'Claude 3.5 Sonnet';
+    if (m.includes('claude-3-5-haiku'))  return 'Claude 3.5 Haiku';
+    if (m.includes('claude-3-opus'))     return 'Claude 3 Opus';
+    if (m.includes('claude-3-haiku'))    return 'Claude 3 Haiku';
+    return m.replace(/-\d{8,}$/,'').replace(/-/g,' ').replace(/\b\w/g,l=>l.toUpperCase());
+  };
+
+  _agDonutChart = new Chart(el, {
+    type: 'doughnut',
+    data: {
+      labels:   entries.map(([m])=>cleanMdl(m)),
+      datasets: [{ data: entries.map(([,c])=>parseFloat(c.toFixed(4))), backgroundColor: AG_COLORS.slice(0, entries.length), borderWidth: 0 }],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#8b92b8', font: { size: 10 }, padding: 8 } },
+        tooltip: { callbacks: { label: ctx => `${ctx.label}: $${ctx.parsed.toFixed(4)}` } },
+      },
+    },
+  });
+}
+
 // ==================== DAILY TAB ====================
 let dailySortCol = 'cursor', dailySortDir = -1;
 function sortDailyTable(col) {
@@ -5452,6 +5854,7 @@ function renderModelUsage() {
 // ── Bootstrap tabs that don't need post-HTML elements ──────────────────────
 // tab-daily and tab-weekly divs appear BEFORE this <script> block,
 // so their DOM nodes already exist here — call synchronously.
+try { renderAgentsTab(); } catch(e) { console.error('[boot] renderAgentsTab:', e); }
 try { renderDailyTab();  } catch(e) { console.error('[boot] renderDailyTab:', e); }
 try { renderWeeklyTab(); } catch(e) { console.error('[boot] renderWeeklyTab:', e); }
 </script>
