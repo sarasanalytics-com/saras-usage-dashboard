@@ -1865,14 +1865,11 @@ function renderUserUsageTable() {
   const tbody = document.getElementById('userUsageTableBody');
   if (!tbody) return;
 
-  let userUsage = (typeof DATA !== 'undefined' && DATA.userUsage) ? DATA.userUsage : {};
+  const userUsage = (typeof DATA !== 'undefined' && DATA.userUsage) ? DATA.userUsage : {};
 
-  // Generate sample data if empty (based on members array)
-  if (Object.keys(userUsage).length === 0 && typeof members !== 'undefined' && members.length > 0) {
-    userUsage = {};
-    members.forEach(m => {
-      userUsage[m.email] = Math.floor(Math.random() * 500000) + 50000;
-    });
+  if (Object.keys(userUsage).length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--muted)">No per-user token data available yet — pending next data sync</td></tr>';
+    return;
   }
 
   const rows = Object.entries(userUsage)
@@ -1897,19 +1894,12 @@ function renderUserCostTable() {
   const tbody = document.getElementById('userCostTableBody');
   if (!tbody) return;
 
-  let userCost = (typeof DATA !== 'undefined' && DATA.userCost) ? DATA.userCost : {};
-  let userTokens = (typeof DATA !== 'undefined' && DATA.userUsage) ? DATA.userUsage : {};
+  const userCost = (typeof DATA !== 'undefined' && DATA.userCost) ? DATA.userCost : {};
+  const userTokens = (typeof DATA !== 'undefined' && DATA.userUsage) ? DATA.userUsage : {};
 
-  // Generate sample cost data if empty
-  if (Object.keys(userCost).length === 0 && typeof members !== 'undefined' && members.length > 0) {
-    userCost = {};
-    userTokens = {};
-    members.forEach(m => {
-      const tokens = Math.floor(Math.random() * 500000) + 50000;
-      userTokens[m.email] = tokens;
-      // Rough pricing: $0.004 per 1K input tokens
-      userCost[m.email] = (tokens / 1000) * 0.004;
-    });
+  if (Object.keys(userCost).length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">No per-user cost data available yet — pending next data sync</td></tr>';
+    return;
   }
 
   const rows = Object.entries(userCost)
@@ -1989,27 +1979,17 @@ function renderTopUsersDailyChart() {
   const canvas = document.getElementById('top-users-daily-chart');
   if (!canvas) return;
 
-  let userDailyAvg = (typeof DATA !== 'undefined' && DATA.userDailyAvg) ? DATA.userDailyAvg : {};
+  const userDailyAvg = (typeof DATA !== 'undefined' && DATA.userDailyAvg) ? DATA.userDailyAvg : {};
 
-  // Generate sample data if empty
-  if (Object.keys(userDailyAvg).length === 0 && typeof members !== 'undefined' && members.length > 0) {
-    userDailyAvg = {};
-    members.forEach(m => {
-      // Daily avg is roughly monthly tokens / 30, with some random variation
-      const monthlyTokens = Math.floor(Math.random() * 500000) + 50000;
-      userDailyAvg[m.email] = Math.floor(monthlyTokens / 30);
-    });
+  if (Object.keys(userDailyAvg).length === 0) {
+    canvas.parentElement.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px">No daily average data available yet — pending next data sync</div>';
+    return;
   }
 
   const rows = Object.entries(userDailyAvg)
     .map(([email, avg]) => ({ email: email.split('@')[0], avg: avg || 0 }))
     .sort((a, b) => b.avg - a.avg)
     .slice(0, 10);
-
-  if (rows.length === 0) {
-    canvas.parentElement.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px">User data not yet available.</div>';
-    return;
-  }
 
   if (window.topUsersChartInstance) window.topUsersChartInstance.destroy();
 
@@ -2042,16 +2022,11 @@ function renderConversationTable() {
   const tbody = document.getElementById('conversationTableBody');
   if (!tbody) return;
 
-  let conversations = (typeof DATA !== 'undefined' && DATA.conversations) ? DATA.conversations : {};
+  const conversations = (typeof DATA !== 'undefined' && DATA.conversations) ? DATA.conversations : {};
 
-  // Generate sample conversation data if empty
-  if (Object.keys(conversations).length === 0 && typeof members !== 'undefined' && members.length > 0) {
-    conversations = {};
-    members.forEach(m => {
-      const count = Math.floor(Math.random() * 50) + 5;
-      const messages = Math.floor(Math.random() * 200) + 20;
-      conversations[m.email] = { count, messages };
-    });
+  if (Object.keys(conversations).length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">No conversation data available yet — pending next data sync</td></tr>';
+    return;
   }
 
   const rows = Object.entries(conversations)
