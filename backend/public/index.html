@@ -258,7 +258,7 @@
   <div class="tab" onclick="switchTab('clickup',this)">✅ ClickUp</div>
 </div>
 
-<div id="global-filter-bar" style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;width:100%;box-sizing:border-box;">
+<div id="global-filter-bar" style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;width:100%;box-sizing:border-box;position:sticky;top:160px;z-index:99;">
   <span style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-weight:600">View by:</span>
   <select id="gf-dept" class="dept-select" onchange="applyGlobalFilters()">
     <option value="all">All Departments</option>
@@ -1407,18 +1407,14 @@ window.addEventListener('load', () => {
   setTimeout(initStickyFilterBar, 200);
 });
 
-// ── Sticky Filter Bar: set top dynamically based on actual header+tabs height ──
+// ── Sticky Filter Bar: fine-tune top based on actual rendered heights ──────────
 function initStickyFilterBar() {
   const filterBar = document.getElementById('global-filter-bar');
   const header = document.querySelector('header');
   const tabs = document.querySelector('.tabs');
   if (!filterBar || !header || !tabs) return;
-
-  const stickyTop = header.offsetHeight + tabs.offsetHeight;
-  filterBar.style.position = 'sticky';
-  filterBar.style.top = stickyTop + 'px';
-  filterBar.style.zIndex = '99';
-  filterBar.style.width = '100%';
+  // Measure real heights and set exact top value
+  filterBar.style.top = (header.offsetHeight + tabs.offsetHeight) + 'px';
 }
 
 // ==================== UPDATE THESE TWO BLOCKS DAILY ====================
