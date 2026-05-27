@@ -497,13 +497,13 @@
   <div class="section-divider"><span>All Activity Yesterday</span></div>
   <div class="card-full">
     <table class="data-table">
-      <thead><tr id="dy-thead-row">
+      <thead id="dy-thead"><tr>
         <th>Employee</th>
         <th>Dept</th>
         <th>Manager</th>
         <th style="text-align:right">Cursor Requests</th>
-        <th style="text-align:right" id="dy-cc-th">CC Lines</th>
-        <th style="text-align:right" id="dy-ai-th">Claude.ai Chats</th>
+        <th style="text-align:right">CC Lines</th>
+        <th style="text-align:right">Claude.ai Chats (MTD)</th>
         <th style="text-align:center">Windsurf</th>
         <th style="text-align:center">ClickUp</th>
         <th>Active Tools</th>
@@ -4214,6 +4214,13 @@ function sortAdoptTable(col) { if(adoptSortCol===col)adoptSortDir*=-1;else{adopt
 function filterAdoptSearch(val) { adoptSearch = val.toLowerCase(); renderAdoptHeatmap(); renderAdoptTable(adoptUTotals, adoptUDays); }
 
 // ==================== DAILY TAB ====================
+let dailySortCol = 'cursor', dailySortDir = -1;
+function sortDailyTable(col) {
+  if (dailySortCol === col) dailySortDir *= -1;
+  else { dailySortCol = col; dailySortDir = -1; }
+  renderDailyTab();
+}
+
 function renderDailyTab() {
   const sortedDates = ADOPTION_DAYS.map(d => d.date).sort();
   if (!sortedDates.length) return;
@@ -4240,10 +4247,9 @@ function renderDailyTab() {
 
   set('dy-hero-date', fmtFull(yesterday));
 
-  // Only show active employees (in the current ALL_EMPLOYEES roster)
-  // This filters out ex-employees who still appear in ClickUp/Cursor data
+  // Active employees (roster) + global dept/manager filter
   const activeEmps = new Set((typeof ALL_EMPLOYEES !== 'undefined' ? ALL_EMPLOYEES : []).map(emp => emp.email));
-  const _isReal = e => activeEmps.has(e);
+  const _inScope = e => activeEmps.has(e) && inGFScope(e);
 
   // Day data for Cursor / Windsurf / ClickUp → "yesterday"
   const dayData  = ADOPTION_DAYS.find(d => d.date === yesterday) || {date:yesterday, c:{}, w:{}, cc:{}, cu:{}};
@@ -4257,19 +4263,23 @@ function renderDailyTab() {
 
   const claudeAiUsers = typeof CLAUDE_AI_USERS !== 'undefined' ? CLAUDE_AI_USERS : {};
 
-  // ── Collect all active users (yesterday + CC date) ────────────────────────
-  const usersSet = new Set();
-  Object.keys(cursorMap).forEach(e => { if (_isReal(e)) usersSet.add(e); });
-  Object.keys(wsMap).forEach(e     => { if (_isReal(e)) usersSet.add(e); });
-  Object.keys(cuMap).forEach(e     => { if (_isReal(e)) usersSet.add(e); });
-  Object.keys(ccMap).forEach(e     => { if ((ccMap[e]||0) > 0 && _isReal(e)) usersSet.add(e); });
+  // ── Build emp lookup ──────────────────────────────────────────────────────
+  const empLookup = {};
+  (typeof ALL_EMPLOYEES !== 'undefined' ? ALL_EMPLOYEES : []).forEach(emp => { empLookup[emp.email] = emp; });
 
-  // ── KPIs ──────────────────────────────────────────────────────────────────
-  const totalCursor = Object.entries(cursorMap).filter(([e])=>_isReal(e)).reduce((s,[,v])=>s+v,0);
-  const totalCC     = Object.entries(ccMap).filter(([e])=>_isReal(e)).reduce((s,[,v])=>s+v,0);
-  const wsCount     = Object.keys(wsMap).filter(e=>_isReal(e)).length;
-  const cuCount     = Object.keys(cuMap).filter(e=>_isReal(e)).length;
-  const aiMTDCount  = Object.keys(claudeAiUsers).filter(e=>_isReal(e)&&(claudeAiUsers[e]||0)>0).length;
+  // ── Collect all in-scope users (yesterday + CC date) ─────────────────────
+  const usersSet = new Set();
+  Object.keys(cursorMap).forEach(e => { if (_inScope(e)) usersSet.add(e); });
+  Object.keys(wsMap).forEach(e     => { if (_inScope(e)) usersSet.add(e); });
+  Object.keys(cuMap).forEach(e     => { if (_inScope(e)) usersSet.add(e); });
+  Object.keys(ccMap).forEach(e     => { if ((ccMap[e]||0) > 0 && _inScope(e)) usersSet.add(e); });
+
+  // ── KPIs (reflect current filter scope) ──────────────────────────────────
+  const totalCursor = Object.entries(cursorMap).filter(([e])=>_inScope(e)).reduce((s,[,v])=>s+v,0);
+  const totalCC     = Object.entries(ccMap).filter(([e])=>_inScope(e)).reduce((s,[,v])=>s+v,0);
+  const wsCount     = Object.keys(wsMap).filter(e=>_inScope(e)).length;
+  const cuCount     = Object.keys(cuMap).filter(e=>_inScope(e)).length;
+  const aiMTDCount  = Object.keys(claudeAiUsers).filter(e=>_inScope(e)&&(claudeAiUsers[e]||0)>0).length;
 
   set('dy-active-users', usersSet.size);
   set('dy-cursor-req',   fmt(totalCursor));
@@ -4286,36 +4296,64 @@ function renderDailyTab() {
   set('dy-cu-sub',      `users with ClickUp activity · ${fmtShort(yesterday)}`);
   set('dy-ai-sub',      aiAsOf  ? `MTD chats · as of ${fmtShort(aiAsOf)}` : 'MTD chats this month');
 
-  // Dynamic column headers
-  const ccTh = document.getElementById('dy-cc-th');
-  if (ccTh) ccTh.textContent = ccDate ? `CC Lines (${fmtShort(ccDate)})` : 'CC Lines';
-  const aiTh = document.getElementById('dy-ai-th');
-  if (aiTh) aiTh.textContent = aiAsOf ? `Claude.ai Chats (MTD · ${fmtShort(aiAsOf)})` : 'Claude.ai Chats (MTD)';
+  // ── Dynamic sortable thead ────────────────────────────────────────────────
+  const ccLabel = ccDate ? `CC Lines (${fmtShort(ccDate)})` : 'CC Lines';
+  const aiLabel = aiAsOf ? `Claude.ai Chats (MTD · ${fmtShort(aiAsOf)})` : 'Claude.ai Chats (MTD)';
+  const th = (label, col, align) => _thSort(label, col, dailySortCol, dailySortDir, 'sortDailyTable', align);
+  const theadEl = document.getElementById('dy-thead');
+  if (theadEl) theadEl.innerHTML = `<tr>
+    ${th('Employee','name','')}
+    ${th('Dept','dept','')}
+    ${th('Manager','mgr','')}
+    ${th('Cursor Requests','cursor','right')}
+    ${th(ccLabel,'cc','right')}
+    ${th(aiLabel,'ai','right')}
+    ${th('Windsurf','ws','center')}
+    ${th('ClickUp','cu','center')}
+    ${th('Active Tools','tools','')}
+  </tr>`;
 
-  // ── Build emp lookup ──────────────────────────────────────────────────────
-  const empLookup = {};
-  (typeof ALL_EMPLOYEES !== 'undefined' ? ALL_EMPLOYEES : []).forEach(emp => { empLookup[emp.email] = emp; });
+  // ── Build row objects (with name/dept/mgr for sorting) ────────────────────
+  const userRows = [...usersSet].map(email => {
+    const empInfo = empLookup[email] || {};
+    const dept    = empInfo.dept || getDept(email) || '–';
+    const mgr     = empInfo.reportingManager || '–';
+    const name    = nameFromEmail(email);
+    const cursor  = cursorMap[email] || 0;
+    const cc      = ccMap[email]     || 0;
+    const ws      = !!wsMap[email];
+    const cu      = !!cuMap[email];
+    const ai      = claudeAiUsers[email] || 0;
+    const tools   = (cursor>0?1:0) + (cc>0?1:0) + (ai>0?1:0) + (ws?1:0) + (cu?1:0);
+    return { email, name, dept, mgr, cursor, cc, ws, cu, ai, tools };
+  });
 
-  // ── Sort: Cursor desc, then CC, then active on other tools ────────────────
-  const userRows = [...usersSet].map(email => ({
-    email,
-    cursor: cursorMap[email] || 0,
-    cc:     ccMap[email]     || 0,
-    ws:     !!wsMap[email],
-    cu:     !!cuMap[email],
-    ai:     claudeAiUsers[email] || 0,
-  })).sort((a,b) => (b.cursor + b.cc/100) - (a.cursor + a.cc/100));
+  // ── Sort ──────────────────────────────────────────────────────────────────
+  userRows.sort((a, b) => {
+    let va, vb;
+    switch (dailySortCol) {
+      case 'name':   va = a.name.toLowerCase(); vb = b.name.toLowerCase(); break;
+      case 'dept':   va = a.dept.toLowerCase(); vb = b.dept.toLowerCase(); break;
+      case 'mgr':    va = a.mgr.toLowerCase();  vb = b.mgr.toLowerCase();  break;
+      case 'cursor': va = a.cursor; vb = b.cursor; break;
+      case 'cc':     va = a.cc;     vb = b.cc;     break;
+      case 'ai':     va = a.ai;     vb = b.ai;     break;
+      case 'ws':     va = a.ws?1:0; vb = b.ws?1:0; break;
+      case 'cu':     va = a.cu?1:0; vb = b.cu?1:0; break;
+      case 'tools':  va = a.tools;  vb = b.tools;  break;
+      default:       va = a.cursor; vb = b.cursor;
+    }
+    if (va < vb) return dailySortDir;
+    if (va > vb) return -dailySortDir;
+    return 0;
+  });
 
   // ── Table ─────────────────────────────────────────────────────────────────
   const tbody = document.getElementById('dy-table');
   if (!tbody) return;
 
   tbody.innerHTML = userRows.map(u => {
-    const empInfo  = empLookup[u.email] || {};
-    const dept     = empInfo.dept || getDept(u.email) || '–';
-    const mgr      = empInfo.reportingManager || '–';
-    const mgrShort = mgr !== '–' && mgr.length > 18 ? mgr.split(' ').slice(0,2).join(' ') : mgr;
-    const name     = nameFromEmail(u.email);
+    const mgrShort = u.mgr !== '–' && u.mgr.length > 18 ? u.mgr.split(' ').slice(0,2).join(' ') : u.mgr;
 
     const badges = [];
     if (u.cursor > 0) badges.push(`<span style="background:rgba(108,99,255,0.15);color:#a89cff;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">Cursor AI</span>`);
@@ -4325,9 +4363,9 @@ function renderDailyTab() {
     if (u.cu)         badges.push(`<span style="background:rgba(129,199,132,0.12);color:#81c784;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">ClickUp</span>`);
 
     return `<tr>
-      <td style="font-weight:600">${name}</td>
-      <td style="font-size:0.8rem;color:var(--muted)">${dept}</td>
-      <td style="font-size:0.8rem;color:var(--muted)" title="${mgr}">${mgrShort}</td>
+      <td style="font-weight:600">${u.name}</td>
+      <td style="font-size:0.8rem;color:var(--muted)">${u.dept}</td>
+      <td style="font-size:0.8rem;color:var(--muted)" title="${u.mgr}">${mgrShort}</td>
       <td style="text-align:right;font-weight:${u.cursor>0?'700':'400'};color:${u.cursor>0?'#a89cff':'var(--muted)'}">${u.cursor>0?fmt(u.cursor):'–'}</td>
       <td style="text-align:right;font-weight:${u.cc>0?'700':'400'};color:${u.cc>0?'#00d4aa':'var(--muted)'}">${u.cc>0?fmt(u.cc):'–'}</td>
       <td style="text-align:right;font-weight:${u.ai>0?'600':'400'};color:${u.ai>0?'#ffa726':'var(--muted)'}">${u.ai>0?u.ai:'–'}</td>
