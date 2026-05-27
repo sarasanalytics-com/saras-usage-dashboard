@@ -4236,7 +4236,10 @@ function renderDailyTab() {
 
   set('dy-hero-date', fmtFull(yesterday));
 
-  const _isReal = e => e.endsWith('@sarasanalytics.com') && !BOT_ACCOUNTS.has(e);
+  // Only show active employees (in the current ALL_EMPLOYEES roster)
+  // This filters out ex-employees who still appear in ClickUp/Cursor data
+  const activeEmps = new Set((typeof ALL_EMPLOYEES !== 'undefined' ? ALL_EMPLOYEES : []).map(emp => emp.email));
+  const _isReal = e => activeEmps.has(e);
 
   // Day data for Cursor / Windsurf / ClickUp → "yesterday"
   const dayData  = ADOPTION_DAYS.find(d => d.date === yesterday) || {date:yesterday, c:{}, w:{}, cc:{}, cu:{}};
@@ -4364,7 +4367,9 @@ function renderWeeklyTab() {
 
   // Collect all users active in this window (Cursor + Windsurf + Claude Code MTD + Claude.ai MTD)
   const usersSet = new Set();
-  const _isReal   = e => e.endsWith('@sarasanalytics.com') && !BOT_ACCOUNTS.has(e);
+  // Only active employees (ALL_EMPLOYEES roster) — filters out ex-employees still in tool data
+  const activeEmpsWk = new Set((typeof ALL_EMPLOYEES !== 'undefined' ? ALL_EMPLOYEES : []).map(emp => emp.email));
+  const _isReal   = e => activeEmpsWk.has(e);
   const _inScope  = e => _isReal(e) && inGFScope(e);   // applies dept + manager filters
   // Add users active on ANY tool this week (Cursor, Windsurf, Claude Code, ClickUp per-day data)
   days7.forEach(day => {
