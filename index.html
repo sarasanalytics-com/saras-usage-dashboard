@@ -21,7 +21,8 @@
   header h1 span { color: var(--accent); }
   .header-meta { font-size: 0.8rem; color: var(--muted); text-align: right; flex-shrink: 1; min-width: 0; overflow: hidden; }
   .header-meta strong { color: var(--accent2); }
-  .tabs { display: flex; gap: 4px; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; position: sticky; top: 113px; z-index: 98; width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: auto; scrollbar-width: none; } .tabs::-webkit-scrollbar { display: none; }
+  #nav-sticky-wrapper { position: sticky; top: 113px; z-index: 98; width: 100%; }
+  .tabs { display: flex; gap: 4px; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; width: 100%; max-width: 100%; box-sizing: border-box; overflow-x: auto; scrollbar-width: none; } .tabs::-webkit-scrollbar { display: none; }
   .tab { padding: 12px 22px; font-size: 0.85rem; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; transition: all 0.2s; white-space: nowrap; }
   .tab:hover { color: var(--text); }
   .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
@@ -242,6 +243,7 @@
   </div>
 </div>
 
+<div id="nav-sticky-wrapper">
 <div class="tabs">
   <div class="tab active" onclick="switchTab('overview',this)">📊 Executive Summary</div>
   <div class="tab" onclick="switchTab('spends',this)">💰 Spends</div>
@@ -258,7 +260,6 @@
   <div class="tab" onclick="switchTab('clickup',this)">✅ ClickUp</div>
 </div>
 
-<div id="filter-bar-spacer" style="display:none;"></div>
 <div id="global-filter-bar" style="background:var(--surface);border-bottom:1px solid var(--border);padding:10px 32px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;width:100%;box-sizing:border-box;">
   <span style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;font-weight:600">View by:</span>
   <select id="gf-dept" class="dept-select" onchange="applyGlobalFilters()">
@@ -271,6 +272,7 @@
   <button onclick="clearGlobalFilters()" id="gf-clear" style="display:none;padding:4px 12px;background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:0.75rem;cursor:pointer;">✕ Clear filter</button>
   <span style="font-size:0.68rem;color:rgba(139,146,184,0.4);margin-left:auto">Filter affects all tabs</span>
 </div>
+</div><!-- end #nav-sticky-wrapper -->
 
 <!-- API KEY CONFIG (Hidden) -->
 <div id="api-config" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface2);border-radius:8px;padding:24px;z-index:9999;width:400px;box-shadow:0 10px 40px rgba(0,0,0,0.5)">
@@ -1392,50 +1394,7 @@ document.head.appendChild(script);
 // Also check auth on page load
 window.addEventListener('load', () => {
   setTimeout(checkAuthentication, 100);
-  // Initialize sticky filter bar
-  setTimeout(initStickyFilterBar, 200);
 });
-
-// ── Sticky Filter Bar: position:fixed approach (works in all browsers) ─────────
-function initStickyFilterBar() {
-  const filterBar = document.getElementById('global-filter-bar');
-  const spacer    = document.getElementById('filter-bar-spacer');
-  const header    = document.querySelector('header');
-  const tabs      = document.querySelector('.tabs');
-  if (!filterBar || !spacer || !header || !tabs) return;
-
-  const stickyTop    = header.offsetHeight + tabs.offsetHeight;
-  const barHeight    = filterBar.offsetHeight;
-  // Store the natural page-top position of the bar before it goes fixed
-  const naturalTop   = filterBar.getBoundingClientRect().top + window.pageYOffset;
-
-  // Pre-size the spacer so layout doesn't jump when bar goes fixed
-  spacer.style.height = barHeight + 'px';
-
-  function onScroll() {
-    const scrolled = window.pageYOffset >= (naturalTop - stickyTop);
-    if (scrolled) {
-      // Go fixed — lock bar at top under header+tabs
-      filterBar.style.position = 'fixed';
-      filterBar.style.top      = stickyTop + 'px';
-      filterBar.style.left     = '0';
-      filterBar.style.width    = '100%';
-      filterBar.style.zIndex   = '99';
-      spacer.style.display     = 'block'; // fill the gap
-    } else {
-      // Back to normal flow
-      filterBar.style.position = '';
-      filterBar.style.top      = '';
-      filterBar.style.left     = '';
-      filterBar.style.width    = '';
-      filterBar.style.zIndex   = '';
-      spacer.style.display     = 'none';
-    }
-  }
-
-  window.addEventListener('scroll', onScroll, { passive: true });
-  onScroll(); // run once on load in case page is already scrolled
-}
 
 // ==================== UPDATE THESE TWO BLOCKS DAILY ====================
 
