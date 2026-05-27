@@ -149,7 +149,7 @@ try:
     params = {
         "starting_at":  START,
         "ending_at":    END,
-        "bucket_width": "1month",
+        "bucket_width": "1d",       # cost_report only supports 1d buckets
         "group_by":     ["model", "token_type"],
     }
     resp = org_get("cost_report", params)
@@ -180,7 +180,7 @@ except Exception as e:
         params = {
             "starting_at":  START,
             "ending_at":    END,
-            "bucket_width": "1month",
+            "bucket_width": "1d",
             "group_by":     ["description"],
         }
         resp = org_get("cost_report", params)
