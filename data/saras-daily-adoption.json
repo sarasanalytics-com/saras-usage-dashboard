@@ -1029,22 +1029,43 @@
     {
       "date": "2026-05-27",
       "cursor": {
+        "vishnu.priya@sarasanalytics.com": 15,
+        "kamal.bura@sarasanalytics.com": 1,
+        "saivarun.pathi@sarasanalytics.com": 6,
         "joseph.ubbarapu@sarasanalytics.com": 2,
         "purna.subhash@sarasanalytics.com": 3
       },
-      "windsurf": {},
-      "clickup": {
-        "maninder.singh@sarasanalytics.com": 1,
-        "john.joseph@sarasanalytics.com": 1,
-        "ali.khan@sarasanalytics.com": 1
+      "windsurf": {
+        "nithin.dornala@sarasanalytics.com": 1
       },
-      "claudeCodeDaily": {
-        "bheem@sarasanalytics.com": 1722,
-        "bhawna.kumari@sarasanalytics.com": 118,
-        "ganesh.kamineni@sarasanalytics.com": 3246,
-        "datta.abburi@sarasanalytics.com": 644,
-        "rudrasen.gouda@sarasanalytics.com": 62
-      }
+      "clickup": {
+        "gaurav.sharma@sarasanalytics.com": 1,
+        "tejaswini.surineni@sarasanalytics.com": 1,
+        "sivakotti.p@sarasanalytics.com": 1,
+        "kritik.kumar@sarasanalytics.com": 1,
+        "radhakrishnan.swaminathan@epicslope.partners": 1,
+        "maninder.singh@sarasanalytics.com": 1,
+        "sarath.buchi@sarasanalytics.com": 1,
+        "ashyam.zubair@sarasanalytics.com": 1,
+        "sri.priya@sarasanalytics.com": 1,
+        "monish.m@sarasanalytics.com": 1,
+        "nischala.agnihotri@sarasanalytics.com": 1,
+        "susmitha.peeka@sarasanalytics.com": 1,
+        "sahil.chhimpa@sarasanalytics.com": 1,
+        "naveena.kolli@sarasanalytics.com": 1,
+        "aerica.sethi@sarasanalytics.com": 1,
+        "ali.khan@sarasanalytics.com": 1,
+        "rakesh.varma@sarasanalytics.com": 1,
+        "ritvik.vemula@sarasanalytics.com": 1,
+        "smriti.ojha@sarasanalytics.com": 1,
+        "pravalika.g@sarasanalytics.com": 1,
+        "kamal.bura@sarasanalytics.com": 1,
+        "john.joseph@sarasanalytics.com": 1,
+        "sumeet.bose@sarasanalytics.com": 1,
+        "saikiran.kallem@sarasanalytics.com": 1,
+        "srinithi.reddy@sarasanalytics.com": 1
+      },
+      "claudeCodeDaily": {}
     }
   ],
   "claudeCodeMTD": {
@@ -1196,5 +1217,5 @@
     "nandhini.ilangovan@sarasanalytics.com": 0,
     "rohit.singh@sarasanalytics.com": 0
   },
-  "lastUpdated": "2026-05-27T02:30:41.667293+00:00"
+  "lastUpdated": "2026-05-27T04:51:29.423585+00:00"
 }
