@@ -529,10 +529,16 @@ log(f"  ADOPTION_DAYS: {len(last30)} days")
 
 # ── Update API_AGENTS_DATA in HTML ───────────────────────────────────────────
 if api_agents:
-    agents_json = json.dumps(api_agents, separators=(",", ":"))
+    # Use ensure_ascii=True (default) so all Unicode is \uXXXX, then use a lambda
+    # in re.sub to prevent those escape sequences from being re-interpreted.
+    agents_json = json.dumps(api_agents, separators=(",", ":"), ensure_ascii=True)
     new_agents_line = f"const API_AGENTS_DATA={agents_json};"
     if re.search(r"const API_AGENTS_DATA=\{.*?\};", html, flags=re.DOTALL):
-        html = re.sub(r"const API_AGENTS_DATA=\{.*?\};", new_agents_line, html, count=1, flags=re.DOTALL)
+        html = re.sub(
+            r"const API_AGENTS_DATA=\{.*?\};",
+            lambda _: new_agents_line,   # lambda avoids \uXXXX being treated as regex escapes
+            html, count=1, flags=re.DOTALL
+        )
         log(f"  API_AGENTS_DATA: {len(api_agents.get('agents', []))} agents, MTD=${api_agents.get('totalApiSpendMtd', 0):.2f}")
     else:
         log("  [WARN] API_AGENTS_DATA placeholder not found in HTML")
