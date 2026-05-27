@@ -213,11 +213,15 @@ BASE_COST_PARAMS = {
     "bucket_width": "1d",
 }
 
-# Strategy A: group by api_key_id + model
+# Valid group_by values (confirmed from API 400 error):
+#   product, model, context_window, inference_geo, speed,
+#   rbac_group_id, claude_project_id, cost_type, token_type
+# We try rbac_group_id (likely = workspace / API-key group) then claude_project_id.
 for strategy, group_by_list, id_field in [
-    ("api_key_id",    ["api_key_id"],           "api_key_id"),
-    ("workspace_id",  ["workspace_id"],          "workspace_id"),
-    ("api_key+model", ["api_key_id", "model"],   "api_key_id"),
+    ("rbac_group_id",          ["rbac_group_id"],                   "rbac_group_id"),
+    ("claude_project_id",      ["claude_project_id"],               "claude_project_id"),
+    ("rbac_group+model",       ["rbac_group_id", "model"],          "rbac_group_id"),
+    ("project+model",          ["claude_project_id", "model"],      "claude_project_id"),
 ]:
     try:
         params = {**BASE_COST_PARAMS, "group_by": group_by_list}
@@ -312,8 +316,8 @@ key_usage = defaultdict(lambda: {"input_tokens": 0, "output_tokens": 0, "cache_r
 model_token_totals = {}  # model → {input, output, cache}
 
 for group_by_list, id_field in [
-    (["api_key_id"], "api_key_id"),
-    (["workspace_id"], "workspace_id"),
+    (["rbac_group_id"],     "rbac_group_id"),
+    (["claude_project_id"], "claude_project_id"),
 ]:
     try:
         params = {
@@ -408,7 +412,7 @@ def _entity_name(eid):
     if eid in key_names:
         return key_names[eid]
     if eid in workspace_names:
-        return f"[WS] {workspace_names[eid]}"
+        return workspace_names[eid]
     if eid == "all_api_keys":
         return "All API Keys (aggregate)"
     return eid[:24] + ("…" if len(eid) > 24 else "")
