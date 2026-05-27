@@ -145,55 +145,44 @@ model_type_cost   = defaultdict(lambda: defaultdict(float))
 # model → token_type → total tokens (filled from usage_report below)
 model_type_tokens = defaultdict(lambda: defaultdict(float))
 
-try:
-    params = {
+# Use group_by=description (confirmed working; model+token_type returns 400)
+# Response fields: model, token_type, amount (in cents), description
+def _fetch_cost_report(group_by_val):
+    p = {
         "starting_at":  START,
         "ending_at":    END,
-        "bucket_width": "1d",       # cost_report only supports 1d buckets
-        "group_by":     ["model", "token_type"],
+        "bucket_width": "1d",
+        "group_by":     [group_by_val],
     }
-    resp = org_get("cost_report", params)
-
+    r = org_get("cost_report", p)
+    rows_found = 0
     while True:
-        for bucket in resp.get("data", []):
-            for item in bucket.get("results", []):
-                mdl   = item.get("model") or "unknown"
-                ttype = item.get("token_type") or item.get("description") or "unknown"
-                amt   = float(item.get("amount", 0) or 0) / 100.0   # cents → USD
-                model_type_cost[mdl][ttype] += amt
-
-        if not resp.get("has_more"):
-            break
-        params["page"] = resp.get("next_page")
-        resp = org_get("cost_report", params)
-        time.sleep(0.2)
-
-    total_cost = sum(c for tc in model_type_cost.values() for c in tc.values())
-    log(f"  ✓ Cost report: {len(model_type_cost)} models, total=${total_cost:.4f}")
-    for mdl, tc in sorted(model_type_cost.items(), key=lambda x: -sum(x[1].values()))[:5]:
-        log(f"    {mdl}: ${sum(tc.values()):.4f}")
-
-except Exception as e:
-    log(f"  [WARN] cost_report failed: {e}")
-    # Fallback: try with group_by description
-    try:
-        params = {
-            "starting_at":  START,
-            "ending_at":    END,
-            "bucket_width": "1d",
-            "group_by":     ["description"],
-        }
-        resp = org_get("cost_report", params)
-        for bucket in resp.get("data", []):
+        for bucket in r.get("data", []):
             for item in bucket.get("results", []):
                 mdl   = item.get("model") or "unknown"
                 ttype = item.get("token_type") or "unknown"
-                amt   = float(item.get("amount", 0) or 0) / 100.0
+                amt   = float(item.get("amount", 0) or 0) / 100.0   # cents → USD
                 model_type_cost[mdl][ttype] += amt
+                rows_found += 1
+        if not r.get("has_more"):
+            break
+        p["page"] = r.get("next_page")
+        r = org_get("cost_report", p)
+        time.sleep(0.2)
+    return rows_found
+
+for group_by_val in ["description", "token_type", "model"]:
+    try:
+        rows = _fetch_cost_report(group_by_val)
         total_cost = sum(c for tc in model_type_cost.values() for c in tc.values())
-        log(f"  ✓ Cost report (description fallback): total=${total_cost:.4f}")
-    except Exception as e2:
-        log(f"  [WARN] cost_report fallback also failed: {e2}")
+        log(f"  ✓ Cost report (group_by={group_by_val}): {rows} rows, total=${total_cost:.4f}")
+        for mdl, tc in sorted(model_type_cost.items(), key=lambda x: -sum(x[1].values()))[:5]:
+            log(f"    {mdl}: ${sum(tc.values()):.4f}")
+        break
+    except Exception as e:
+        log(f"  [WARN] cost_report group_by={group_by_val} failed: {e}")
+        model_type_cost.clear()
+        continue
 
 
 # ── 4. Usage report: tokens per api_key_id per model (daily, MTD) ─────────────
