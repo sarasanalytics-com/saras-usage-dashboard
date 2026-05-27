@@ -484,24 +484,26 @@
     <div style="font-size:1rem;color:var(--muted);margin-top:8px">Cursor AI · Claude Code · Windsurf · ClickUp</div>
   </div>
 
-  <div class="section-divider"><span>Activity Summary <span class="timeframe-badge tbadge-7d">Yesterday</span></span></div>
+  <div class="section-divider"><span>Activity Summary <span class="timeframe-badge tbadge-7d" id="dy-summary-badge">Yesterday</span></span></div>
   <div class="kpi-grid" style="margin-bottom:28px">
-    <div class="kpi c1"><div class="kpi-label">Employees Active</div><div class="kpi-value" id="dy-active-users">-</div><div class="kpi-sub">on any AI tool yesterday</div></div>
-    <div class="kpi c2"><div class="kpi-label">Cursor Requests</div><div class="kpi-value" id="dy-cursor-req">-</div><div class="kpi-sub">Cursor AI actions</div></div>
-    <div class="kpi c3"><div class="kpi-label">CC Lines Written</div><div class="kpi-value" id="dy-cc-lines">-</div><div class="kpi-sub">Claude Code lines</div></div>
-    <div class="kpi c4"><div class="kpi-label">Windsurf Sessions</div><div class="kpi-value" id="dy-ws-count">-</div><div class="kpi-sub">active Windsurf users</div></div>
-    <div class="kpi c5"><div class="kpi-label">ClickUp Active</div><div class="kpi-value" id="dy-cu-count">-</div><div class="kpi-sub">users with ClickUp activity</div></div>
+    <div class="kpi c1"><div class="kpi-label">Employees Active</div><div class="kpi-value" id="dy-active-users">-</div><div class="kpi-sub" id="dy-active-sub">on any AI tool yesterday</div></div>
+    <div class="kpi c2"><div class="kpi-label">Cursor Requests</div><div class="kpi-value" id="dy-cursor-req">-</div><div class="kpi-sub" id="dy-cursor-sub">Cursor AI actions</div></div>
+    <div class="kpi c3"><div class="kpi-label">CC Lines Written</div><div class="kpi-value" id="dy-cc-lines">-</div><div class="kpi-sub" id="dy-cc-sub">Claude Code lines</div></div>
+    <div class="kpi c4" style="border-top-color:#ffa726"><div class="kpi-label">Claude.ai Users</div><div class="kpi-value" id="dy-ai-count">-</div><div class="kpi-sub" id="dy-ai-sub">MTD chats this month</div></div>
+    <div class="kpi c5"><div class="kpi-label">Windsurf Sessions</div><div class="kpi-value" id="dy-ws-count">-</div><div class="kpi-sub" id="dy-ws-sub">active Windsurf users</div></div>
+    <div class="kpi c1"><div class="kpi-label">ClickUp Active</div><div class="kpi-value" id="dy-cu-count">-</div><div class="kpi-sub" id="dy-cu-sub">users with ClickUp activity</div></div>
   </div>
 
   <div class="section-divider"><span>All Activity Yesterday</span></div>
   <div class="card-full">
     <table class="data-table">
-      <thead><tr>
+      <thead><tr id="dy-thead-row">
         <th>Employee</th>
         <th>Dept</th>
         <th>Manager</th>
         <th style="text-align:right">Cursor Requests</th>
-        <th style="text-align:right">CC Lines</th>
+        <th style="text-align:right" id="dy-cc-th">CC Lines</th>
+        <th style="text-align:right" id="dy-ai-th">Claude.ai Chats</th>
         <th style="text-align:center">Windsurf</th>
         <th style="text-align:center">ClickUp</th>
         <th>Active Tools</th>
@@ -4211,56 +4213,93 @@ function filterAdoptSearch(val) { adoptSearch = val.toLowerCase(); renderAdoptHe
 function renderDailyTab() {
   const sortedDates = ADOPTION_DAYS.map(d => d.date).sort();
   if (!sortedDates.length) return;
-  const yesterday = sortedDates[sortedDates.length - 1];
 
-  const DAYS_FULL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const yDate = new Date(yesterday + 'T00:00:00Z');
-  const dateLabel = `${DAYS_FULL[yDate.getUTCDay()]}, ${MONTHS[yDate.getUTCMonth()]} ${yDate.getUTCDate()}, ${yDate.getUTCFullYear()}`;
-  set('dy-hero-date', dateLabel);
+  // ── Date helpers ──────────────────────────────────────────────────────────
+  const DAYS_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const MONTHS_S   = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtShort   = ds => { const dt = new Date(ds+'T00:00:00Z'); return `${MONTHS_S[dt.getUTCMonth()]} ${dt.getUTCDate()}`; };
+  const fmtFull    = ds => { const dt = new Date(ds+'T00:00:00Z'); return `${DAYS_FULL[dt.getUTCDay()]}, ${MONTHS_S[dt.getUTCMonth()]} ${dt.getUTCDate()}, ${dt.getUTCFullYear()}`; };
+
+  // "Yesterday" = latest date strictly before today (avoids showing still-accumulating today)
+  const todayStr  = new Date().toISOString().slice(0,10);
+  const pastDates = sortedDates.filter(d => d < todayStr);
+  const yesterday = pastDates.length ? pastDates[pastDates.length-1] : sortedDates[sortedDates.length-1];
+
+  // Latest date with actual Claude Code data (3-day API delay)
+  const ccDates = ADOPTION_DAYS
+    .filter(d => d.cc && Object.values(d.cc).some(v => v > 0))
+    .map(d => d.date).sort();
+  const ccDate = ccDates.length ? ccDates[ccDates.length-1] : null;
+
+  // Claude.ai data-as-of date (from DATA object)
+  const aiAsOf = (typeof DATA !== 'undefined' && DATA.dataAsOf) ? DATA.dataAsOf : null;
+
+  set('dy-hero-date', fmtFull(yesterday));
 
   const _isReal = e => e.endsWith('@sarasanalytics.com') && !BOT_ACCOUNTS.has(e);
-  const dayData = ADOPTION_DAYS.find(d => d.date === yesterday) || {date: yesterday, c:{}, w:{}, cc:{}, cu:{}};
 
-  const cursorMap  = dayData.c  || {};
-  const wsMap      = dayData.w  || {};
-  const ccMap      = dayData.cc || {};
-  const cuMap      = dayData.cu || {};
+  // Day data for Cursor / Windsurf / ClickUp → "yesterday"
+  const dayData  = ADOPTION_DAYS.find(d => d.date === yesterday) || {date:yesterday, c:{}, w:{}, cc:{}, cu:{}};
+  // CC data from its own latest available date
+  const ccDayData = ccDate ? (ADOPTION_DAYS.find(d => d.date === ccDate) || {cc:{}}) : {cc:{}};
 
-  // Collect all active users
+  const cursorMap = dayData.c  || {};
+  const wsMap     = dayData.w  || {};
+  const cuMap     = dayData.cu || {};
+  const ccMap     = ccDayData.cc || {};
+
+  const claudeAiUsers = typeof CLAUDE_AI_USERS !== 'undefined' ? CLAUDE_AI_USERS : {};
+
+  // ── Collect all active users (yesterday + CC date) ────────────────────────
   const usersSet = new Set();
   Object.keys(cursorMap).forEach(e => { if (_isReal(e)) usersSet.add(e); });
   Object.keys(wsMap).forEach(e     => { if (_isReal(e)) usersSet.add(e); });
-  Object.keys(ccMap).forEach(e     => { if ((ccMap[e]||0) > 0 && _isReal(e)) usersSet.add(e); });
   Object.keys(cuMap).forEach(e     => { if (_isReal(e)) usersSet.add(e); });
+  Object.keys(ccMap).forEach(e     => { if ((ccMap[e]||0) > 0 && _isReal(e)) usersSet.add(e); });
 
-  // KPIs
-  const totalCursor = Object.entries(cursorMap).filter(([e]) => _isReal(e)).reduce((s,[,v]) => s+v, 0);
-  const totalCC     = Object.entries(ccMap).filter(([e]) => _isReal(e)).reduce((s,[,v]) => s+v, 0);
-  const wsCount     = Object.keys(wsMap).filter(e => _isReal(e)).length;
-  const cuCount     = Object.keys(cuMap).filter(e => _isReal(e)).length;
+  // ── KPIs ──────────────────────────────────────────────────────────────────
+  const totalCursor = Object.entries(cursorMap).filter(([e])=>_isReal(e)).reduce((s,[,v])=>s+v,0);
+  const totalCC     = Object.entries(ccMap).filter(([e])=>_isReal(e)).reduce((s,[,v])=>s+v,0);
+  const wsCount     = Object.keys(wsMap).filter(e=>_isReal(e)).length;
+  const cuCount     = Object.keys(cuMap).filter(e=>_isReal(e)).length;
+  const aiMTDCount  = Object.keys(claudeAiUsers).filter(e=>_isReal(e)&&(claudeAiUsers[e]||0)>0).length;
 
   set('dy-active-users', usersSet.size);
   set('dy-cursor-req',   fmt(totalCursor));
   set('dy-cc-lines',     fmt(totalCC));
   set('dy-ws-count',     wsCount);
   set('dy-cu-count',     cuCount);
+  set('dy-ai-count',     aiMTDCount);
 
-  // Build emp lookup
+  // Dynamic subtitles with dates
+  set('dy-active-sub',  `active on any AI tool · ${fmtShort(yesterday)}`);
+  set('dy-cursor-sub',  `Cursor AI actions · ${fmtShort(yesterday)}`);
+  set('dy-cc-sub',      ccDate ? `Claude Code lines · ${fmtShort(ccDate)}` : 'Claude Code lines');
+  set('dy-ws-sub',      `active Windsurf users · ${fmtShort(yesterday)}`);
+  set('dy-cu-sub',      `users with ClickUp activity · ${fmtShort(yesterday)}`);
+  set('dy-ai-sub',      aiAsOf  ? `MTD chats · as of ${fmtShort(aiAsOf)}` : 'MTD chats this month');
+
+  // Dynamic column headers
+  const ccTh = document.getElementById('dy-cc-th');
+  if (ccTh) ccTh.textContent = ccDate ? `CC Lines (${fmtShort(ccDate)})` : 'CC Lines';
+  const aiTh = document.getElementById('dy-ai-th');
+  if (aiTh) aiTh.textContent = aiAsOf ? `Claude.ai Chats (MTD · ${fmtShort(aiAsOf)})` : 'Claude.ai Chats (MTD)';
+
+  // ── Build emp lookup ──────────────────────────────────────────────────────
   const empLookup = {};
-  (typeof ALL_EMPLOYEES !== 'undefined' ? ALL_EMPLOYEES : []).forEach(e => { empLookup[e.email] = e; });
+  (typeof ALL_EMPLOYEES !== 'undefined' ? ALL_EMPLOYEES : []).forEach(emp => { empLookup[emp.email] = emp; });
 
-  // Sort users by total activity (Cursor desc, then CC lines)
-  const userRows = [...usersSet].map(email => {
-    const cursor = cursorMap[email] || 0;
-    const cc     = ccMap[email] || 0;
-    const ws     = !!wsMap[email];
-    const cu     = !!cuMap[email];
-    return {email, cursor, cc, ws, cu};
-  }).sort((a, b) => (b.cursor + b.cc/100) - (a.cursor + a.cc/100));
+  // ── Sort: Cursor desc, then CC, then active on other tools ────────────────
+  const userRows = [...usersSet].map(email => ({
+    email,
+    cursor: cursorMap[email] || 0,
+    cc:     ccMap[email]     || 0,
+    ws:     !!wsMap[email],
+    cu:     !!cuMap[email],
+    ai:     claudeAiUsers[email] || 0,
+  })).sort((a,b) => (b.cursor + b.cc/100) - (a.cursor + a.cc/100));
 
-  // Table
-  const claudeAiUsers = typeof CLAUDE_AI_USERS !== 'undefined' ? CLAUDE_AI_USERS : {};
+  // ── Table ─────────────────────────────────────────────────────────────────
   const tbody = document.getElementById('dy-table');
   if (!tbody) return;
 
@@ -4271,22 +4310,23 @@ function renderDailyTab() {
     const mgrShort = mgr !== '–' && mgr.length > 18 ? mgr.split(' ').slice(0,2).join(' ') : mgr;
     const name     = nameFromEmail(u.email);
 
-    const tools = [];
-    if (u.cursor > 0) tools.push(`<span style="background:rgba(108,99,255,0.15);color:#a89cff;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">Cursor AI</span>`);
-    if (u.cc > 0)     tools.push(`<span style="background:rgba(0,212,170,0.15);color:#00d4aa;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">Claude Code</span>`);
-    if (u.ws)         tools.push(`<span style="background:rgba(38,198,218,0.12);color:#26c6da;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">Windsurf</span>`);
-    if (u.cu)         tools.push(`<span style="background:rgba(129,199,132,0.12);color:#81c784;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">ClickUp</span>`);
-    if ((claudeAiUsers[u.email]||0) > 0) tools.push(`<span style="background:rgba(255,167,38,0.12);color:#ffa726;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">Claude.ai</span>`);
+    const badges = [];
+    if (u.cursor > 0) badges.push(`<span style="background:rgba(108,99,255,0.15);color:#a89cff;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">Cursor AI</span>`);
+    if (u.cc > 0)     badges.push(`<span style="background:rgba(0,212,170,0.15);color:#00d4aa;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">Claude Code</span>`);
+    if (u.ai > 0)     badges.push(`<span style="background:rgba(255,167,38,0.12);color:#ffa726;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600" title="${u.ai} MTD Claude.ai chats">Claude.ai</span>`);
+    if (u.ws)         badges.push(`<span style="background:rgba(38,198,218,0.12);color:#26c6da;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">Windsurf</span>`);
+    if (u.cu)         badges.push(`<span style="background:rgba(129,199,132,0.12);color:#81c784;border-radius:4px;padding:1px 6px;font-size:0.67rem;font-weight:600">ClickUp</span>`);
 
     return `<tr>
       <td style="font-weight:600">${name}</td>
       <td style="font-size:0.8rem;color:var(--muted)">${dept}</td>
       <td style="font-size:0.8rem;color:var(--muted)" title="${mgr}">${mgrShort}</td>
-      <td style="text-align:right;font-weight:${u.cursor>0?'700':'400'};color:${u.cursor>0?'#a89cff':'var(--muted)'}">${u.cursor > 0 ? fmt(u.cursor) : '–'}</td>
-      <td style="text-align:right;font-weight:${u.cc>0?'700':'400'};color:${u.cc>0?'#00d4aa':'var(--muted)'}">${u.cc > 0 ? fmt(u.cc) : '–'}</td>
-      <td style="text-align:center;color:${u.ws?'#26c6da':'var(--muted)'}">${u.ws ? '✓' : '–'}</td>
-      <td style="text-align:center;color:${u.cu?'#81c784':'var(--muted)'}">${u.cu ? '✓' : '–'}</td>
-      <td><div style="display:flex;gap:3px;flex-wrap:wrap">${tools.join('')}</div></td>
+      <td style="text-align:right;font-weight:${u.cursor>0?'700':'400'};color:${u.cursor>0?'#a89cff':'var(--muted)'}">${u.cursor>0?fmt(u.cursor):'–'}</td>
+      <td style="text-align:right;font-weight:${u.cc>0?'700':'400'};color:${u.cc>0?'#00d4aa':'var(--muted)'}">${u.cc>0?fmt(u.cc):'–'}</td>
+      <td style="text-align:right;font-weight:${u.ai>0?'600':'400'};color:${u.ai>0?'#ffa726':'var(--muted)'}">${u.ai>0?u.ai:'–'}</td>
+      <td style="text-align:center;color:${u.ws?'#26c6da':'var(--muted)'}">${u.ws?'✓':'–'}</td>
+      <td style="text-align:center;color:${u.cu?'#81c784':'var(--muted)'}">${u.cu?'✓':'–'}</td>
+      <td><div style="display:flex;gap:3px;flex-wrap:wrap">${badges.join('')}</div></td>
     </tr>`;
   }).join('');
 }
