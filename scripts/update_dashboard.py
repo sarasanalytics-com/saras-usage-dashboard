@@ -232,6 +232,31 @@ model_usage_json      = json.dumps(model_usage,      separators=(",", ":"))
 model_cost_json       = json.dumps(model_cost,       separators=(",", ":"))
 model_cost_daily_json = json.dumps(model_cost_daily, separators=(",", ":"))
 
+# Generate user-level data from available sources
+chat_users = cc.get("chatUsers", {})
+cowork_users = cc.get("coworkUsers", {})
+total_spend = sum(model_cost.values()) if model_cost else 0
+
+# userUsage: chats per user (proxy for activity)
+user_usage = dict(chat_users)
+
+# userCost: estimated cost per user based on chat activity
+user_cost = {}
+total_chats = sum(chat_users.values()) if chat_users else 1
+for user, chats in chat_users.items():
+    proportion = chats / total_chats if total_chats > 0 else 0
+    user_cost[user] = round(total_spend * proportion, 2)
+
+# userDailyAvg: estimate of daily chats
+user_daily_avg = {}
+for user, chats in chat_users.items():
+    # Approximate: total chats in month / 20 working days
+    user_daily_avg[user] = round(chats / 20, 1) if chats > 0 else 0
+
+user_usage_json = json.dumps(user_usage, separators=(",", ":"))
+user_cost_json = json.dumps(user_cost, separators=(",", ":"))
+user_daily_avg_json = json.dumps(user_daily_avg, separators=(",", ":"))
+
 new_data_block = f"""const DATA = {{
   asOf: '{TODAY_LABEL}',
   monthLabel: '{MONTH_LABEL}',
@@ -262,9 +287,9 @@ new_data_block = f"""const DATA = {{
   modelUsage: {model_usage_json},
   modelCost: {model_cost_json},
   modelCostDaily: {model_cost_daily_json},
-  userUsage: {json.dumps(cc.get('userUsage', {}), separators=(',', ':'))},
-  userCost: {json.dumps(cc.get('userCost', {}), separators=(',', ':'))},
-  userDailyAvg: {json.dumps(cc.get('userDailyAvg', {}), separators=(',', ':'))},
+  userUsage: {user_usage_json},
+  userCost: {user_cost_json},
+  userDailyAvg: {user_daily_avg_json},
   conversations: {{}},
   claudeAITokens: 0,
   claudeCodeTokens: 0,
