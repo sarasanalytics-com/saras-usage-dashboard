@@ -949,7 +949,7 @@
         <th style="text-align:right">Input Tokens</th>
         <th style="text-align:right">Output Tokens</th>
         <th style="text-align:right">Total Tokens</th>
-        <th style="text-align:right">Est. Cost</th>
+        <th style="text-align:right">Spend Cost</th>
         <th style="text-align:right">% of Total</th>
       </tr></thead>
       <tbody id="claudeai-model-table"></tbody>
@@ -5110,7 +5110,7 @@ function renderModelUsage() {
         <td class="num-cell">${fmt(d.input_tokens || 0)}</td>
         <td class="num-cell">${fmt(d.output_tokens || 0)}</td>
         <td class="num-cell" style="font-weight:700">${fmt(totalTok)}</td>
-        <td class="num-cell" style="color:var(--accent2);font-weight:700">$${cost.toFixed(2)}</td>
+        <td class="num-cell" style="color:var(--accent2);font-weight:700" title="Spend Cost">$${cost.toFixed(2)}</td>
         <td class="num-cell">${pct}%</td>
       </tr>`;
   }).join('');
