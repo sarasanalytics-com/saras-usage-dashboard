@@ -4357,13 +4357,29 @@ function renderWeeklyTab() {
   const heatUsers = wkSearch
     ? userStats.filter(u => (nameFromEmail(u.email)+' '+u.email).toLowerCase().includes(wkSearch))
     : userStats;
-  set('wk-heatmap-sub', `${heatUsers.length} active employees this week · weekdays only · hover cells for details`);
+  set('wk-heatmap-sub', `${heatUsers.length} active employees · Mon–Fri only shown · hover a cell to see exact Cursor request count`);
   document.getElementById('wk-heatmap-legend').innerHTML = `
-    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1)"></div>No activity</div>
-    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.32)"></div>Light (1–14)</div>
-    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.72)"></div>Moderate (15–49)</div>
-    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:#6c63ff"></div>Heavy (50+)</div>
-    <div style="display:flex;align-items:center;gap:5px"><div style="width:14px;height:14px;border-radius:3px;background:rgba(0,212,170,0.6)"></div>Windsurf</div>`;
+    <div style="font-size:0.7rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;margin-right:6px">Day Cell Color =</div>
+    <div style="display:flex;align-items:center;gap:5px" title="No Cursor AI requests on this day">
+      <div style="width:14px;height:14px;border-radius:3px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1)"></div>
+      <span>No Cursor activity</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px" title="1 to 14 Cursor AI requests on this day">
+      <div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.32)"></div>
+      <span>Cursor · 1–14 requests</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px" title="15 to 49 Cursor AI requests on this day">
+      <div style="width:14px;height:14px;border-radius:3px;background:rgba(108,99,255,0.72)"></div>
+      <span>Cursor · 15–49 requests</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px" title="50 or more Cursor AI requests on this day">
+      <div style="width:14px;height:14px;border-radius:3px;background:#6c63ff"></div>
+      <span>Cursor · 50+ requests</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:5px" title="User had a Windsurf session on this day (no Cursor that day)">
+      <div style="width:14px;height:14px;border-radius:3px;background:rgba(0,212,170,0.6)"></div>
+      <span>Windsurf active (no Cursor)</span>
+    </div>`;
 
   let h = `<table style="border-collapse:separate;border-spacing:3px;min-width:max-content">`;
   h += `<tr>
@@ -4377,8 +4393,16 @@ function renderWeeklyTab() {
     h += `<th style="text-align:center;padding:2px 0;width:38px;${isAnchor ? 'color:#a89cff;font-weight:700' : 'color:var(--muted);font-weight:400'}">
       <div style="font-size:0.75rem">${dow}</div><div style="font-size:0.68rem;opacity:0.7">${dd}</div></th>`;
   });
-  h += `<th style="padding:6px 8px;color:var(--muted);font-weight:400;font-size:0.74rem;text-align:center;min-width:54px" title="Active weekdays this week">Wk Days</th>`;
-  h += `<th style="padding:6px 8px;color:var(--muted);font-weight:400;font-size:0.74rem;text-align:center;min-width:58px" title="Active days on Cursor this month">Mo Days</th>`;
+  h += `<th style="padding:4px 8px;color:var(--muted);font-weight:500;font-size:0.72rem;text-align:center;min-width:72px" title="Number of weekdays (Mon–Fri) this week where the employee made at least one Cursor AI request">
+      <div style="color:var(--text);font-size:0.73rem;font-weight:600">Active Days</div>
+      <div style="font-size:0.67rem;color:var(--muted);margin-top:1px">This Week</div>
+      <div style="font-size:0.63rem;color:rgba(108,99,255,0.7);margin-top:1px">(Cursor · of 5)</div>
+    </th>`;
+  h += `<th style="padding:4px 8px;color:var(--muted);font-weight:500;font-size:0.72rem;text-align:center;min-width:72px" title="Number of distinct days this month (MTD) where the employee made at least one Cursor AI request">
+      <div style="color:var(--text);font-size:0.73rem;font-weight:600">Active Days</div>
+      <div style="font-size:0.67rem;color:var(--muted);margin-top:1px">This Month</div>
+      <div style="font-size:0.63rem;color:rgba(108,99,255,0.7);margin-top:1px">(Cursor · MTD)</div>
+    </th>`;
   h += `<th style="padding:6px 12px;color:var(--muted);font-weight:400;font-size:0.74rem;min-width:150px">Active Tools</th></tr>`;
 
   heatUsers.forEach(u => {
@@ -4416,13 +4440,22 @@ function renderWeeklyTab() {
       h += `<td style="${style};width:38px;height:34px;border-radius:5px" title="${tip}"></td>`;
     });
 
-    // Week active days (colour-coded: green ≥4, orange 2-3, grey 1, dim 0)
-    const wkCol = wkActiveDays >= 4 ? '#4caf50' : wkActiveDays >= 2 ? '#ffa726' : wkActiveDays === 1 ? '#8b92b8' : 'rgba(255,255,255,0.2)';
-    h += `<td style="padding:4px 8px;text-align:center;font-size:0.84rem;font-weight:700;color:${wkCol}">${wkActiveDays}/5</td>`;
+    // Active days this week (Cursor only, Mon–Fri): colour-coded green ≥4, orange 2–3, grey 1, dim 0
+    const wkCol  = wkActiveDays >= 4 ? '#4caf50' : wkActiveDays >= 2 ? '#ffa726' : wkActiveDays === 1 ? '#8b92b8' : 'rgba(255,255,255,0.25)';
+    const wkTip  = `${label} · Active on Cursor ${wkActiveDays} out of ${d7wk.length} weekdays this week`;
+    h += `<td style="padding:4px 8px;text-align:center;font-weight:700;color:${wkCol}" title="${wkTip}">
+      <div style="font-size:0.92rem;line-height:1.1">${wkActiveDays}/${d7wk.length}</div>
+      <div style="font-size:0.62rem;color:var(--muted);font-weight:400">days</div>
+    </td>`;
 
-    // Month active days
-    const moCol = moActiveDays >= 15 ? '#4caf50' : moActiveDays >= 8 ? '#ffa726' : moActiveDays >= 1 ? '#8b92b8' : 'rgba(255,255,255,0.2)';
-    h += `<td style="padding:4px 8px;text-align:center;font-size:0.84rem;font-weight:700;color:${moCol}">${moActiveDays > 0 ? moActiveDays + 'd' : '–'}</td>`;
+    // Active days this month — Cursor MTD: colour-coded green ≥15, orange ≥8, grey ≥1
+    const moCol  = moActiveDays >= 15 ? '#4caf50' : moActiveDays >= 8 ? '#ffa726' : moActiveDays >= 1 ? '#8b92b8' : 'rgba(255,255,255,0.25)';
+    const moDays = monthDaysAll.length;
+    const moTip  = `${label} · Used Cursor on ${moActiveDays} of ${moDays} days in ${DATA.monthLabel}`;
+    h += `<td style="padding:4px 8px;text-align:center;font-weight:700;color:${moCol}" title="${moTip}">
+      <div style="font-size:0.92rem;line-height:1.1">${moActiveDays > 0 ? moActiveDays + '/' + moDays : '–'}</div>
+      <div style="font-size:0.62rem;color:var(--muted);font-weight:400">days</div>
+    </td>`;
 
     const tools = [];
     if (u.hasCc)       tools.push(`<span style="background:rgba(0,212,170,0.15);color:#00d4aa;border-radius:4px;padding:2px 6px;font-size:0.67rem;font-weight:600">Claude Code</span>`);
