@@ -1319,7 +1319,7 @@ async function handleMicrosoftSignIn() {
     const data = await result.json();
     if (result.ok && data.success) {
       sessionStorage.setItem('dashboard-auth', 'true');
-      sessionStorage.setItem('session-token', data.sessionToken);
+      localStorage.setItem('session-token', data.sessionToken);
       sessionStorage.setItem('user-email', data.email);
       sessionStorage.setItem('user-name', data.name);
       document.getElementById('login-container').style.display = 'none';
@@ -1336,7 +1336,7 @@ async function handleMicrosoftSignIn() {
 }
 
 async function validateSession() {
-  const sessionToken = sessionStorage.getItem('session-token');
+  const sessionToken = localStorage.getItem('session-token');
   if (!sessionToken) return false;
 
   try {
