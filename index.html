@@ -499,7 +499,7 @@
     <div class="kpi c2">
       <div class="kpi-label">Using 2+ AI Tools</div>
       <div class="kpi-value" id="wk-multitool">-</div>
-      <div class="kpi-sub">Claude Code + Cursor or Windsurf</div>
+      <div class="kpi-sub">Active on 2 or more AI tools</div>
     </div>
     <div class="kpi c3">
       <div class="kpi-label">Busiest Day</div>
@@ -507,9 +507,9 @@
       <div class="kpi-sub" id="wk-peak-day-sub"></div>
     </div>
     <div class="kpi c4">
-      <div class="kpi-label">Total AI Actions (7d)</div>
+      <div class="kpi-label">Cursor Actions (7d)</div>
       <div class="kpi-value" id="wk-total-events">-</div>
-      <div class="kpi-sub">coding requests across all tools</div>
+      <div class="kpi-sub">Cursor AI requests this week</div>
     </div>
   </div>
 
@@ -4213,10 +4213,10 @@ function renderWeeklyTab() {
   set('wk-hero-sub', `${dateLabel}, ${anchor.slice(0,4)}  ·  Cursor AI · Claude Code · Windsurf · Claude.ai`);
 
   // KPIs
-  const total = DATA.orgSize || 209;
+  const total    = DATA.orgSize || 209;
+  const orgPct   = Math.round(usersSet.size / total * 100);
   set('wk-active-users', usersSet.size);
-  const licensedPct = Math.round(usersSet.size / (DATA.licensedSeats || total) * 100);
-  set('wk-active-pct', `of ~${DATA.licensedSeats} licensed users - ${licensedPct}% active this week`);
+  set('wk-active-pct', `of ${total} employees · ${orgPct}% adoption this week`);
   set('wk-multitool', multiTool);
   set('wk-total-events', fmt(totalEv7));
   if (peak.date) {
@@ -4224,20 +4224,26 @@ function renderWeeklyTab() {
     set('wk-peak-day-sub', `${peak.date.slice(5)} · ${peak.users} employees active`);
   }
 
-  // Engagement tiers
-  const power    = userStats.filter(u => u.events >= 100 || u.activeDays >= 5);
-  const regular  = userStats.filter(u => u.events >= 20 && u.events < 100 && u.activeDays < 5);
-  const casual   = userStats.filter(u => u.events > 0 && u.events < 20);
-  const wsOnly   = userStats.filter(u => u.events === 0 && u.hasWs);
-  const maxCount = Math.max(power.length, regular.length, casual.length, 1);
+  // Engagement tiers — exhaustive (every user in usersSet falls in exactly one tier)
+  const power      = userStats.filter(u => u.events >= 100 || u.activeDays >= 5);
+  const regular    = userStats.filter(u => u.events >= 20 && u.events < 100 && u.activeDays < 5);
+  const casual     = userStats.filter(u => u.events > 0 && u.events < 20);
+  // All remaining: active on Claude Code / Claude.ai / Windsurf but no Cursor this week
+  const otherTools = userStats.filter(u => u.events === 0);
+  const otCc  = otherTools.filter(u => u.hasCc).length;
+  const otAi  = otherTools.filter(u => u.hasClaudeAi).length;
+  const otWs  = otherTools.filter(u => u.hasWs).length;
+  const otDesc = [otCc > 0 ? `${otCc} Claude Code` : '', otAi > 0 ? `${otAi} Claude.ai` : '', otWs > 0 ? `${otWs} Windsurf` : ''].filter(Boolean).join(' · ') || 'Non-Cursor tools';
+  const maxCount = Math.max(power.length, regular.length, casual.length, otherTools.length, 1);
 
-  // ── Last-week aggregates for WoW comparison ──
+  // ── Last-week aggregates for WoW comparison (same definition as current week) ──
   const prevUsersSet = new Set();
   daysPrev.forEach(day => Object.keys(day.c).forEach(e => { if (_isReal(e)) prevUsersSet.add(e); }));
   Object.entries(WINDSURF_USERS).forEach(([email, lastDate]) => {
     if (lastDate && lastDate >= d7prev[0] && lastDate <= d7prev[6] && _isReal(email)) prevUsersSet.add(email);
   });
   Object.entries(ADOPTION_CC_MTD).forEach(([email, lines]) => { if (lines > 0 && _isReal(email)) prevUsersSet.add(email); });
+  Object.keys(claudeAiUsers).forEach(email => { if (_isReal(email)) prevUsersSet.add(email); });
   const totalEvPrev = daysPrev.reduce((s, d) => s + Object.values(d.c).reduce((a, v) => a + v, 0), 0);
   const powerPrev   = [...prevUsersSet].filter(email => {
     const ev   = daysPrev.reduce((s, d) => s + (d.c[email] || 0), 0);
@@ -4254,9 +4260,9 @@ function renderWeeklyTab() {
     return {arrow:'->', txt:'no change', col:'var(--muted)'};
   }
   const wowMetrics = [
-    {label:'Active Users',    curr:usersSet.size,  prev:prevUsersSet.size, fmt:v=>v},
-    {label:'Total AI Actions',curr:totalEv7,       prev:totalEvPrev,       fmt:fmt},
-    {label:'Power Users',     curr:power.length,   prev:powerPrev,         fmt:v=>v},
+    {label:'Active Employees',   curr:usersSet.size,  prev:prevUsersSet.size, fmt:v=>v},
+    {label:'Cursor Actions (7d)',curr:totalEv7,       prev:totalEvPrev,       fmt:fmt},
+    {label:'Cursor Power Users', curr:power.length,   prev:powerPrev,         fmt:v=>v},
   ];
   const prevDateLabel = `${d7prev[0].slice(5).replace('-','/')} - ${d7prev[6].slice(5).replace('-','/')}`;
   document.getElementById('wk-compare').innerHTML = `
@@ -4278,15 +4284,15 @@ function renderWeeklyTab() {
         }).join('')}
       </div>
       <div style="font-size:0.72rem;color:var(--muted);border-top:1px solid var(--border);padding-top:10px">
-        ⓘ <em>AI Actions counts Cursor AI requests only (per-day data available). Active Users includes Claude Code MTD + Windsurf + Cursor. Week-on-week variance is normal - sprint cycles, weekends, and data lag all affect daily counts.</em>
+        ⓘ <em>Cursor Actions = Cursor AI requests (per-day granularity). Active Employees = anyone active on Cursor · Claude Code · Windsurf · Claude.ai this period. Week-on-week variance is normal — sprint cycles and data lag all affect counts.</em>
       </div>
     </div>`;
 
   const tiers = [
-    {label:'Power Users',      desc:'100+ actions or active 5+ days',  count:power.length,   color:'#6c63ff', people:power},
-    {label:'Regular Users',    desc:'20 - 99 actions this week',        count:regular.length,  color:'#00d4aa', people:regular},
-    {label:'Occasional Users', desc:'1 - 19 actions this week',         count:casual.length,   color:'#ffa726', people:casual},
-    {label:'Windsurf Active',  desc:'Active on Windsurf this week',     count:wsOnly.length,   color:'#26c6da', people:wsOnly},
+    {label:'Cursor Power Users',    desc:'100+ Cursor actions or active 5+ days',  count:power.length,      color:'#6c63ff', people:power},
+    {label:'Cursor Regular Users',  desc:'20–99 Cursor actions this week',          count:regular.length,    color:'#00d4aa', people:regular},
+    {label:'Cursor Occasional',     desc:'1–19 Cursor actions this week',           count:casual.length,     color:'#ffa726', people:casual},
+    {label:'Other AI Tools',        desc:otDesc,                                    count:otherTools.length, color:'#8b92b8', people:otherTools},
   ];
   document.getElementById('wk-tier-bars').innerHTML = tiers.map(t => {
     const barW  = Math.round(t.count / maxCount * 100);
