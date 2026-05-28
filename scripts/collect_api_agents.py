@@ -10,11 +10,18 @@ Correct endpoints (WITHOUT /analytics/ prefix — those are claude.ai-only):
   GET /v1/organizations/cost_report                  — model cost rates (MTD, by description)
   GET /v1/organizations/usage_report/messages        — token usage per api_key_id per model
 
-Cost computation (two-step, same as claude-usage-alerts):
-  1. cost_report gives total_cost[model][token_type]
-  2. usage_report/messages gives tokens[key_id][model][token_type]
+Cost computation (same pattern as claude-usage-alerts):
+  1. cost_report gives total_cost[model][token_type_short]  (TOKEN_TYPE_MAP normalises names)
+  2. usage_report/messages gives tokens[key_id][model][token_type_short]
   3. rate[model][token_type] = cost[model][token_type] / total_tokens[model][token_type]
   4. key_cost = sum( tokens[key][model][type] * rate[model][type] )
+
+TOKEN_TYPE_MAP (critical — cost_report returns dot-notation names for cache_creation):
+  "uncached_input_tokens"                    → "input"
+  "cache_read_input_tokens"                  → "cache_read"
+  "cache_creation.ephemeral_5m_input_tokens" → "cache_write"
+  "cache_creation.ephemeral_1h_input_tokens" → "cache_write"
+  "output_tokens"                            → "output"
 
 Writes  data/api_agents_stats.json
 """
@@ -44,6 +51,18 @@ HEADERS_BETA = {
     "anthropic-version": "2023-06-01",
     "anthropic-beta":    "api-key-management-2025-02-19",
 }
+
+# Normalise the raw token_type strings returned by cost_report to the same
+# short keys used when storing usage_report token counts.
+# cost_report uses dot-notation for cache_creation sub-types.
+TOKEN_TYPE_MAP = {
+    "uncached_input_tokens":                    "input",
+    "cache_read_input_tokens":                  "cache_read",
+    "cache_creation.ephemeral_5m_input_tokens": "cache_write",
+    "cache_creation.ephemeral_1h_input_tokens": "cache_write",
+    "output_tokens":                            "output",
+}
+TOKEN_TYPES = ("input", "cache_read", "cache_write", "output")
 
 
 def log(msg):
@@ -77,14 +96,17 @@ def org_get(path, params, headers=None):
 
 # ── Date range ────────────────────────────────────────────────────────────────
 today_utc   = datetime.now(timezone.utc).date()
-data_until  = today_utc - timedelta(days=1)   # yesterday (usage_report has 1-day delay)
+# cost_report is real-time; include today by using tomorrow as exclusive END
+# usage_report/messages has a 1-day delay so its END stays at today
+data_until  = today_utc                              # portal shows today's costs
 month_start = today_utc.replace(day=1)
 
 days_in_month = calendar.monthrange(today_utc.year, today_utc.month)[1]
 days_elapsed  = max(1, (data_until - month_start).days + 1)
 
-START = month_start.strftime("%Y-%m-%dT00:00:00Z")
-END   = today_utc.strftime("%Y-%m-%dT00:00:00Z")   # exclusive upper bound
+START      = month_start.strftime("%Y-%m-%dT00:00:00Z")
+COST_END   = (today_utc + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z")  # include today
+USAGE_END  = today_utc.strftime("%Y-%m-%dT00:00:00Z")                        # through yesterday
 
 log(f"Collecting API agent stats  {month_start} → {data_until}  "
     f"({days_elapsed}/{days_in_month} days elapsed)")
@@ -140,17 +162,15 @@ for h_label, h in [("beta", HEADERS_BETA), ("plain", HEADERS)]:
 
 # ── 3. Cost report: total cost by model × token_type (compute per-token rates) ──
 log("\n── 3. Cost report (model × token_type rates) ───────────────────────────")
-# model → token_type → total USD cost
-model_type_cost   = defaultdict(lambda: defaultdict(float))
-# model → token_type → total tokens (filled from usage_report below)
-model_type_tokens = defaultdict(lambda: defaultdict(float))
+# model → short_token_type → total USD cost  (short types: input/cache_read/cache_write/output)
+model_type_cost: dict = defaultdict(lambda: defaultdict(float))
+# description (= API key name) → total USD cost  (for direct per-key attribution)
+desc_cost: dict = defaultdict(float)
 
-# Use group_by=description (confirmed working; model+token_type returns 400)
-# Response fields: model, token_type, amount (in cents), description
 def _fetch_cost_report(group_by_val):
     p = {
         "starting_at":  START,
-        "ending_at":    END,
+        "ending_at":    COST_END,   # includes today
         "bucket_width": "1d",
         "group_by":     [group_by_val],
     }
@@ -160,9 +180,16 @@ def _fetch_cost_report(group_by_val):
         for bucket in r.get("data", []):
             for item in bucket.get("results", []):
                 mdl   = item.get("model") or "unknown"
-                ttype = item.get("token_type") or "unknown"
+                raw   = item.get("token_type") or ""
+                ttype = TOKEN_TYPE_MAP.get(raw, "other")   # normalise to short name
                 amt   = float(item.get("amount", 0) or 0) / 100.0   # cents → USD
                 model_type_cost[mdl][ttype] += amt
+
+                # Also capture direct per-key cost via the description field
+                desc = item.get("description") or ""
+                if desc:
+                    desc_cost[desc] += amt
+
                 rows_found += 1
         if not r.get("has_more"):
             break
@@ -177,21 +204,28 @@ for group_by_val in ["description", "token_type", "model"]:
         total_cost = sum(c for tc in model_type_cost.values() for c in tc.values())
         log(f"  ✓ Cost report (group_by={group_by_val}): {rows} rows, total=${total_cost:.4f}")
         for mdl, tc in sorted(model_type_cost.items(), key=lambda x: -sum(x[1].values()))[:5]:
-            log(f"    {mdl}: ${sum(tc.values()):.4f}")
+            log(f"    {mdl}: ${sum(tc.values()):.4f}  "
+                f"(in={tc.get('input',0):.2f} cr={tc.get('cache_read',0):.2f} "
+                f"cw={tc.get('cache_write',0):.2f} out={tc.get('output',0):.2f})")
+        if desc_cost:
+            log(f"  Top keys by desc_cost:")
+            for d, c in sorted(desc_cost.items(), key=lambda x: -x[1])[:5]:
+                log(f"    {d}: ${c:.4f}")
         break
     except Exception as e:
         log(f"  [WARN] cost_report group_by={group_by_val} failed: {e}")
         model_type_cost.clear()
+        desc_cost.clear()
         continue
 
 
 # ── 4. Usage report: tokens per api_key_id per model (daily, MTD) ─────────────
 log("\n── 4. Usage report per api_key_id × model (daily) ──────────────────────")
-# key_id → date → model → token_type → count
+# key_id → date → model → short_token_type → count
 key_day_model_tokens: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(float))))
-# key_id → model → token_type → total count (MTD)
+# key_id → model → short_token_type → total count (MTD)
 key_model_tokens: dict = defaultdict(lambda: defaultdict(lambda: defaultdict(float)))
-# model → token_type → total across all keys (for rate computation)
+# model → short_token_type → total across all keys (for rate computation)
 all_model_tokens: dict = defaultdict(lambda: defaultdict(float))
 
 usage_ok = False
@@ -199,7 +233,7 @@ usage_ok = False
 try:
     params = {
         "starting_at":  START,
-        "ending_at":    END,
+        "ending_at":    USAGE_END,  # through yesterday (1-day delay)
         "bucket_width": "1d",
         "group_by":     ["api_key_id", "model"],
     }
@@ -212,7 +246,7 @@ try:
                 kid = item.get("api_key_id") or "unknown"
                 mdl = item.get("model") or "unknown"
 
-                # Extract all token type counts
+                # Extract token counts using the same short names as TOKEN_TYPE_MAP
                 cc = item.get("cache_creation") or {}
                 tokens = {
                     "input":       float(item.get("uncached_input_tokens", 0) or 0),
@@ -221,19 +255,12 @@ try:
                                          (cc.get("ephemeral_1h_input_tokens") or 0)),
                     "output":      float(item.get("output_tokens", 0) or 0),
                 }
-                # Also capture original names the cost_report might use
-                tok_map = {
-                    "input":       "uncached_input_tokens",
-                    "cache_read":  "cache_read_input_tokens",
-                    "cache_write": "cache_creation_input_tokens",
-                    "output":      "output_tokens",
-                }
-                for short, orig in tok_map.items():
-                    cnt = tokens[short]
+                # Store with short names — must match TOKEN_TYPE_MAP output above
+                for ttype_short, cnt in tokens.items():
                     if cnt:
-                        key_day_model_tokens[kid][date_str][mdl][orig]  += cnt
-                        key_model_tokens[kid][mdl][orig]                 += cnt
-                        all_model_tokens[mdl][orig]                      += cnt
+                        key_day_model_tokens[kid][date_str][mdl][ttype_short] += cnt
+                        key_model_tokens[kid][mdl][ttype_short]               += cnt
+                        all_model_tokens[mdl][ttype_short]                    += cnt
 
         if not resp.get("has_more"):
             break
@@ -258,18 +285,23 @@ except Exception as e:
 # ── 5. Compute per-key costs ──────────────────────────────────────────────────
 log("\n── 5. Computing per-key costs from token counts × rates ─────────────────")
 
-# Build per-token-type rate: rate[model][token_type] = cost/token
+# Build per-token-type rate: rate[model][short_type] = cost/token
+# Both model_type_cost and all_model_tokens now use the same short keys
 rates: dict = defaultdict(lambda: defaultdict(float))
 
 for mdl, type_costs in model_type_cost.items():
-    for ttype, cost in type_costs.items():
-        total_toks = all_model_tokens[mdl].get(ttype, 0)
-        if total_toks > 0:
-            rates[mdl][ttype] = cost / total_toks
+    for ttype in TOKEN_TYPES:
+        cost      = type_costs.get(ttype, 0)
+        total_tok = all_model_tokens[mdl].get(ttype, 0)
+        if total_tok > 0:
+            rates[mdl][ttype] = cost / total_tok
             log(f"    rate {mdl} {ttype}: ${rates[mdl][ttype]:.8f}/tok")
 
-# Compute per-key MTD cost
-key_cost_mtd: dict = defaultdict(float)
+# Build reverse lookup: key name → key id (for desc_cost mapping)
+name_to_id: dict = {v: k for k, v in key_names.items()}
+
+# Compute per-key MTD cost (prefer desc_cost from cost_report; fall back to rates×tokens)
+key_cost_mtd: dict   = defaultdict(float)
 key_model_cost: dict = defaultdict(lambda: defaultdict(float))
 
 for kid, mdl_map in key_model_tokens.items():
@@ -280,7 +312,15 @@ for kid, mdl_map in key_model_tokens.items():
             key_cost_mtd[kid]       += cost
             key_model_cost[kid][mdl] += cost
 
-# Compute per-key daily cost
+# Override key_cost_mtd with direct desc_cost where available (exact portal match)
+if desc_cost:
+    for desc, cost in desc_cost.items():
+        kid = name_to_id.get(desc)
+        if kid:
+            key_cost_mtd[kid] = cost   # replace rate-computed value with exact cost_report value
+            log(f"    desc override: {desc} → ${cost:.4f}")
+
+# Compute per-key daily cost (rates × tokens; used for trend charts)
 agent_daily: dict = defaultdict(lambda: defaultdict(float))
 for kid, day_map in key_day_model_tokens.items():
     for date_str, mdl_map in day_map.items():
@@ -289,7 +329,23 @@ for kid, day_map in key_day_model_tokens.items():
                 rate = rates[mdl].get(ttype, 0)
                 agent_daily[kid][date_str] += cnt * rate
 
-# Global model cost (cross-key sum)
+# Scale daily costs to match total costMtd (so they sum correctly)
+for kid in agent_daily:
+    rate_total  = sum(agent_daily[kid].values())
+    exact_total = key_cost_mtd.get(kid, 0)
+    if rate_total > 0 and exact_total > 0:
+        scale = exact_total / rate_total
+        agent_daily[kid] = {d: c * scale for d, c in agent_daily[kid].items()}
+
+# Scale model costs to match total costMtd
+for kid in key_model_cost:
+    rate_total  = sum(key_model_cost[kid].values())
+    exact_total = key_cost_mtd.get(kid, 0)
+    if rate_total > 0 and exact_total > 0:
+        scale = exact_total / rate_total
+        key_model_cost[kid] = {m: c * scale for m, c in key_model_cost[kid].items()}
+
+# Global model cost (cross-key sum, for header chart)
 global_model_cost: dict = defaultdict(float)
 for kid, mc in key_model_cost.items():
     for mdl, cost in mc.items():
@@ -314,13 +370,6 @@ for kid, cost in sorted(key_cost_mtd.items(), key=lambda x: -x[1])[:10]:
 
 
 # ── 6. Build agents list ──────────────────────────────────────────────────────
-def _entity_name(eid):
-    if eid in key_names:
-        return key_names[eid]
-    if eid in workspace_names:
-        return workspace_names[eid]
-    return eid[:24] + ("…" if len(eid) > 24 else "")
-
 # Merge all known key IDs
 all_key_ids = set(key_names.keys()) | set(key_cost_mtd.keys())
 
