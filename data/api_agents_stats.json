@@ -15,7 +15,44 @@
     "claude-opus-4-7": 1414.840655,
     "claude-sonnet-4-5-20250929": 395.288345,
     "claude-haiku-4-5-20251001": 208.954258,
-    "claude-sonnet-4-20250514": 1.359548
+    "claude-sonnet-4-20250514": 1.359547
+  },
+  "globalModelTokens": {
+    "claude-haiku-4-5-20251001": {
+      "input": 43396557,
+      "output": 8117898,
+      "cache_read": 628253423,
+      "cache_write": 49714295
+    },
+    "claude-sonnet-4-5-20250929": {
+      "input": 8536197,
+      "cache_read": 228050548,
+      "cache_write": 43515000,
+      "output": 9205556
+    },
+    "claude-sonnet-4-20250514": {
+      "input": 196235,
+      "output": 43832,
+      "cache_write": 30230
+    },
+    "claude-opus-4-7": {
+      "input": 3166089,
+      "cache_read": 1333178621,
+      "cache_write": 68519900,
+      "output": 12166861
+    },
+    "claude-sonnet-4-6": {
+      "input": 75727641,
+      "cache_read": 2294409220,
+      "cache_write": 279161060,
+      "output": 32560309
+    },
+    "claude-opus-4-6": {
+      "input": 22458560,
+      "cache_read": 1411637349,
+      "cache_write": 133181901,
+      "output": 31235382
+    }
   },
   "agents": [
     {
@@ -75,15 +112,15 @@
       },
       "dailyCosts": {
         "2026-05-01": 35.666982,
-        "2026-05-02": 28.881367,
-        "2026-05-03": 23.773805,
+        "2026-05-02": 28.881368,
+        "2026-05-03": 23.773806,
         "2026-05-04": 47.699511,
         "2026-05-05": 36.790942,
         "2026-05-06": 56.413594,
         "2026-05-07": 32.590733,
         "2026-05-08": 29.733109,
         "2026-05-09": 19.43002,
-        "2026-05-10": 54.389008,
+        "2026-05-10": 54.389009,
         "2026-05-11": 42.423876,
         "2026-05-12": 34.890705,
         "2026-05-13": 38.978474,
@@ -124,15 +161,15 @@
         "2026-05-08": 44.274045,
         "2026-05-09": 34.934761,
         "2026-05-10": 42.552166,
-        "2026-05-11": 38.934334,
+        "2026-05-11": 38.934333,
         "2026-05-12": 39.955982,
         "2026-05-13": 40.877875,
         "2026-05-14": 40.862969,
-        "2026-05-15": 38.975169,
+        "2026-05-15": 38.975168,
         "2026-05-16": 37.684838,
         "2026-05-17": 38.992468,
         "2026-05-18": 43.056237,
-        "2026-05-19": 53.613169,
+        "2026-05-19": 53.613168,
         "2026-05-20": 60.370631,
         "2026-05-21": 23.014731,
         "2026-05-22": 34.518941,
@@ -472,48 +509,8 @@
       }
     },
     {
-      "id": "apikey_01D7Tfs6kYkhWnjtYb88XeFw",
-      "name": "cstudio",
-      "status": "archived",
-      "workspace": "Connector Studio AI project",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
-      "id": "apikey_01J3GwkcMqvgVES8ifC8rSwZ",
-      "name": "sonnet-3.5",
-      "status": "archived",
-      "workspace": "UI Team",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
-      "id": "apikey_01EwcUzeegpRtoFcJQadaamq",
-      "name": "edm-code-review",
-      "status": "archived",
-      "workspace": "",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
-      "id": "apikey_01S7ULjiARYwcvipMRxxi33P",
-      "name": "Test ",
-      "status": "archived",
-      "workspace": "Saras Analytics INC",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
-      "id": "apikey_01SR1LvpypLoEGmYvcBFmn8S",
-      "name": "iq-saras",
+      "id": "apikey_01NcSfZTjT2nce36EGwwHCis",
+      "name": "DE-agents-testing",
       "status": "archived",
       "workspace": "",
       "costMtd": 0,
@@ -532,50 +529,10 @@
       "dailyCosts": {}
     },
     {
-      "id": "apikey_016wpwxj664HffAJQBaaLsKt",
-      "name": "Slack bot",
-      "status": "archived",
-      "workspace": "",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
-      "id": "apikey_01NcSfZTjT2nce36EGwwHCis",
-      "name": "DE-agents-testing",
-      "status": "archived",
-      "workspace": "",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
       "id": "apikey_015BUYv3Ge8bkuHFXPvL4mxg",
       "name": "data-quality-agent",
       "status": "archived",
       "workspace": "",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
-      "id": "apikey_01TYpnvTycefsNxjNm2yofBr",
-      "name": "de-agent-dev",
-      "status": "archived",
-      "workspace": "Pulse",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
-      "id": "apikey_01SnFCkVLqVinadgfqndA5ZW",
-      "name": "api-key-1",
-      "status": "archived",
-      "workspace": "Connector Studio AI project",
       "costMtd": 0,
       "usage": {},
       "modelCosts": {},
@@ -592,6 +549,16 @@
       "dailyCosts": {}
     },
     {
+      "id": "apikey_01HbynVVfZzWE4K7yXXwRJ89",
+      "name": "shopify-mcp",
+      "status": "archived",
+      "workspace": "",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
       "id": "apikey_01AWEuMQVdHjrLjnRSezxa7C",
       "name": "dev-key",
       "status": "archived",
@@ -602,10 +569,80 @@
       "dailyCosts": {}
     },
     {
-      "id": "apikey_01HbynVVfZzWE4K7yXXwRJ89",
-      "name": "shopify-mcp",
+      "id": "apikey_016wpwxj664HffAJQBaaLsKt",
+      "name": "Slack bot",
       "status": "archived",
       "workspace": "",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
+      "id": "apikey_01SR1LvpypLoEGmYvcBFmn8S",
+      "name": "iq-saras",
+      "status": "archived",
+      "workspace": "",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
+      "id": "apikey_01S7ULjiARYwcvipMRxxi33P",
+      "name": "Test ",
+      "status": "archived",
+      "workspace": "Saras Analytics INC",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
+      "id": "apikey_01D7Tfs6kYkhWnjtYb88XeFw",
+      "name": "cstudio",
+      "status": "archived",
+      "workspace": "Connector Studio AI project",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
+      "id": "apikey_01TYpnvTycefsNxjNm2yofBr",
+      "name": "de-agent-dev",
+      "status": "archived",
+      "workspace": "Pulse",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
+      "id": "apikey_01EwcUzeegpRtoFcJQadaamq",
+      "name": "edm-code-review",
+      "status": "archived",
+      "workspace": "",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
+      "id": "apikey_01EgNpQKspfPWeGrUC1bqFti",
+      "name": "Daton assistant",
+      "status": "archived",
+      "workspace": "Saras Analytics INC",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
+      "id": "apikey_01J3GwkcMqvgVES8ifC8rSwZ",
+      "name": "sonnet-3.5",
+      "status": "archived",
+      "workspace": "UI Team",
       "costMtd": 0,
       "usage": {},
       "modelCosts": {},
@@ -622,10 +659,10 @@
       "dailyCosts": {}
     },
     {
-      "id": "apikey_01EgNpQKspfPWeGrUC1bqFti",
-      "name": "Daton assistant",
+      "id": "apikey_01SnFCkVLqVinadgfqndA5ZW",
+      "name": "api-key-1",
       "status": "archived",
-      "workspace": "Saras Analytics INC",
+      "workspace": "Connector Studio AI project",
       "costMtd": 0,
       "usage": {},
       "modelCosts": {},
