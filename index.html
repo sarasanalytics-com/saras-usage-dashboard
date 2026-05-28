@@ -4432,7 +4432,9 @@ function renderAgentsTab() {
   // ── Sortable thead ────────────────────────────────────────────────────────────
   const th = (label, col, align) => _thSort(label, col, agSortCol, agSortDir, 'sortAgentTable', align);
   const theadEl = document.getElementById('ag-agent-thead');
+  const colSpan = analyticsOn ? 5 : 4;
   if (theadEl) theadEl.innerHTML = `<tr>
+    <th style="color:var(--muted);font-size:0.78rem;width:20px"></th>
     ${th('Agent / API Key','name','')}
     <th style="color:var(--muted);font-size:0.78rem">Workspace</th>
     <th style="color:var(--muted);font-size:0.78rem">Status</th>
@@ -4470,7 +4472,7 @@ function renderAgentsTab() {
   const tbody = document.getElementById('ag-agent-table');
   if (tbody) {
     if (rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:24px">No API key data yet — ensure ANTHROPIC_ADMIN_KEY is set</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:24px">No API key data yet — ensure ANTHROPIC_ADMIN_KEY is set</td></tr>';
     } else {
       const pendingNote = !analyticsOn
         ? `<tr><td colspan="4" style="background:rgba(206,147,216,0.06);color:#ce93d8;font-size:0.8rem;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.06)">
@@ -4478,20 +4480,57 @@ function renderAgentsTab() {
             Keys and workspaces are live from the Admin API.
            </td></tr>`
         : '';
-      tbody.innerHTML = pendingNote + rows.map(r => {
-        const dot  = r.status === 'inactive' ? '🔴' : '🟢';
-        const ws   = r.workspace ? `<span style="font-size:0.75rem;color:var(--muted)">${r.workspace}</span>` : '<span style="color:var(--muted);font-size:0.75rem">—</span>';
-        const cost = analyticsOn
+      // Track expand state per agent name
+      if (!window._agExpanded) window._agExpanded = {};
+      const MC_COLORS = ['#ce93d8','#80cbc4','#ffcc80','#90caf9','#ef9a9a','#a5d6a7','#f48fb1','#ffe082'];
+
+      tbody.innerHTML = pendingNote + rows.map((r, ri) => {
+        const dot     = '🟢';
+        const ws      = r.workspace ? `<span style="font-size:0.75rem;color:var(--muted)">${r.workspace}</span>` : '<span style="color:var(--muted);font-size:0.75rem">—</span>';
+        const cost    = analyticsOn
           ? `<td style="text-align:right;color:#ce93d8;font-weight:700">${r.cost > 0 ? fmtUSD(r.cost) : '–'}</td>
              <td style="text-align:right"><span style="color:var(--muted);font-size:0.8rem">${r.pct.toFixed(1)}%</span></td>`
           : `<td style="text-align:right;color:var(--muted);font-size:0.8rem">—</td>`;
-        return `<tr>
+        const hasModels = analyticsOn && Object.keys(r.modelCosts).length > 0;
+        const expanded  = window._agExpanded[r.name];
+        const chevron   = hasModels
+          ? `<span style="font-size:0.65rem;color:var(--muted);transition:transform 0.2s;display:inline-block;transform:rotate(${expanded?90:0}deg)">▶</span>`
+          : '';
+        const clickAttr = hasModels ? `onclick="window._agToggle('${r.name.replace(/'/g,"\\'")}', this)" style="cursor:pointer"` : '';
+
+        // Build model sub-row
+        const modelEntries = Object.entries(r.modelCosts).filter(([,c])=>c>0).sort(([,a],[,b])=>b-a);
+        const subRow = (hasModels && expanded) ? `<tr id="ag-sub-${ri}" style="background:rgba(206,147,216,0.04)">
+          <td></td>
+          <td colspan="${colSpan}" style="padding:8px 16px 12px 28px">
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              ${modelEntries.map(([m,c],i) => {
+                const mpct = r.cost > 0 ? (c/r.cost*100).toFixed(0) : 0;
+                return `<div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border-radius:5px;padding:4px 10px;font-size:0.78rem">
+                  <span style="width:8px;height:8px;border-radius:50%;background:${MC_COLORS[i%MC_COLORS.length]};flex-shrink:0"></span>
+                  <span style="color:var(--muted)">${cleanMdl(m)}</span>
+                  <span style="color:#ce93d8;font-weight:700">${fmtUSD(c)}</span>
+                  <span style="color:var(--muted);font-size:0.72rem">${mpct}%</span>
+                </div>`;
+              }).join('')}
+            </div>
+          </td>
+        </tr>` : '';
+
+        return `<tr ${clickAttr}>
+          <td style="text-align:center;width:20px">${chevron}</td>
           <td style="font-weight:600">${dot} ${r.name}</td>
           <td>${ws}</td>
-          <td><span style="font-size:0.75rem;padding:2px 6px;border-radius:3px;background:${r.status==='active'?'rgba(165,214,167,0.15)':'rgba(239,154,154,0.15)'};color:${r.status==='active'?'#a5d6a7':'#ef9a9a'}">${r.status}</span></td>
+          <td><span style="font-size:0.75rem;padding:2px 6px;border-radius:3px;background:rgba(165,214,167,0.15);color:#a5d6a7">active</span></td>
           ${cost}
-        </tr>`;
+        </tr>${subRow}`;
       }).join('');
+
+      // Toggle handler (stored on window so inline onclick works)
+      window._agToggle = (name, cell) => {
+        window._agExpanded[name] = !window._agExpanded[name];
+        renderAgentsTab();
+      };
     }
   }
 
