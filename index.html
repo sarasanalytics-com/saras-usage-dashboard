@@ -4374,7 +4374,7 @@ function renderAgentsTab() {
   const naCost      = v => analyticsOn ? fmtUSD(v) : '—';
 
   set('ag-hero-spend',    analyticsOn ? fmtUSD(totalMtd) : '—');
-  set('ag-hero-sub',      `platform API · ${agents.filter(a=>!a.isAggregate).length} keys · as of ${D.asOf||'–'}` +
+  set('ag-hero-sub',      `platform API · ${agents.filter(a=>!a.isAggregate&&a.status==='active').length} keys · as of ${D.asOf||'–'}` +
                           (analyticsOn ? '' : ' · cost data pending'));
   set('ag-kpi-mtd',       naCost(totalMtd));
   set('ag-kpi-mtd-sub',   analyticsOn ? (D.asOf ? `through ${D.asOf}` : 'this month') : 'analytics access pending');
@@ -4396,8 +4396,8 @@ function renderAgentsTab() {
   </tr>`;
 
   // ── Build row objects ─────────────────────────────────────────────────────────
-  // Exclude the aggregate entry from the individual-key table rows
-  const indivAgents = agents.filter(a => !a.isAggregate);
+  // Exclude aggregate entry and archived/inactive keys (keep only active ones)
+  const indivAgents = agents.filter(a => !a.isAggregate && a.status === 'active');
   const rows = indivAgents.map(a => ({
     name:       a.name || a.id,
     workspace:  a.workspace || '',
