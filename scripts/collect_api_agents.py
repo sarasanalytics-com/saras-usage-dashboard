@@ -36,6 +36,10 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 import calendar
 
+# NOTE: cost_report "description" field is a model/billing label like
+# "Claude Sonnet 4.6 Usage - Input Tokens, Cache Write" — NOT the API key name.
+# Per-key costs must be computed via rates × tokens (see TOKEN_TYPE_MAP below).
+
 REPO_ROOT   = Path(__file__).resolve().parent.parent
 OUTPUT_PATH = REPO_ROOT / "data" / "api_agents_stats.json"
 
@@ -164,8 +168,6 @@ for h_label, h in [("beta", HEADERS_BETA), ("plain", HEADERS)]:
 log("\n── 3. Cost report (model × token_type rates) ───────────────────────────")
 # model → short_token_type → total USD cost  (short types: input/cache_read/cache_write/output)
 model_type_cost: dict = defaultdict(lambda: defaultdict(float))
-# description (= API key name) → total USD cost  (for direct per-key attribution)
-desc_cost: dict = defaultdict(float)
 
 def _fetch_cost_report(group_by_val):
     p = {
@@ -184,12 +186,6 @@ def _fetch_cost_report(group_by_val):
                 ttype = TOKEN_TYPE_MAP.get(raw, "other")   # normalise to short name
                 amt   = float(item.get("amount", 0) or 0) / 100.0   # cents → USD
                 model_type_cost[mdl][ttype] += amt
-
-                # Also capture direct per-key cost via the description field
-                desc = item.get("description") or ""
-                if desc:
-                    desc_cost[desc] += amt
-
                 rows_found += 1
         if not r.get("has_more"):
             break
@@ -207,15 +203,10 @@ for group_by_val in ["description", "token_type", "model"]:
             log(f"    {mdl}: ${sum(tc.values()):.4f}  "
                 f"(in={tc.get('input',0):.2f} cr={tc.get('cache_read',0):.2f} "
                 f"cw={tc.get('cache_write',0):.2f} out={tc.get('output',0):.2f})")
-        if desc_cost:
-            log(f"  Top keys by desc_cost:")
-            for d, c in sorted(desc_cost.items(), key=lambda x: -x[1])[:5]:
-                log(f"    {d}: ${c:.4f}")
         break
     except Exception as e:
         log(f"  [WARN] cost_report group_by={group_by_val} failed: {e}")
         model_type_cost.clear()
-        desc_cost.clear()
         continue
 
 
@@ -297,10 +288,7 @@ for mdl, type_costs in model_type_cost.items():
             rates[mdl][ttype] = cost / total_tok
             log(f"    rate {mdl} {ttype}: ${rates[mdl][ttype]:.8f}/tok")
 
-# Build reverse lookup: key name → key id (for desc_cost mapping)
-name_to_id: dict = {v: k for k, v in key_names.items()}
-
-# Compute per-key MTD cost (prefer desc_cost from cost_report; fall back to rates×tokens)
+# Compute per-key MTD cost via rates × tokens
 key_cost_mtd: dict   = defaultdict(float)
 key_model_cost: dict = defaultdict(lambda: defaultdict(float))
 
@@ -312,14 +300,6 @@ for kid, mdl_map in key_model_tokens.items():
             key_cost_mtd[kid]       += cost
             key_model_cost[kid][mdl] += cost
 
-# Override key_cost_mtd with direct desc_cost where available (exact portal match)
-if desc_cost:
-    for desc, cost in desc_cost.items():
-        kid = name_to_id.get(desc)
-        if kid:
-            key_cost_mtd[kid] = cost   # replace rate-computed value with exact cost_report value
-            log(f"    desc override: {desc} → ${cost:.4f}")
-
 # Compute per-key daily cost (rates × tokens; used for trend charts)
 agent_daily: dict = defaultdict(lambda: defaultdict(float))
 for kid, day_map in key_day_model_tokens.items():
@@ -328,22 +308,6 @@ for kid, day_map in key_day_model_tokens.items():
             for ttype, cnt in type_map.items():
                 rate = rates[mdl].get(ttype, 0)
                 agent_daily[kid][date_str] += cnt * rate
-
-# Scale daily costs to match total costMtd (so they sum correctly)
-for kid in agent_daily:
-    rate_total  = sum(agent_daily[kid].values())
-    exact_total = key_cost_mtd.get(kid, 0)
-    if rate_total > 0 and exact_total > 0:
-        scale = exact_total / rate_total
-        agent_daily[kid] = {d: c * scale for d, c in agent_daily[kid].items()}
-
-# Scale model costs to match total costMtd
-for kid in key_model_cost:
-    rate_total  = sum(key_model_cost[kid].values())
-    exact_total = key_cost_mtd.get(kid, 0)
-    if rate_total > 0 and exact_total > 0:
-        scale = exact_total / rate_total
-        key_model_cost[kid] = {m: c * scale for m, c in key_model_cost[kid].items()}
 
 # Global model cost (cross-key sum, for header chart)
 global_model_cost: dict = defaultdict(float)
