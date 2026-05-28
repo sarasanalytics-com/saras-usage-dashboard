@@ -82,5 +82,6 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "Daily update $(date -u +'%Y-%m-%d')"
+            git pull --rebase
             git push
           fi
