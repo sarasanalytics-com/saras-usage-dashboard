@@ -294,29 +294,38 @@
   
   <!-- TOTAL SPEND KPI -->
   <div style="background:linear-gradient(135deg,rgba(255,167,38,0.15),rgba(255,193,7,0.1));border-radius:8px;padding:20px;margin-bottom:24px;border-left:4px solid #ffa726">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px">
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">TOTAL MONTHLY SPEND</div>
         <div style="font-size:2rem;font-weight:700;color:#fff" id="total-spend-monthly">-</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">All AI Tools + Subscriptions</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">Subscriptions + Claude.ai + Platform API</div>
         <div style="font-size:0.7rem;color:var(--muted);margin-top:2px;opacity:0.7" id="kpi-updated-date"></div>
       </div>
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">YEARLY PROJECTION</div>
         <div style="font-size:2rem;font-weight:700;color:#fff" id="total-spend-yearly">-</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">Annualized</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">Annualized (incl. Platform API)</div>
       </div>
       <div>
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">MODEL COST (MTD)</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">CLAUDE.AI MODEL COST</div>
         <div style="font-size:2rem;font-weight:700;color:#fff" id="model-cost-daily">-</div>
         <div style="font-size:0.75rem;color:var(--muted);margin-top:4px" id="model-cost-date-label">All Claude Models</div>
-      </div>
-      <div>
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">MODEL BREAKDOWN</div>
-        <div style="font-size:0.85rem;color:#fff;line-height:1.5">
+        <div style="font-size:0.85rem;color:#fff;line-height:1.6;margin-top:6px">
           <div>Sonnet: <span style="color:#ffa726;font-weight:600" id="model-cost-sonnet">-</span></div>
           <div>Opus: <span style="color:#81c784;font-weight:600" id="model-cost-opus">-</span></div>
           <div>Haiku: <span style="color:#00d4aa;font-weight:600" id="model-cost-haiku">-</span></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">PLATFORM API MTD</div>
+        <div style="font-size:2rem;font-weight:700;color:#ce93d8" id="ov-api-mtd">-</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px" id="ov-api-mtd-sub">Platform API agents</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-top:6px">Daily avg: <span style="color:#ce93d8;font-weight:600" id="ov-api-daily">-</span></div>
+      </div>
+      <div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">API MODEL BREAKDOWN</div>
+        <div style="font-size:0.82rem;color:#fff;line-height:1.7" id="ov-api-models">
+          <span style="color:var(--muted);font-size:0.75rem">Loading…</span>
         </div>
       </div>
     </div>
@@ -1714,19 +1723,25 @@ function populateSpendsTab() {
   const cursorSub   = spendData.cursor.subscription   || (spendData.cursor.seats   * spendData.cursor.perSeat);
   const windsurfSub = spendData.windsurf.subscription || (spendData.windsurf.seats * spendData.windsurf.perSeat);
 
-  // Grand totals: API model costs + fixed subscriptions for all tools
-  // spendData.claude.monthly = Claude API model cost (from Anthropic Analytics)
+  // Platform API agent cost from API_AGENTS_DATA (separate from claude.ai model cost)
+  const agApiMtd   = (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.analyticsWorking)
+                      ? (API_AGENTS_DATA.totalApiSpendMtd || 0) : 0;
+  const agApiDaily = (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.analyticsWorking)
+                      ? (API_AGENTS_DATA.dailyAvg || 0) : 0;
+
+  // Grand totals: API model costs + fixed subscriptions + platform API agents
+  // spendData.claude.monthly = Claude.ai model cost (from Anthropic Analytics)
   // Cursor and Windsurf API costs are $0 until their APIs are integrated
   const totalMonthly = spendData.claude.monthly + spendData.cursor.monthly + spendData.windsurf.monthly
-                     + claudeSub + cursorSub + windsurfSub;
+                     + claudeSub + cursorSub + windsurfSub + agApiMtd;
   const totalYearly  = totalMonthly * 12;
   const totalDaily   = Math.round((totalMonthly / daysThisMonth) * 100) / 100;
 
-    // Populate total spend in overview (includes model costs)
+    // Populate total spend in overview (includes model costs + platform API)
     const elMonthly = document.getElementById('total-spend-monthly');
-    if (elMonthly) elMonthly.textContent = '$' + totalMonthly.toLocaleString();
+    if (elMonthly) elMonthly.textContent = '$' + Math.round(totalMonthly).toLocaleString();
     const elYearly = document.getElementById('total-spend-yearly');
-    if (elYearly) elYearly.textContent = '$' + totalYearly.toLocaleString();
+    if (elYearly) elYearly.textContent = '$' + Math.round(totalYearly).toLocaleString();
     const elDaily = document.getElementById('total-spend-daily');
     if (elDaily) elDaily.textContent = '$' + totalDaily.toFixed(2);
 
@@ -1790,7 +1805,7 @@ function populateSpendsTab() {
     document.getElementById('spend-windsurf-daily').textContent = '$' + spendData.windsurf.daily.toFixed(2);
     document.getElementById('spend-windsurf-date').textContent  = updatedDate ? 'Updated ' + updatedDate : '';
 
-    // Populate API Agents card
+    // Populate API Agents card (Spends tab)
     if (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.asOf) {
       const ag = API_AGENTS_DATA;
       const agAnalytics = ag.analyticsWorking === true;
@@ -1806,6 +1821,34 @@ function populateSpendsTab() {
       if (el('spend-api-date'))      el('spend-api-date').textContent      = agAnalytics
         ? (ag.asOf ? `Through ${ag.asOf}` : '')
         : `${(ag.agents||[]).filter(a=>!a.isAggregate).length} keys tracked · cost data pending`;
+
+      // Populate overview header KPIs for Platform API
+      const fmtUSDrnd = v => '$' + Math.round(v||0).toLocaleString();
+      const fmtUSD2   = v => '$' + (v||0).toFixed(2);
+      if (el('ov-api-mtd')) el('ov-api-mtd').textContent = agAnalytics ? fmtUSDrnd(agMtd) : '—';
+      if (el('ov-api-mtd-sub')) el('ov-api-mtd-sub').textContent =
+        agAnalytics ? `${(ag.agents||[]).filter(a=>a.status==='active'&&!a.isAggregate).length} active keys · through ${ag.asOf||''}` : 'awaiting admin key';
+      if (el('ov-api-daily')) el('ov-api-daily').textContent = agAnalytics ? fmtUSD2(agApiDaily) : '—';
+
+      // API Model Breakdown: top 3 models from globalModelCost
+      const apiModels = el('ov-api-models');
+      if (apiModels && agAnalytics) {
+        const cleanM = m => {
+          const m4 = m.match(/claude-(opus|sonnet|haiku)-4-(\d+)/i);
+          if (m4) return `${m4[1][0].toUpperCase()+m4[1].slice(1)} 4.${m4[2]}`;
+          if (m.includes('claude-3-5-sonnet')) return '3.5 Sonnet';
+          if (m.includes('claude-3-5-haiku'))  return '3.5 Haiku';
+          return m.replace(/claude-/,'').replace(/-\d{8,}$/,'').replace(/-/g,' ').slice(0,14);
+        };
+        const MC_COLORS = ['#ce93d8','#80cbc4','#ffcc80','#90caf9','#ef9a9a'];
+        const top3 = Object.entries(ag.globalModelCost||{})
+          .filter(([,c])=>c>0).sort(([,a],[,b])=>b-a).slice(0,3);
+        apiModels.innerHTML = top3.length
+          ? top3.map(([m,c],i) =>
+              `<div>${cleanM(m)}: <span style="color:${MC_COLORS[i]};font-weight:600">$${Math.round(c).toLocaleString()}</span></div>`
+            ).join('')
+          : '<span style="color:var(--muted);font-size:0.75rem">No data</span>';
+      }
     }
 
   // Populate model cost table
