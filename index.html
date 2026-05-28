@@ -1092,7 +1092,7 @@
       <div style="font-size:0.85rem;font-weight:700;color:var(--muted);margin-bottom:8px">ANTHROPIC API (AGENTS)</div>
       <!-- Hero: MTD cost -->
       <div style="font-size:1.8rem;font-weight:700;color:#ce93d8;margin-bottom:2px" id="spend-api-mtd-hero">-</div>
-      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:12px">Platform API · 10 agent keys</div>
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:12px" id="spend-api-key-count">Platform API · agent keys</div>
       <!-- Secondary: projections -->
       <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:10px">
         <div style="font-size:0.75rem;color:var(--muted);margin-bottom:6px">PROJECTIONS</div>
@@ -1815,12 +1815,14 @@ function populateSpendsTab() {
       const fmtA  = v => agAnalytics ? '$' + (v||0).toFixed(2) : '—';
       const fmtAY = v => agAnalytics ? '$' + Math.round(v||0).toLocaleString() : '—';
       const el = id => document.getElementById(id);
+      const activeKeyCount = (ag.agents||[]).filter(a=>!a.isAggregate&&a.status==='active').length;
       if (el('spend-api-mtd-hero'))  el('spend-api-mtd-hero').textContent  = fmtA(agMtd);
+      if (el('spend-api-key-count')) el('spend-api-key-count').textContent = `Platform API · ${activeKeyCount} active agent keys`;
       if (el('spend-api-daily'))     el('spend-api-daily').textContent     = fmtA(agDaily);
       if (el('spend-api-yearly'))    el('spend-api-yearly').textContent    = fmtAY(agYearly);
       if (el('spend-api-date'))      el('spend-api-date').textContent      = agAnalytics
         ? (ag.asOf ? `Through ${ag.asOf}` : '')
-        : `${(ag.agents||[]).filter(a=>!a.isAggregate).length} keys tracked · cost data pending`;
+        : `${activeKeyCount} keys tracked · cost data pending`;
 
       // Populate overview header KPIs for Platform API
       const fmtUSDrnd = v => '$' + Math.round(v||0).toLocaleString();
