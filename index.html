@@ -495,8 +495,24 @@
     <div class="kpi c5"><div class="kpi-label">Active Agents</div><div class="kpi-value" id="ag-kpi-agents">0</div><div class="kpi-sub">keys with spend this month</div></div>
   </div>
 
+  <!-- Model Breakdown Table — shown first for at-a-glance cost/token summary -->
+  <div class="section-divider"><span>Model Spend Detail <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="card-full">
+    <table class="data-table">
+      <thead><tr>
+        <th>Model</th>
+        <th style="text-align:right">Cost MTD</th>
+        <th style="text-align:right">Input Tokens</th>
+        <th style="text-align:right">Output Tokens</th>
+        <th style="text-align:right">% of API Total</th>
+        <th>Used by Agents</th>
+      </tr></thead>
+      <tbody id="ag-model-table"></tbody>
+    </table>
+  </div>
+
   <!-- Agent Summary Table -->
-  <div class="section-divider"><span>Agent Breakdown <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="section-divider" style="margin-top:32px"><span>Agent Breakdown <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
   <div class="card-full">
     <table class="data-table">
       <thead id="ag-agent-thead"><tr>
@@ -536,20 +552,6 @@
         <canvas id="ag-model-donut"></canvas>
       </div>
     </div>
-  </div>
-
-  <!-- Model Breakdown Table -->
-  <div class="section-divider" style="margin-top:32px"><span>Model Spend Detail <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
-  <div class="card-full">
-    <table class="data-table">
-      <thead><tr>
-        <th>Model</th>
-        <th style="text-align:right">Cost MTD</th>
-        <th style="text-align:right">% of API Total</th>
-        <th>Used by Agents</th>
-      </tr></thead>
-      <tbody id="ag-model-table"></tbody>
-    </table>
   </div>
 </div>
 
@@ -4462,14 +4464,30 @@ function renderAgentsTab() {
   if (modelTbody) {
     const mRows = Object.entries(globalModel).filter(([,c])=>c>0).sort(([,a],[,b])=>b-a);
     if (mRows.length === 0) {
-      modelTbody.innerHTML = '<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:24px">No model cost data yet</td></tr>';
+      modelTbody.innerHTML = '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:24px">No model cost data yet</td></tr>';
     } else {
-      modelTbody.innerHTML = mRows.map(([mdl, cost]) => {
-        const pct = modelTotal > 0 ? (cost/modelTotal*100).toFixed(1) : '0.0';
-        const cnt = modelAgentCount[mdl] || 0;
+      const gmt = D.globalModelTokens || {};
+      const fmtTokLg = n => {
+        if (!n) return '—';
+        if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
+        if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return Math.round(n/1e3) + 'K';
+        return String(n);
+      };
+      let totalInTok = 0, totalOutTok = 0;
+      const dataRows = mRows.map(([mdl, cost]) => {
+        const pct    = modelTotal > 0 ? (cost/modelTotal*100).toFixed(1) : '0.0';
+        const cnt    = modelAgentCount[mdl] || 0;
+        const toks   = gmt[mdl] || {};
+        const inTok  = (toks.input||0) + (toks.cache_read||0) + (toks.cache_write||0);
+        const outTok = toks.output || 0;
+        totalInTok  += inTok;
+        totalOutTok += outTok;
         return `<tr>
           <td style="font-weight:600">${cleanMdl(mdl)}</td>
           <td style="text-align:right;color:#ce93d8;font-weight:700">${fmtUSD(cost)}</td>
+          <td style="text-align:right;color:var(--muted);font-size:0.85rem">${fmtTokLg(inTok)}</td>
+          <td style="text-align:right;color:var(--muted);font-size:0.85rem">${fmtTokLg(outTok)}</td>
           <td style="text-align:right">
             <div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">
               <div style="background:rgba(206,147,216,0.12);border-radius:3px;height:6px;width:80px">
@@ -4480,7 +4498,17 @@ function renderAgentsTab() {
           </td>
           <td style="font-size:0.78rem;color:var(--muted)">${cnt} agent${cnt!==1?'s':''}</td>
         </tr>`;
-      }).join('');
+      });
+      // Totals row
+      const totalRow = `<tr style="border-top:2px solid rgba(255,255,255,0.12);font-weight:700">
+        <td style="color:var(--muted);font-size:0.85rem;text-transform:uppercase;letter-spacing:0.05em">Total</td>
+        <td style="text-align:right;color:#ce93d8">${fmtUSD(modelTotal)}</td>
+        <td style="text-align:right;color:var(--muted);font-size:0.85rem">${fmtTokLg(totalInTok)}</td>
+        <td style="text-align:right;color:var(--muted);font-size:0.85rem">${fmtTokLg(totalOutTok)}</td>
+        <td style="text-align:right"><span style="color:var(--muted);font-size:0.8rem">100%</span></td>
+        <td></td>
+      </tr>`;
+      modelTbody.innerHTML = dataRows.join('') + totalRow;
     }
   }
 

@@ -315,6 +315,12 @@ for kid, mc in key_model_cost.items():
     for mdl, cost in mc.items():
         global_model_cost[mdl] += cost
 
+# Global model tokens (cross-key sum, for model table token columns)
+global_model_tokens: dict = defaultdict(lambda: defaultdict(float))
+for mdl, type_map in all_model_tokens.items():
+    for ttype, cnt in type_map.items():
+        global_model_tokens[mdl][ttype] += cnt
+
 total_api_spend_mtd = sum(key_cost_mtd.values())
 daily_avg           = total_api_spend_mtd / days_elapsed if days_elapsed > 0 else 0
 projected_monthly   = daily_avg * days_in_month
@@ -371,6 +377,8 @@ result = {
     "adminKeyValid":    len(key_names) > 0,
     "globalModelCost":  {m: round(c, 6) for m, c in
                          sorted(global_model_cost.items(), key=lambda x: -x[1])},
+    "globalModelTokens": {m: {t: int(c) for t, c in tv.items()}
+                          for m, tv in global_model_tokens.items()},
     "agents":           agents,
 }
 
