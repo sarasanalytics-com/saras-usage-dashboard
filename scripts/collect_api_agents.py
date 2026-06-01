@@ -110,7 +110,7 @@ days_elapsed  = max(1, (data_until - month_start).days + 1)
 
 START      = month_start.strftime("%Y-%m-%dT00:00:00Z")
 COST_END   = (today_utc + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z")  # include today
-USAGE_END  = today_utc.strftime("%Y-%m-%dT00:00:00Z")                        # through yesterday
+USAGE_END  = (today_utc + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z")  # include today (API requires strict inequality)
 
 log(f"Collecting API agent stats  {month_start} → {data_until}  "
     f"({days_elapsed}/{days_in_month} days elapsed)")
@@ -194,7 +194,7 @@ def _fetch_cost_report(group_by_val):
         time.sleep(0.2)
     return rows_found
 
-for group_by_val in ["description", "token_type", "model"]:
+for group_by_val in ["description"]:  # API only supports "description" and "workspace_id"
     try:
         rows = _fetch_cost_report(group_by_val)
         total_cost = sum(c for tc in model_type_cost.values() for c in tc.values())
