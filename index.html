@@ -125,6 +125,7 @@
   .tbadge-mtd   { background:rgba(108,99,255,0.15); color:#a89cff; }
   .tbadge-daily { background:rgba(0,212,170,0.12);  color:#00d4aa; }
   .tbadge-7d    { background:rgba(255,167,38,0.12); color:#ffa726; }
+  .tbadge-mom   { background:rgba(206,147,216,0.15); color:#ce93d8; }
   .no-data {
     display:inline-flex; align-items:center; gap:5px;
     font-size:0.72rem; color:rgba(139,146,184,0.45); font-style:italic;
@@ -502,6 +503,26 @@
     <div class="kpi c2"><div class="kpi-label">Projected Month</div><div class="kpi-value" id="ag-kpi-proj-mo">$0</div><div class="kpi-sub" id="ag-kpi-proj-mo-sub">full month estimate</div></div>
     <div class="kpi c4"><div class="kpi-label">Projected Yearly</div><div class="kpi-value" id="ag-kpi-proj-yr">$0</div><div class="kpi-sub">annualised run rate</div></div>
     <div class="kpi c5"><div class="kpi-label">Active Agents</div><div class="kpi-value" id="ag-kpi-agents">0</div><div class="kpi-sub">keys with spend this month</div></div>
+  </div>
+
+  <!-- Month-on-Month Spend Comparison -->
+  <div class="section-divider"><span>Spending Comparison <span class="timeframe-badge tbadge-mom">Month-on-Month</span></span></div>
+  <div class="two-col" id="ag-mom-section" style="display:none">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:6px">Previous Month</div>
+      <div class="section-sub" style="margin-bottom:14px" id="ag-mom-prev-label">-</div>
+      <div style="font-size:2.2rem;font-weight:700;color:#ce93d8" id="ag-mom-prev-value">$0.00</div>
+    </div>
+    <div class="card">
+      <div class="section-title" style="margin-bottom:6px">Current Month MTD</div>
+      <div class="section-sub" style="margin-bottom:14px" id="ag-mom-curr-label">-</div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <div style="font-size:2.2rem;font-weight:700;color:#ce93d8" id="ag-mom-curr-value">$0.00</div>
+        <div style="font-size:1.2rem;font-weight:600" id="ag-mom-trend-badge">
+          <span id="ag-mom-trend-arrow">→</span> <span id="ag-mom-trend-pct">0%</span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Model Breakdown Table — shown first for at-a-glance cost/token summary -->
@@ -4431,6 +4452,29 @@ function renderAgentsTab() {
   set('ag-kpi-proj-mo-sub', `${D.daysElapsed||0}/${D.daysInMonth||30} days elapsed`);
   set('ag-kpi-proj-yr',   naCost(projYr));
   set('ag-kpi-agents',    analyticsOn ? activeCount : agents.filter(a=>!a.isAggregate&&a.status==='active').length);
+
+  // ── Month-on-Month Comparison ─────────────────────────────────────────────────
+  const momSection = document.getElementById('ag-mom-section');
+  if (momSection && D.spendComparison) {
+    const comp = D.spendComparison;
+    const prevTotal = comp.previousMonthTotal || 0;
+    const currMtd   = comp.currentMonthMtd || totalMtd;
+    const trendAmt  = comp.trendAmount || 0;
+    const trendPct  = comp.trendPercentage || 0;
+    const trendDir  = comp.trendDirection || 'flat';
+
+    const trendColor = trendDir === 'up' ? '#ff6b6b' : (trendDir === 'down' ? '#51cf66' : '#ce93d8');
+    const trendArrow = trendDir === 'up' ? '↑' : (trendDir === 'down' ? '↓' : '→');
+
+    momSection.style.display = 'grid';
+    set('ag-mom-prev-label', comp.previousMonthLabel || '—');
+    set('ag-mom-prev-value', fmtUSD(prevTotal));
+    set('ag-mom-curr-label', comp.currentMonthLabel || '—');
+    set('ag-mom-curr-value', fmtUSD(currMtd));
+    set('ag-mom-trend-arrow', trendArrow);
+    set('ag-mom-trend-pct', `${Math.abs(trendPct).toFixed(1)}%`);
+    document.getElementById('ag-mom-trend-badge').style.color = trendColor;
+  }
 
   // ── Sortable thead ────────────────────────────────────────────────────────────
   const th = (label, col, align) => _thSort(label, col, agSortCol, agSortDir, 'sortAgentTable', align);
