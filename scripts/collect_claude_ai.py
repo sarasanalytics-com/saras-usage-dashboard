@@ -121,7 +121,7 @@ for date_str in all_dates:
             data = get_json("users", params)
         except urllib.error.HTTPError as e:
             body = e.read().decode()
-            log(f"  [{date_str}] HTTP {e.code}: {body[:120]")
+            log(f"  [{date_str}] HTTP {e.code}: {body[:120]}")
             break
         except Exception as e:
             log(f"  [{date_str}] Error: {e}")
