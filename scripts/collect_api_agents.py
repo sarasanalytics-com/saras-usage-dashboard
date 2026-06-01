@@ -105,15 +105,24 @@ today_utc   = datetime.now(timezone.utc).date()
 data_until  = today_utc                              # portal shows today's costs
 month_start = today_utc.replace(day=1)
 
-days_in_month = calendar.monthrange(today_utc.year, today_utc.month)[1]
-days_elapsed  = max(1, (data_until - month_start).days + 1)
+# If it's early in the month (first 3 days), include last 7 days of previous month
+# to show more meaningful data while current month is still accumulating
+days_elapsed = (data_until - month_start).days + 1
+if days_elapsed <= 3:
+    lookback_start = month_start - timedelta(days=7)
+    note = " (including last 7 days of previous month for context)"
+else:
+    lookback_start = month_start
+    note = ""
 
-START      = month_start.strftime("%Y-%m-%dT00:00:00Z")
+days_in_month = calendar.monthrange(today_utc.year, today_utc.month)[1]
+
+START      = lookback_start.strftime("%Y-%m-%dT00:00:00Z")
 COST_END   = (today_utc + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z")  # include today
 USAGE_END  = (today_utc + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z")  # include today (API requires strict inequality)
 
-log(f"Collecting API agent stats  {month_start} → {data_until}  "
-    f"({days_elapsed}/{days_in_month} days elapsed)")
+log(f"Collecting API agent stats  {lookback_start} → {data_until}  "
+    f"({days_elapsed}/{days_in_month} days elapsed MTD){note}")
 log(f"Admin key prefix: {ADMIN_KEY[:20]}...")
 
 
