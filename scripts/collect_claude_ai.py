@@ -29,10 +29,8 @@ HEADERS  = {
     "anthropic-version":  "2023-06-01",
 }
 
-
 def log(msg):
     print(msg, file=sys.stderr, flush=True)
-
 
 def get_json(path, params=None, timeout=60):
     """Fetch from Analytics API. Handles list params as key[]=val."""
@@ -50,8 +48,7 @@ def get_json(path, params=None, timeout=60):
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read())
 
-
-# ── Date range ────────────────────────────────────────────────────────────────
+# ── Date range ──────────────────────────────────────────────────────────
 today_utc           = datetime.now(timezone.utc).date()
 data_until          = today_utc - timedelta(days=3)   # 3-day API delay
 month_start         = today_utc.replace(day=1)
@@ -63,7 +60,6 @@ while d <= data_until:
     d += timedelta(days=1)
 
 log(f"Collecting claude.ai analytics for {month_start} → {data_until} ({len(all_dates)} days)")
-
 
 # ── 1. Activity summaries ─────────────────────────────────────────────────────
 log("Fetching activity summaries...")
@@ -87,7 +83,6 @@ cowork_wau      = latest.get("cowork_weekly_active_user_count", 0)
 cowork_mau      = latest.get("cowork_monthly_active_user_count", 0)
 
 log(f"  WAU={wau} MAU={mau} Seats={assigned_seats} Cowork-MAU={cowork_mau}")
-
 
 # ── 2. Per-user daily activity ────────────────────────────────────────────────
 log(f"Fetching per-user activity ({len(all_dates)} days × all users)...")
@@ -126,7 +121,7 @@ for date_str in all_dates:
             data = get_json("users", params)
         except urllib.error.HTTPError as e:
             body = e.read().decode()
-            log(f"  [{date_str}] HTTP {e.code}: {body[:120]}")
+            log(f"  [{date_str}] HTTP {e.code}: {body[:120]")
             break
         except Exception as e:
             log(f"  [{date_str}] Error: {e}")
@@ -144,303 +139,4 @@ for date_str in all_dates:
                 core = ccm.get("core_metrics", {})
                 log(f"[DEBUG] core_metrics keys: {list(core.keys())}")
                 loc = core.get("lines_of_code", {})
-                log(f"[DEBUG] lines_of_code: {loc}")
-                ta_debug = ccm.get("tool_actions", {})
-                log(f"[DEBUG] tool_actions keys: {list(ta_debug.keys())}")
-                if ta_debug:
-                    first_tool = next(iter(ta_debug))
-                    log(f"[DEBUG] tool_actions.{first_tool}: {ta_debug[first_tool]}")
-                _debug_logged = True
 
-            # ── Claude Code tool actions ──────────────────────────────────────
-            ta = ccm.get("tool_actions", {})
-            for tool in ("edit_tool", "multi_edit_tool", "write_tool", "notebook_edit_tool"):
-                t = ta.get(tool, {})
-                user_accepted[email]   += t.get("accepted_count", 0)
-                user_rejected[email]   += t.get("rejected_count", 0)
-                # line-level counts within each tool (may or may not exist)
-                user_tool_lines[email] += t.get("accepted_line_count", 0)
-                user_tool_lines[email] += t.get("lines_accepted", 0)
-
-            # ── lines_of_code from core_metrics (git-commit lines) ────────────
-            loc = ccm.get("core_metrics", {}).get("lines_of_code", {})
-            user_loc_added[email] += loc.get("added_count", 0)
-
-            # Claude Code session presence
-            cc_sessions = (user.get("claude_code_metrics", {})
-                           .get("core_metrics", {})
-                           .get("distinct_session_count", 0))
-            if cc_sessions > 0:
-                user_cc_active.add(email)
-
-            # Chat metrics
-            cm = user.get("chat_metrics", {})
-            convos = cm.get("distinct_conversation_count", 0)
-            day_convos += convos
-            if convos > 0:
-                chat_users_mtd.add(email)
-                user_chats[email] += convos
-
-            proj_created = cm.get("distinct_projects_created_count", 0)
-            if proj_created > 0:
-                project_created_mtd[email] += proj_created
-                project_users_mtd.add(email)
-
-            art_created = cm.get("distinct_artifacts_created_count", 0)
-            if art_created > 0:
-                artifact_created_mtd[email] += art_created
-                artifact_users_mtd.add(email)
-
-            # Cowork sessions
-            cw_sessions = (user.get("cowork_metrics", {})
-                           .get("distinct_session_count", 0))
-            day_cowork += cw_sessions
-            if cw_sessions > 0:
-                user_cowork[email] += cw_sessions
-
-        if not data.get("has_more"):
-            break
-        page = data.get("next_page")
-        time.sleep(0.3)  # rate-limit buffer
-
-    daily_chat_convos.append(day_convos)
-    daily_cowork_sess.append(day_cowork)
-    log(f"  {date_str}: convos={day_convos} cowork_sess={day_cowork} (pages={pages_this_day})")
-    time.sleep(0.2)
-
-
-# ── 3. Derived metrics ────────────────────────────────────────────────────────
-total_accepted     = sum(user_accepted.values())   # tool invocation accepts
-total_rejected     = sum(user_rejected.values())
-total_actions      = total_accepted + total_rejected
-accept_rate        = round(100 * total_accepted / total_actions, 1) if total_actions else 0
-
-# Prefer line-level metrics over invocation counts (priority: tool_lines > loc_added > invocations)
-total_tool_lines   = sum(user_tool_lines.values())
-total_loc_added    = sum(user_loc_added.values())
-
-if total_tool_lines > 0:
-    user_lines_final = user_tool_lines
-    total_lines_out  = total_tool_lines
-    lines_source     = "tool_actions.accepted_line_count"
-elif total_loc_added > 0:
-    user_lines_final = user_loc_added
-    total_lines_out  = total_loc_added
-    lines_source     = "core_metrics.lines_of_code.added_count"
-else:
-    user_lines_final = user_accepted
-    total_lines_out  = total_accepted
-    lines_source     = "tool_actions.accepted_count (invocations — fallback)"
-
-log(f"  Tool accepts (invocations): {total_accepted:,}")
-log(f"  Tool line counts:           {total_tool_lines:,}")
-log(f"  LoC added (git):            {total_loc_added:,}")
-log(f"  → Using [{lines_source}] = {total_lines_out:,}")
-
-# Exclude service/shared accounts — not real individual contributors
-BOT_EMAILS = {'consulting@sarasanalytics.com', 'consulting.claude@sarasanalytics.com'}
-
-# Subtract bot lines from total so KPI shows real human-only lines
-bot_lines      = sum(user_lines_final.get(e, 0) for e in BOT_EMAILS)
-total_lines_out -= bot_lines
-log(f"  Bot lines excluded: {bot_lines:,}  → Human total: {total_lines_out:,}")
-
-# Active members = users with accepted lines > 0 OR CC sessions > 0 (bots excluded)
-active_emails      = ({e for e, v in user_lines_final.items() if v > 0} | user_cc_active) - BOT_EMAILS
-active_members     = len(active_emails)
-total_members      = sum(1 for e in user_accepted if e not in BOT_EMAILS)
-
-avg_chat_per_day   = round(sum(daily_chat_convos) / len(daily_chat_convos), 0) if daily_chat_convos else 0
-avg_cowork_per_day = round(sum(daily_cowork_sess)  / len(daily_cowork_sess),  0) if daily_cowork_sess else 0
-
-chat_user_pct      = round(100 * len(chat_users_mtd)    / assigned_seats) if assigned_seats else 0
-cowork_user_pct    = round(100 * cowork_mau              / assigned_seats) if assigned_seats else 0
-project_user_pct   = round(100 * len(project_users_mtd) / assigned_seats) if assigned_seats else 0
-artifact_user_pct  = round(100 * len(artifact_users_mtd) / assigned_seats) if assigned_seats else 0
-
-projects_created_mtd  = sum(project_created_mtd.values())
-artifacts_created_mtd = sum(artifact_created_mtd.values())
-
-log(f"\n=== Summary ===")
-log(f"  totalLines = {total_lines_out:,} ({lines_source})")
-log(f"  Accept rate: {accept_rate}%  |  Total invocations: {total_accepted:,}")
-log(f"  Active CC members: {active_members} / {total_members}")
-log(f"  WAU: {wau}  |  Cowork MAU: {cowork_mau}")
-log(f"  Chat users: {len(chat_users_mtd)}  |  Avg chats/day: {avg_chat_per_day}")
-
-
-
-# ── 4. Model-level costs + usage (same Analytics API key, no Admin key needed) ─
-# Source: /v1/organizations/analytics/cost_report  — same data as
-# claude.ai/analytics/activity "Spend by model" chart.
-# Amount is in fractional cents (divide by 100 → USD).
-log("\nFetching model-level costs from Analytics API (cost_report)...")
-model_usage = {}
-model_cost  = {}
-
-# ── 4a. Cost by model (MTD) ──────────────────────────────────────────────────
-try:
-    cost_params = {
-        "starting_at":  month_start.strftime("%Y-%m-%dT00:00:00Z"),
-        "ending_at":    (data_until + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z"),
-        "bucket_width": "1d",
-        "group_by":     ["model"],
-    }
-    cost_resp = get_json("cost_report", cost_params)
-
-    # Also collect per-day costs for trend chart: {date → {model → cost}}
-    model_cost_daily = {}   # date_str → {model → cost_usd}
-
-    while True:
-        for bucket in cost_resp.get("data", []):
-            date_str = bucket.get("starting_at", "")[:10]  # YYYY-MM-DD
-            for item in bucket.get("results", []):
-                mdl        = item.get("model")
-                amount_str = item.get("amount", "0") or "0"
-                if not mdl:
-                    continue
-                try:
-                    cost_usd = float(amount_str) / 100.0
-                except (ValueError, TypeError):
-                    cost_usd = 0.0
-                model_cost[mdl] = model_cost.get(mdl, 0) + cost_usd
-                if date_str:
-                    if date_str not in model_cost_daily:
-                        model_cost_daily[date_str] = {}
-                    model_cost_daily[date_str][mdl] = model_cost_daily[date_str].get(mdl, 0) + cost_usd
-        if not cost_resp.get("has_more"):
-            break
-        cost_params["page"] = cost_resp.get("next_page")
-        cost_resp = get_json("cost_report", cost_params)
-        time.sleep(0.2)
-
-    if model_cost:
-        log(f"  Cost breakdown by model (MTD through {data_until}):")
-        for mdl, cost in sorted(model_cost.items(), key=lambda x: -x[1]):
-            log(f"    {mdl}: ${cost:.2f}")
-        log(f"  Total Claude spend MTD: ${sum(model_cost.values()):.2f}")
-        log(f"  Daily data points: {len(model_cost_daily)} days")
-    else:
-        log(f"  [INFO] No cost data for {month_start} → {data_until}")
-        log(f"  [INFO] Data available 3+ days ago; chart may show more recent data with higher values")
-
-except Exception as e:
-    log(f"  [WARN] cost_report fetch failed: {e}")
-    model_cost = {}
-
-# ── 4b. Token usage by model ─────────────────────────────────────────────────
-try:
-    usage_params = {
-        "starting_at":  month_start.strftime("%Y-%m-%dT00:00:00Z"),
-        "ending_at":    (data_until + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z"),
-        "bucket_width": "1d",
-        "group_by":     ["model"],
-    }
-    usage_resp = get_json("usage_report", usage_params)
-
-    for bucket in usage_resp.get("data", []):
-        for item in bucket.get("results", []):
-            mdl = item.get("model")
-            if not mdl:
-                continue
-            if mdl not in model_usage:
-                model_usage[mdl] = {"input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0}
-            model_usage[mdl]["input_tokens"]     += item.get("uncached_input_tokens", item.get("input_tokens", 0))
-            model_usage[mdl]["output_tokens"]     += item.get("output_tokens", 0)
-            model_usage[mdl]["cache_read_tokens"] += item.get("cache_read_input_tokens", 0)
-
-    if model_usage:
-        log(f"  Token usage by model:")
-        for mdl, u in sorted(model_usage.items()):
-            log(f"    {mdl}: in={u['input_tokens']:,}  out={u['output_tokens']:,}")
-
-except Exception as e:
-    log(f"  [WARN] usage_report fetch failed: {e}")
-    model_usage = {}
-
-# ── 4b. Extract spend by product ──────────────────────────────────────────────
-# Calculate total Claude spend from model costs
-claude_spend_mtd = sum(model_cost.values()) if model_cost else 0
-claude_spend = {
-    "mtd": round(claude_spend_mtd, 2),
-    "monthly": round(claude_spend_mtd, 2),  # MTD is our best estimate for monthly
-    "byModel": {model: round(cost, 2) for model, cost in model_cost.items()}
-}
-
-# Read Cursor and Windsurf spend from daily_collected.json (populated by collect_data.py)
-from pathlib import Path as PathlibPath
-daily_collected_path = REPO_ROOT / "data" / "daily_collected.json"
-cursor_spend = None
-windsurf_spend = None
-
-if daily_collected_path.exists():
-    try:
-        with open(daily_collected_path, 'r', encoding='utf-8') as f:
-            daily_data = json.load(f)
-            cursor_spend = daily_data.get("cursor_spend")
-            windsurf_spend = daily_data.get("windsurf_spend")
-    except Exception as e:
-        log(f"  [WARN] Could not read daily_collected.json: {e}")
-
-log(f"  Claude spend MTD: ${claude_spend_mtd:.2f}")
-if cursor_spend:
-    log(f"  Cursor spend MTD: ${cursor_spend.get('mtd', 0):.2f}")
-if windsurf_spend:
-    log(f"  Windsurf: {windsurf_spend.get('creditsUsed', 0)} credits used")
-
-# ── 4c. Write output ──────────────────────────────────────────────────────────
-# Sort members by lines (desc), excluding service/shared accounts
-members_sorted = dict(sorted(
-    {k: v for k, v in user_lines_final.items() if k not in BOT_EMAILS}.items(),
-    key=lambda x: -x[1]
-))
-
-# Build per-day arrays for trend charts (weekdays only)
-chats_daily_data  = []
-cowork_daily_data = []
-for date_str, chats, cowork in zip(all_dates, daily_chat_convos, daily_cowork_sess):
-    dt = datetime.strptime(date_str, "%Y-%m-%d")
-    if dt.weekday() < 5:   # Mon–Fri only
-        chats_daily_data.append({"date": date_str, "chats": chats})
-        cowork_daily_data.append({"date": date_str, "users": cowork})
-
-result = {
-    "asOf":                 data_until.strftime("%Y-%m-%d"),
-    "_dataDelay":           "3-day API delay — most recent available date",
-    "totalLines":              total_lines_out,
-    "_linesSource":            lines_source,
-    "_totalLinesInvocations":  total_accepted,
-    "_totalToolLines":         total_tool_lines,
-    "_totalLocAdded":          total_loc_added,
-    "acceptRate":           accept_rate,
-    "activeMembers":        active_members,
-    "totalMembers":         total_members,
-    "assignedSeats":        assigned_seats,
-    "wau":                  wau,
-    "mau":                  mau,
-    "utilization":          round(weekly_adoption, 1),
-    "pendingInvites":       pending_invites,
-    "coworkSessionsPerDay": int(avg_cowork_per_day),
-    "coworkUserPct":        cowork_user_pct,
-    "chatsPerDay":          int(avg_chat_per_day),
-    "chatUserPct":          chat_user_pct,
-    "projectsCreated":      projects_created_mtd,
-    "projectUserPct":       project_user_pct,
-    "artifactsCreated":     artifacts_created_mtd,
-    "artifactUserPct":      artifact_user_pct,
-    "chatsDailyData":       chats_daily_data,
-    "coworkDailyData":      cowork_daily_data,
-    "chatUsers":            dict(sorted(user_chats.items(), key=lambda x: -x[1])),
-    "coworkUsers":          dict(sorted(user_cowork.items(), key=lambda x: -x[1])),
-    "members":              members_sorted,
-    "modelUsage":           model_usage,
-    "modelCost":            model_cost,
-    "modelCostDaily":       model_cost_daily,
-    "claudeSpend":          claude_spend,
-    "cursorSpend":          cursor_spend,
-    "windsurfSpend":        windsurf_spend,
-}
-
-OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-OUTPUT_PATH.write_text(json.dumps(result, indent=2), encoding="utf-8")
-log(f"\nWrote {OUTPUT_PATH}")
