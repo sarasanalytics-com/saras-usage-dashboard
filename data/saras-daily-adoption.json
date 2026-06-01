@@ -1400,6 +1400,25 @@
         "koundinya@sarasanalytics.com": 233,
         "amith@sarasanalytics.com": 5
       }
+    },
+    {
+      "date": "2026-06-01",
+      "cursor": {
+        "saivarun.pathi@sarasanalytics.com": 2,
+        "joe.p@sarasanalytics.com": 1,
+        "ajay.mateti@sarasanalytics.com": 3
+      },
+      "windsurf": {},
+      "clickup": {
+        "ram.gupta@sarasanalytics.com": 1,
+        "nishita.khanna@sarasanalytics.com": 1,
+        "gaurav.sharma@sarasanalytics.com": 1,
+        "srinivas.sampathirao@sarasanalytics.com": 1,
+        "saivarun.pathi@sarasanalytics.com": 1,
+        "anuj.dandawate@sarasanalytics.com": 1,
+        "deepthi@sarasanalytics.com": 1
+      },
+      "claudeCodeDaily": {}
     }
   ],
   "claudeCodeMTD": {
@@ -1559,5 +1578,5 @@
     "paramanand.mahaveer@sarasanalytics.com": 0,
     "dinesh.kavuru@sarasanalytics.com": 0
   },
-  "lastUpdated": "2026-05-31T02:30:05.422901+00:00"
+  "lastUpdated": "2026-06-01T04:20:23.812299+00:00"
 }
