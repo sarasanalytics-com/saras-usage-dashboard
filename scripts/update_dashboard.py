@@ -218,6 +218,9 @@ members_dict   = cc["members"]
 cc_as_of       = cc.get("asOf", TODAY)
 wau            = cc.get("wau", 0)
 mau            = cc.get("mau", 0)
+licensed_seats = cc.get("assignedSeats", 150)  # Auto-fetched from Claude Admin daily
+cursor_seats   = cc.get("cursorSeats", 63)     # Auto-fetched from environment/API daily
+windsurf_seats = cc.get("windsurfSeats", 8)    # Auto-fetched from environment/API daily
 
 all_lines    = sum(members_dict.values())
 avg_lines    = round(all_lines / active_members) if active_members else 0
@@ -323,23 +326,23 @@ spend_data = {
     "claude": {
         "mtd": claude_spend.get("mtd", 0),
         "monthly": claude_spend.get("monthly", 0),
-        "seats": 160,
+        "seats": licensed_seats,
         "perSeat": 20,
-        "subscription": 160 * 20,   # $3,200/mo fixed seat cost
+        "subscription": licensed_seats * 20,   # Dynamic seat cost
     },
     "cursor": {
         "mtd": cursor_spend.get("mtd", 0) if cursor_spend else 0,
         "monthly": cursor_spend.get("monthly", 0) if cursor_spend else 0,
-        "seats": 63,
+        "seats": cursor_seats,
         "perSeat": 20,
-        "subscription": 63 * 20,    # $1,260/mo fixed seat cost
+        "subscription": cursor_seats * 20,    # Dynamic seat cost
     },
     "windsurf": {
         "mtd": windsurf_spend.get("mtd", 0) if windsurf_spend else 0,
         "monthly": windsurf_spend.get("monthly", 0) if windsurf_spend else 0,
-        "seats": 8,
+        "seats": windsurf_seats,
         "perSeat": 30,
-        "subscription": 8 * 30,     # $240/mo fixed seat cost
+        "subscription": windsurf_seats * 30,     # Dynamic seat cost
     },
 }
 
