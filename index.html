@@ -4455,25 +4455,31 @@ function renderAgentsTab() {
 
   // ── Month-on-Month Comparison ─────────────────────────────────────────────────
   const momSection = document.getElementById('ag-mom-section');
-  if (momSection && D.spendComparison) {
-    const comp = D.spendComparison;
-    const prevTotal = comp.previousMonthTotal || 0;
-    const currMtd   = comp.currentMonthMtd || totalMtd;
-    const trendAmt  = comp.trendAmount || 0;
-    const trendPct  = comp.trendPercentage || 0;
-    const trendDir  = comp.trendDirection || 'flat';
+  if (momSection) {
+    if (D.spendComparison) {
+      const comp = D.spendComparison;
+      const prevTotal = comp.previousMonthTotal || 0;
+      const currMtd   = comp.currentMonthMtd || totalMtd;
+      const trendAmt  = comp.trendAmount || 0;
+      const trendPct  = comp.trendPercentage || 0;
+      const trendDir  = comp.trendDirection || 'flat';
 
-    const trendColor = trendDir === 'up' ? '#ff6b6b' : (trendDir === 'down' ? '#51cf66' : '#ce93d8');
-    const trendArrow = trendDir === 'up' ? '↑' : (trendDir === 'down' ? '↓' : '→');
+      const trendColor = trendDir === 'up' ? '#ff6b6b' : (trendDir === 'down' ? '#51cf66' : '#ce93d8');
+      const trendArrow = trendDir === 'up' ? '↑' : (trendDir === 'down' ? '↓' : '→');
 
-    momSection.style.display = 'grid';
-    set('ag-mom-prev-label', comp.previousMonthLabel || '—');
-    set('ag-mom-prev-value', fmtUSD(prevTotal));
-    set('ag-mom-curr-label', comp.currentMonthLabel || '—');
-    set('ag-mom-curr-value', fmtUSD(currMtd));
-    set('ag-mom-trend-arrow', trendArrow);
-    set('ag-mom-trend-pct', `${Math.abs(trendPct).toFixed(1)}%`);
-    document.getElementById('ag-mom-trend-badge').style.color = trendColor;
+      momSection.style.display = 'grid';
+      set('ag-mom-prev-label', comp.previousMonthLabel || '—');
+      set('ag-mom-prev-value', fmtUSD(prevTotal));
+      set('ag-mom-curr-label', comp.currentMonthLabel || '—');
+      set('ag-mom-curr-value', fmtUSD(currMtd));
+      set('ag-mom-trend-arrow', trendArrow);
+      set('ag-mom-trend-pct', `${Math.abs(trendPct).toFixed(1)}%`);
+      const badgeEl = document.getElementById('ag-mom-trend-badge');
+      if (badgeEl) badgeEl.style.color = trendColor;
+    } else {
+      // No spendComparison data yet, keep hidden
+      momSection.style.display = 'none';
+    }
   }
 
   // ── Sortable thead ────────────────────────────────────────────────────────────
