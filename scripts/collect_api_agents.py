@@ -331,7 +331,16 @@ for mdl, type_map in all_model_tokens.items():
         global_model_tokens[mdl][ttype] += cnt
 
 total_api_spend_mtd = sum(key_cost_mtd.values())
-daily_avg           = total_api_spend_mtd / days_elapsed if days_elapsed > 0 else 0
+
+# Calculate daily average based on actual date range (not just MTD days)
+# When looking back into previous month, span includes those days too
+actual_days_span = (data_until - lookback_start).days + 1
+daily_avg = total_api_spend_mtd / actual_days_span if actual_days_span > 0 else 0
+
+# For June 1st with lookback: actual spend is May 25-June 1 (7 days)
+# So daily_avg should be spend/7, not spend/1
+# But monthly projection should still be based on full month
+
 projected_monthly   = daily_avg * days_in_month
 projected_yearly    = projected_monthly * 12
 
@@ -374,21 +383,23 @@ log(f"  Agents in output: {len(agents)}")
 
 
 result = {
-    "asOf":             data_until.strftime("%Y-%m-%d"),
-    "monthStart":       month_start.strftime("%Y-%m-%d"),
-    "totalApiSpendMtd": round(total_api_spend_mtd, 4),
-    "dailyAvg":         round(daily_avg, 6),
-    "projectedMonthly": round(projected_monthly, 2),
-    "projectedYearly":  round(projected_yearly, 2),
-    "daysElapsed":      days_elapsed,
-    "daysInMonth":      days_in_month,
-    "analyticsWorking": analytics_working,
-    "adminKeyValid":    len(key_names) > 0,
-    "globalModelCost":  {m: round(c, 6) for m, c in
-                         sorted(global_model_cost.items(), key=lambda x: -x[1])},
+    "asOf":              data_until.strftime("%Y-%m-%d"),
+    "monthStart":        month_start.strftime("%Y-%m-%d"),
+    "dataRange":         f"{lookback_start.strftime('%Y-%m-%d')} to {data_until.strftime('%Y-%m-%d')}",
+    "dataRangeSpan":     f"{actual_days_span} days",
+    "totalApiSpendMtd":  round(total_api_spend_mtd, 4),
+    "dailyAvg":          round(daily_avg, 6),
+    "projectedMonthly":  round(projected_monthly, 2),
+    "projectedYearly":   round(projected_yearly, 2),
+    "daysElapsed":       days_elapsed,  # Actual MTD days in current month
+    "daysInMonth":       days_in_month,
+    "analyticsWorking":  analytics_working,
+    "adminKeyValid":     len(key_names) > 0,
+    "globalModelCost":   {m: round(c, 6) for m, c in
+                          sorted(global_model_cost.items(), key=lambda x: -x[1])},
     "globalModelTokens": {m: {t: int(c) for t, c in tv.items()}
                           for m, tv in global_model_tokens.items()},
-    "agents":           agents,
+    "agents":            agents,
 }
 
 OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
