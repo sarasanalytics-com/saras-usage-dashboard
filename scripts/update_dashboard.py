@@ -276,7 +276,7 @@ new_data_block = f"""const DATA = {{
   asOf: '{TODAY_LABEL}',
   monthLabel: '{MONTH_LABEL}',
   utilization: {utilization},
-  licensedSeats: 150,
+  licensedSeats: {licensed_seats},
   totalLines: {total_lines},
   acceptRate: {accept_rate},
   activeMembers: {active_members},
