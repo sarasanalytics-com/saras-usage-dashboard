@@ -16,6 +16,8 @@ Required environment variables:
 
 Optional:
   CLICKUP_TEAM_ID        defaults to 9011000533
+  CURSOR_SEATS           Cursor license count, defaults to 63
+  WINDSURF_SEATS         Windsurf license count, defaults to 8
   REPORT_DATE            YYYY-MM-DD, defaults to today UTC
 """
 import json
@@ -33,6 +35,8 @@ CLICKUP_TOKEN        = os.environ["CLICKUP_API_KEY"]
 CURSOR_BEARER_TOKEN  = os.environ["CURSOR_BEARER_TOKEN"]
 WINDSURF_SERVICE_KEY = os.environ["WINDSURF_SERVICE_KEY"]
 WORKSPACE_ID         = os.environ.get("CLICKUP_TEAM_ID", "9011000533")
+CURSOR_SEATS         = int(os.environ.get("CURSOR_SEATS", "63"))
+WINDSURF_SEATS       = int(os.environ.get("WINDSURF_SEATS", "8"))
 
 TODAY_STR = os.environ.get("REPORT_DATE") or datetime.now(timezone.utc).strftime("%Y-%m-%d")
 TODAY     = datetime.strptime(TODAY_STR, "%Y-%m-%d").replace(tzinfo=timezone.utc)
@@ -387,9 +391,11 @@ result = {
     },
     "cursor_today": dict(cursor_user_counts),
     "cursor_spend": cursor_spend_data,
+    "cursor_seats": CURSOR_SEATS,
     "windsurf_today": windsurf_today,
     "windsurf_users": windsurf_users,
     "windsurf_spend": windsurf_spend_data,
+    "windsurf_seats": WINDSURF_SEATS,
 }
 
 OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
