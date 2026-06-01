@@ -357,6 +357,34 @@ for kid, cost in sorted(key_cost_mtd.items(), key=lambda x: -x[1])[:10]:
     log(f"    {key_names.get(kid, kid[:20])}: ${cost:.4f}")
 
 
+# ── 5b. Fetch previous month's total cost for comparison ─────────────────────
+log(f"\n── Month-on-Month Comparison ───────────────────────────────────────────")
+previous_month_total = 0
+previous_month_start = (month_start - timedelta(days=1)).replace(day=1)
+previous_month_end   = (month_start - timedelta(days=1))
+previous_start_str   = previous_month_start.strftime("%Y-%m-%dT00:00:00Z")
+previous_end_str     = (previous_month_end + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z")
+
+try:
+    # Fetch cost_report for full previous month
+    prev_cost_resp = org_get("cost_report", {
+        "group_by": ["description"],
+        "starting_at": previous_start_str,
+        "ending_at": previous_end_str,
+    })
+    for row in prev_cost_resp.get("data", []):
+        previous_month_total += row.get("cost", 0)
+    log(f"  Previous month ({previous_month_start.strftime('%B %Y')}): ${previous_month_total:.4f}")
+except Exception as e:
+    log(f"  [WARN] Could not fetch previous month cost: {e}")
+    previous_month_total = 0
+
+# Calculate trend
+trend_amount = total_api_spend_mtd - previous_month_total
+trend_pct = (trend_amount / previous_month_total * 100) if previous_month_total > 0 else 0
+trend_dir = "up" if trend_amount > 0 else ("down" if trend_amount < 0 else "flat")
+
+
 # ── 6. Build agents list ──────────────────────────────────────────────────────
 # Merge all known key IDs
 all_key_ids = set(key_names.keys()) | set(key_cost_mtd.keys())
@@ -399,9 +427,19 @@ result = {
                           sorted(global_model_cost.items(), key=lambda x: -x[1])},
     "globalModelTokens": {m: {t: int(c) for t, c in tv.items()}
                           for m, tv in global_model_tokens.items()},
+    "spendComparison": {
+        "previousMonthTotal": round(previous_month_total, 4),
+        "previousMonthLabel": previous_month_start.strftime("%B %Y"),
+        "currentMonthMtd": round(total_api_spend_mtd, 4),
+        "currentMonthLabel": month_start.strftime("%B %Y"),
+        "trendAmount": round(trend_amount, 4),
+        "trendPercentage": round(trend_pct, 1),
+        "trendDirection": trend_dir,
+    },
     "agents":            agents,
 }
 
 OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
 OUTPUT_PATH.write_text(json.dumps(result, indent=2), encoding="utf-8")
 log(f"\nWrote {OUTPUT_PATH}  ({len(agents)} agents, analyticsWorking={analytics_working})")
+log(f"  Month-on-Month: {previous_month_start.strftime('%b %Y')} ${previous_month_total:.2f} → {month_start.strftime('%b %Y')} ${total_api_spend_mtd:.2f} ({trend_dir} {abs(trend_pct):.1f}%)")
