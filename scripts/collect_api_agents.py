@@ -366,14 +366,27 @@ previous_start_str   = previous_month_start.strftime("%Y-%m-%dT00:00:00Z")
 previous_end_str     = (previous_month_end + timedelta(days=1)).strftime("%Y-%m-%dT00:00:00Z")
 
 try:
-    # Fetch cost_report for full previous month
-    prev_cost_resp = org_get("cost_report", {
-        "group_by": ["description"],
-        "starting_at": previous_start_str,
-        "ending_at": previous_end_str,
-    })
-    for row in prev_cost_resp.get("data", []):
-        previous_month_total += row.get("cost", 0)
+    # Fetch cost_report for the full previous month. Parse the same
+    # data[].results[].amount (cents) shape — and paginate — exactly like
+    # _fetch_cost_report above. The previous implementation read a
+    # non-existent data[].cost field, so it always returned $0 even when the
+    # prior month clearly had spend (breaking the month-on-month comparison).
+    prev_params = {
+        "starting_at":  previous_start_str,
+        "ending_at":    previous_end_str,
+        "bucket_width": "1d",
+        "group_by":     ["description"],
+    }
+    prev_resp = org_get("cost_report", prev_params)
+    while True:
+        for bucket in prev_resp.get("data", []):
+            for item in bucket.get("results", []):
+                previous_month_total += float(item.get("amount", 0) or 0) / 100.0  # cents → USD
+        if not prev_resp.get("has_more"):
+            break
+        prev_params["page"] = prev_resp.get("next_page")
+        prev_resp = org_get("cost_report", prev_params)
+        time.sleep(0.2)
     log(f"  Previous month ({previous_month_start.strftime('%B %Y')}): ${previous_month_total:.4f}")
 except Exception as e:
     log(f"  [WARN] Could not fetch previous month cost: {e}")

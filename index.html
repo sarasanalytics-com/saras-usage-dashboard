@@ -5048,15 +5048,18 @@ function renderWeeklyTab() {
   const maxCount = Math.max(power.length, regular.length, casual.length, otherTools.length, 1);
 
   // ── Last-week aggregates for WoW comparison (same definition: all per-day tools) ──
+  // Use the SAME scope as the current week (_inScope = roster + dept + manager
+  // filters) so the WoW baseline isn't inflated by out-of-scope users when a
+  // department or manager filter is active.
   const prevUsersSet = new Set();
   daysPrev.forEach(day => {
-    Object.keys(day.c).forEach(e        => { if (_isReal(e)) prevUsersSet.add(e); });
-    Object.keys(day.w  || {}).forEach(e => { if (_isReal(e)) prevUsersSet.add(e); });
-    Object.keys(day.cc || {}).forEach(e => { if ((day.cc[e]||0) > 0 && _isReal(e)) prevUsersSet.add(e); });
-    Object.keys(day.cu || {}).forEach(e => { if (_isReal(e)) prevUsersSet.add(e); });
+    Object.keys(day.c).forEach(e        => { if (_inScope(e)) prevUsersSet.add(e); });
+    Object.keys(day.w  || {}).forEach(e => { if (_inScope(e)) prevUsersSet.add(e); });
+    Object.keys(day.cc || {}).forEach(e => { if ((day.cc[e]||0) > 0 && _inScope(e)) prevUsersSet.add(e); });
+    Object.keys(day.cu || {}).forEach(e => { if (_inScope(e)) prevUsersSet.add(e); });
   });
-  Object.keys(claudeAiUsers).forEach(email => { if (_isReal(email)) prevUsersSet.add(email); });
-  const totalEvPrev = daysPrev.reduce((s, d) => s + Object.values(d.c).reduce((a, v) => a + v, 0), 0);
+  Object.keys(claudeAiUsers).forEach(email => { if (_inScope(email)) prevUsersSet.add(email); });
+  const totalEvPrev = daysPrev.reduce((s, d) => s + Object.entries(d.c).filter(([e]) => _inScope(e)).reduce((a, [,v]) => a + v, 0), 0);
   const powerPrev   = [...prevUsersSet].filter(email => {
     const ev   = daysPrev.reduce((s, d) => s + (d.c[email] || 0), 0);
     const days = daysPrev.filter(d => (d.c[email] || 0) > 0).length;
