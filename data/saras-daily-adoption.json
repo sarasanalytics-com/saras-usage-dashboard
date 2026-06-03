@@ -1501,6 +1501,17 @@
         "gaurav.sharma@sarasanalytics.com": 1
       },
       "claudeCodeDaily": {}
+    },
+    {
+      "date": "2026-06-03",
+      "cursor": {
+        "saivarun.pathi@sarasanalytics.com": 4
+      },
+      "windsurf": {},
+      "clickup": {
+        "gaurav.sharma@sarasanalytics.com": 1
+      },
+      "claudeCodeDaily": {}
     }
   ],
   "claudeCodeMTD": {
@@ -1660,5 +1671,5 @@
     "paramanand.mahaveer@sarasanalytics.com": 0,
     "dinesh.kavuru@sarasanalytics.com": 0
   },
-  "lastUpdated": "2026-06-02T02:28:35.407093+00:00"
+  "lastUpdated": "2026-06-03T02:28:04.817979+00:00"
 }
