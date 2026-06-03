@@ -2252,12 +2252,15 @@ function renderConversationTable() {
     return;
   }
 
+  // Average over the actual number of days in the chat feed (weekdays with
+  // data), not a hardcoded 31 — keeps this consistent with userDailyAvg.
+  const _convDays = Math.max(1, (DATA.chatsDailyData || []).length);
   const rows = Object.entries(conversations)
     .map(([email, data]) => ({
       email,
       conversations: data.count || 0,
       messages: data.messages || 0,
-      avgPerDay: (data.count || 0) / 31
+      avgPerDay: (data.count || 0) / _convDays
     }))
     .sort((a, b) => b.conversations - a.conversations);
 
@@ -3330,7 +3333,7 @@ function initFromData() {
           <div>
             <div style="color:#ff6b6b;font-weight:700;font-size:0.85rem;margin-bottom:3px">ACTION NEEDED THIS WEEK</div>
             <div style="color:var(--text);font-size:0.82rem"><strong style="color:#fff">${idleMembers.length} CC seats idle</strong> · ${veryLowMembers.length} members &lt;100 lines - needs 1:1 onboarding</div>
-            <div style="color:#00d4aa;font-size:0.75rem;margin-top:4px">Cowork trending ↑${cwTrend !== null ? ' +'+cwTrend+'% Mon->Thu' : ''} · ${d.coworkDailyUsers} daily active users</div>
+            <div style="color:var(--muted);font-size:0.75rem;margin-top:4px">Cowork ${cwTrend !== null ? `<span style="color:${cwTrend<0?'#ff6b6b':cwTrend>0?'#00d4aa':'#8b92b8'}">${cwTrend>0?'↑':cwTrend<0?'↓':'→'}${Math.abs(cwTrend)}% MTD</span> · ` : ''}${d.coworkDailyUsers} daily active users</div>
           </div>
         </div>
       </div>
@@ -3371,7 +3374,8 @@ function initFromData() {
   // Cowork overview delta
   const cwD = coworkDailyData;
   const cwDelta = cwD.length>=2 ? Math.round((cwD[cwD.length-1].users - cwD[0].users)/cwD[0].users*100) : null;
-  set('kpi-overview-cowork-user-sub', `Weekday avg · ${cwDelta!==null?'↑'+cwDelta+'% Mon->Thu · ':''} data as of ${d.coworkDataAsOf}`);
+  const cwArrow = cwDelta===null ? '' : (cwDelta>0?'↑':cwDelta<0?'↓':'→');
+  set('kpi-overview-cowork-user-sub', `Weekday avg · ${cwDelta!==null?cwArrow+Math.abs(cwDelta)+'% MTD · ':''}data as of ${d.coworkDataAsOf}`);
 
   // Claude Code tab
   set('kpi-code-total-lines', fmt(d.totalLines));
@@ -3917,7 +3921,7 @@ const CLICKUP_DATA = {
 // Add a new entry each week: { week:'YYYY-MM-DD', label:'Mon D', lines:{email:n,...}, cu_open:{email:n,...} }
 // The first entry is seeded from current live data so tracking starts immediately.
 const WEEKLY_SNAPSHOTS = (function() {
-  const snap = { week: CLICKUP_DATA.asOf, label: 'May 18' };
+  const snap = { week: CLICKUP_DATA.asOf, label: new Date(CLICKUP_DATA.asOf + 'T00:00:00').toLocaleDateString('en-US', {month:'short', day:'numeric'}) };
   snap.lines   = {};  members.forEach(m => { snap.lines[m.email]   = m.lines; });
   snap.cu_open = {};  CLICKUP_DATA.people.forEach(p => { snap.cu_open[p.email] = p.open; });
   return [snap];
@@ -4425,11 +4429,20 @@ function renderAgentsTab() {
   set('ag-hero-spend',    analyticsOn ? fmtUSD(totalMtd) : '—');
   set('ag-hero-sub',      `platform API · ${agents.filter(a=>!a.isAggregate&&a.status==='active').length} keys · as of ${D.asOf||'–'}` +
                           (analyticsOn ? '' : ' · cost data pending'));
+  // Early in the month the collector blends in the last few days of the prior
+  // month "for context", so the figure spans dataRangeSpan days (e.g. 10), not
+  // just the elapsed MTD days. Label it honestly instead of implying pure MTD.
+  const _spanDays     = parseInt(D.dataRangeSpan, 10) || (D.daysElapsed || 0);
+  const _usesLookback = _spanDays > (D.daysElapsed || 0);
   set('ag-kpi-mtd',       naCost(totalMtd));
-  set('ag-kpi-mtd-sub',   analyticsOn ? (D.asOf ? `through ${D.asOf}` : 'this month') : 'analytics access pending');
+  set('ag-kpi-mtd-sub',   analyticsOn
+                            ? (_usesLookback && D.dataRange ? D.dataRange.replace(' to ', ' → ') : (D.asOf ? `through ${D.asOf}` : 'this month'))
+                            : 'analytics access pending');
   set('ag-kpi-daily',     naCost(dailyAvg));
   set('ag-kpi-proj-mo',   naCost(projMo));
-  set('ag-kpi-proj-mo-sub', `${D.daysElapsed||0}/${D.daysInMonth||30} days elapsed`);
+  set('ag-kpi-proj-mo-sub', _usesLookback
+                            ? `${_spanDays}-day run-rate × ${D.daysInMonth||30} days`
+                            : `${D.daysElapsed||0}/${D.daysInMonth||30} days elapsed`);
   set('ag-kpi-proj-yr',   naCost(projYr));
   set('ag-kpi-agents',    analyticsOn ? activeCount : agents.filter(a=>!a.isAggregate&&a.status==='active').length);
 
@@ -4449,13 +4462,22 @@ function renderAgentsTab() {
 
       momSection.style.display = 'grid';
       set('ag-mom-prev-label', comp.previousMonthLabel || '—');
-      set('ag-mom-prev-value', fmtUSD(prevTotal));
+      set('ag-mom-prev-value', prevTotal > 0 ? fmtUSD(prevTotal) : 'No data');
       set('ag-mom-curr-label', comp.currentMonthLabel || '—');
       set('ag-mom-curr-value', fmtUSD(currMtd));
-      set('ag-mom-trend-arrow', trendArrow);
-      set('ag-mom-trend-pct', `${Math.abs(trendPct).toFixed(1)}%`);
       const badgeEl = document.getElementById('ag-mom-trend-badge');
-      if (badgeEl) badgeEl.style.color = trendColor;
+      if (prevTotal > 0) {
+        // Have a real prior-month baseline — show the signed % change.
+        set('ag-mom-trend-arrow', trendArrow);
+        set('ag-mom-trend-pct', `${Math.abs(trendPct).toFixed(1)}%`);
+        if (badgeEl) badgeEl.style.color = trendColor;
+      } else {
+        // No prior-month spend recorded — a "% change vs $0" is undefined, so
+        // don't render a misleading "↑ 0.0%".
+        set('ag-mom-trend-arrow', '');
+        set('ag-mom-trend-pct', 'No prior-month baseline');
+        if (badgeEl) badgeEl.style.color = '#8b92b8';
+      }
     } else {
       // No spendComparison data yet, keep hidden
       momSection.style.display = 'none';
@@ -5761,7 +5783,37 @@ renderToolStrips();
 
 // ==================== TRENDS TAB ====================
 function initTrendsTab() {
-  const TMONTHS = ['Feb 2026','Mar 2026','Apr 2026','May 2026'];
+  // Month labels derived from the live current month (DATA.monthLabel) so the
+  // latest column / comparison always matches the data instead of being
+  // hardcoded to "May 2026" (which silently went stale once the month rolled).
+  const _TM_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const _tmParts  = (DATA.monthLabel || '').split(' ');
+  const _tmIdx    = _TM_NAMES.indexOf(_tmParts[0]);
+  const _tmYear   = parseInt(_tmParts[1], 10);
+  const _tmCur    = (_tmIdx >= 0 && !isNaN(_tmYear)) ? new Date(_tmYear, _tmIdx, 1) : new Date();
+  const _tmLbl    = (back) => { const d = new Date(_tmCur); d.setMonth(d.getMonth() - back); return d.toLocaleDateString('en-US',{month:'short',year:'numeric'}); };
+  const _tmShort  = (back) => { const d = new Date(_tmCur); d.setMonth(d.getMonth() - back); return d.toLocaleDateString('en-US',{month:'short'}); };
+  const TMONTHS        = [_tmLbl(3), _tmLbl(2), _tmLbl(1), _tmLbl(0)];  // 4 months ending at current
+  const CUR_MON_SHORT  = _tmShort(0);   // e.g. "Jun"
+  const PREV_MON_SHORT = _tmShort(1);   // e.g. "May"
+
+  // Sync the static section headers / badges / table labels in this tab to the
+  // derived months (these have no live data binding otherwise).
+  const _setTxt = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt; };
+  _setTxt('tr-mom-compare-title', PREV_MON_SHORT + ' -> ' + CUR_MON_SHORT + ' Comparison');
+  _setTxt('tr-trendlines-badge',  TMONTHS[0] + ' -> ' + TMONTHS[3]);
+  _setTxt('tr-active-seats-sub',  'Members with any lines · of ' + DATA.licensedSeats + ' licensed seats');
+  _setTxt('tr-dept-badge',        TMONTHS[3] + ' MTD');
+  _setTxt('tr-th-cclines',        'CC Lines (' + CUR_MON_SHORT + ')');
+  _setTxt('tr-th-cursorev',       'Cursor Events (' + CUR_MON_SHORT + ')');
+  // The daily chart plots DATA.chatsDailyData, whose month may lag behind the
+  // current month (Claude.ai feed has a multi-day delay) — label it by the
+  // actual data month, not "this month".
+  const _dailyMon = (DATA.chatsDailyData && DATA.chatsDailyData.length)
+    ? new Date(DATA.chatsDailyData[0].date + 'T00:00:00').toLocaleDateString('en-US',{month:'short',year:'numeric'})
+    : TMONTHS[3];
+  _setTxt('tr-daily-title', 'Daily Activity - ' + _dailyMon);
+  _setTxt('tr-daily-badge', 'Weekdays');
   // Historical monthly snapshots - add a new row each month
   const TM = [
     {lines:0,      activeMembers:0,  chatsPerDay:0,   chatUserPct:0,  coworkDAU:0,  cursorDAU:0,  cursorEvents:0,     projectsCreated:0,  artifactUserPct:0},
@@ -5835,7 +5887,7 @@ function initTrendsTab() {
 
   // KPI Row
   const kpis = [
-    {label:'CC Lines (May MTD)', val:fmt(curr.lines),        delta:trPct(curr.lines,prev.lines),                cls:'c1'},
+    {label:'CC Lines ('+CUR_MON_SHORT+' MTD)', val:fmt(curr.lines), delta:trPct(curr.lines,prev.lines),         cls:'c1'},
     {label:'CC Active Members',  val:curr.activeMembers,     delta:trPct(curr.activeMembers,prev.activeMembers), cls:'c2'},
     {label:'Chats / Day (avg)',  val:curr.chatsPerDay,       delta:trPct(curr.chatsPerDay,prev.chatsPerDay),     cls:'c3'},
     {label:'Cowork DAU',         val:curr.coworkDAU,         delta:trPct(curr.coworkDAU,prev.coworkDAU),         cls:'c4'},
@@ -5845,7 +5897,7 @@ function initTrendsTab() {
     <div class="kpi ${k.cls}">
       <div class="kpi-label">${k.label}</div>
       <div class="kpi-value">${k.val}</div>
-      <div class="kpi-sub" style="color:${trDeltaClr(k.delta)};font-weight:600;margin-top:5px">${trDeltaStr(k.delta)} <span style="color:var(--muted);font-weight:400">vs Apr</span></div>
+      <div class="kpi-sub" style="color:${trDeltaClr(k.delta)};font-weight:600;margin-top:5px">${trDeltaStr(k.delta)} <span style="color:var(--muted);font-weight:400">vs ${PREV_MON_SHORT}</span></div>
     </div>`).join('');
 
   // MoM Strip
@@ -5860,8 +5912,8 @@ function initTrendsTab() {
     const dc=trDeltaClr(c.delta), ds=trDeltaStr(c.delta);
     return `<div class="card" style="display:flex;flex-direction:column;gap:8px">
       <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600">${c.title}</div>
-      <div style="display:flex;justify-content:space-between"><span style="font-size:0.78rem;color:var(--muted)">Apr 2026</span><span style="font-weight:700;color:var(--muted)">${c.apr}</span></div>
-      <div style="display:flex;justify-content:space-between"><span style="font-size:0.78rem;color:var(--muted)">May 2026</span><span style="font-weight:700;color:${c.color}">${c.may}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="font-size:0.78rem;color:var(--muted)">${TMONTHS[2]}</span><span style="font-weight:700;color:var(--muted)">${c.apr}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="font-size:0.78rem;color:var(--muted)">${TMONTHS[3]}</span><span style="font-weight:700;color:${c.color}">${c.may}</span></div>
       <div style="text-align:center;font-size:1.3rem;color:${dc};border-top:1px solid var(--border);padding-top:6px">${c.delta>0?'↑':c.delta<0?'↓':'->'}</div>
       <div style="text-align:center;font-size:0.82rem;font-weight:700;color:${dc}">${ds} MoM</div>
     </div>`;
@@ -5871,12 +5923,12 @@ function initTrendsTab() {
   const lineGrowth = trPct(curr.lines, first.lines);
   const chatGrowth = trPct(curr.chatsPerDay, first.chatsPerDay);
   document.getElementById('trends-insight-body').innerHTML =
-    `Claude Code lines grew <strong style="color:#fff">${lineGrowth}%</strong> from Mar -> May `
+    `Claude Code lines grew <strong style="color:#fff">${lineGrowth}%</strong> from ${TMONTHS[1]} -> ${TMONTHS[3]} `
     +`(${fmt(first.lines)} -> ${fmt(curr.lines)}). `
     +`Claude.ai daily chats grew <strong style="color:#fff">${chatGrowth}%</strong> in the same period. `
     +`Active members on Claude Code: <strong style="color:#fff">${first.activeMembers}</strong> -> <strong style="color:#fff">${curr.activeMembers}</strong> `
     +`(+${curr.activeMembers - first.activeMembers} people onboarded). `
-    +`Cowork: <strong style="color:#fff">${curr.coworkDAU} users/day</strong> avg in May (was ${first.coworkDAU} in Mar).<br><br>`
+    +`Cowork: <strong style="color:#fff">${curr.coworkDAU} users/day</strong> avg in ${CUR_MON_SHORT} (was ${first.coworkDAU} in ${_tmShort(2)}).<br><br>`
     +`<strong style="color:#fff">Biggest gaps remaining:</strong> `
     +`Projects (${curr.chatUserPct - DATA.projectUserPct}pp below chat adoption) · `
     +`Artifacts (${25 - curr.artifactUserPct}% below 25% target).`;
@@ -6007,7 +6059,7 @@ try { renderWeeklyTab(); } catch(e) { console.error('[boot] renderWeeklyTab:', e
   <div class="section-divider"><span>Month-over-Month Snapshot <span class="timeframe-badge tbadge-mtd">MoM</span></span></div>
   <div class="kpi-grid" id="trends-mom-kpis"></div>
 
-  <div class="section-divider"><span>Apr -> May Comparison <span class="timeframe-badge tbadge-mtd">MoM</span></span></div>
+  <div class="section-divider"><span><span id="tr-mom-compare-title">Apr -> May Comparison</span> <span class="timeframe-badge tbadge-mtd">MoM</span></span></div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:24px" id="trends-mom-strip"></div>
 
   <div id="trends-insight" style="background:rgba(0,212,170,0.06);border:1px solid rgba(0,212,170,0.22);border-radius:10px;padding:14px 18px;margin-bottom:24px;font-size:0.82rem;">
@@ -6015,7 +6067,7 @@ try { renderWeeklyTab(); } catch(e) { console.error('[boot] renderWeeklyTab:', e
     <div id="trends-insight-body" style="color:var(--muted)">Loading…</div>
   </div>
 
-  <div class="section-divider"><span>Monthly Trend Lines <span class="timeframe-badge tbadge-mtd">Feb -> May 2026</span></span></div>
+  <div class="section-divider"><span>Monthly Trend Lines <span class="timeframe-badge tbadge-mtd" id="tr-trendlines-badge">Feb -> May 2026</span></span></div>
   <div class="two-col">
     <div class="card">
       <div class="section-title">Claude Code - Lines Accepted</div>
@@ -6024,7 +6076,7 @@ try { renderWeeklyTab(); } catch(e) { console.error('[boot] renderWeeklyTab:', e
     </div>
     <div class="card">
       <div class="section-title">Claude Code - Active Members</div>
-      <div class="section-sub">Members with any lines · of 146 licensed seats</div>
+      <div class="section-sub" id="tr-active-seats-sub">Members with any lines · of 164 licensed seats</div>
       <div style="height:210px;margin-top:14px"><canvas id="tr-chartActiveMembers"></canvas></div>
     </div>
   </div>
@@ -6062,7 +6114,7 @@ try { renderWeeklyTab(); } catch(e) { console.error('[boot] renderWeeklyTab:', e
     <div style="height:280px"><canvas id="tr-chartAllTools"></canvas></div>
   </div>
 
-  <div class="section-divider"><span>Department Breakdown <span class="timeframe-badge tbadge-mtd">May 2026 MTD</span></span></div>
+  <div class="section-divider"><span>Department Breakdown <span class="timeframe-badge tbadge-mtd" id="tr-dept-badge">May 2026 MTD</span></span></div>
   <div style="background:rgba(255,193,7,0.06);border:1px solid rgba(255,193,7,0.2);border-radius:10px;padding:12px 18px;margin-bottom:16px;font-size:0.8rem;color:var(--muted)">
     <strong style="color:#ffd740">ℹ️ How to read:</strong>
     <strong style="color:#00d4aa">Green = strong</strong> ·
@@ -6074,9 +6126,9 @@ try { renderWeeklyTab(); } catch(e) { console.error('[boot] renderWeeklyTab:', e
     <table class="data-table" id="tr-deptTable">
       <thead><tr>
         <th>Department</th>
-        <th style="text-align:right">CC Lines (May)</th>
+        <th style="text-align:right" id="tr-th-cclines">CC Lines (May)</th>
         <th style="text-align:right">CC Members Active</th>
-        <th style="text-align:right">Cursor Events (May)</th>
+        <th style="text-align:right" id="tr-th-cursorev">Cursor Events (May)</th>
         <th style="text-align:right">Cursor Users</th>
         <th style="text-align:right">Claude.ai Chat %</th>
         <th>MoM Trend</th>
@@ -6085,7 +6137,7 @@ try { renderWeeklyTab(); } catch(e) { console.error('[boot] renderWeeklyTab:', e
     </table>
   </div>
 
-  <div class="section-divider"><span>Daily Activity - May 2026 <span class="timeframe-badge tbadge-mtd">This Month</span></span></div>
+  <div class="section-divider"><span><span id="tr-daily-title">Daily Activity - May 2026</span> <span class="timeframe-badge tbadge-daily" id="tr-daily-badge">This Month</span></span></div>
   <div class="card-full">
     <div class="section-title">Claude.ai Chats &amp; Cowork Users - Daily</div>
     <div class="section-sub" style="margin-bottom:16px">Weekdays only · Source: Claude Admin · ~2 day lag</div>
@@ -6093,7 +6145,6 @@ try { renderWeeklyTab(); } catch(e) { console.error('[boot] renderWeeklyTab:', e
   </div>
 
 </div>
-<!-- Updated 2026-05-22 14:45 UTC -->
 <!-- END TRENDS TAB -->
 
 <!-- Person detail slide-in panel -->
