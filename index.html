@@ -1231,7 +1231,7 @@
   <div class="section-divider" style="margin-top:32px"><span>Usage by Product</span></div>
   <div class="two-col">
     <div class="card" style="display:flex;flex-direction:column;align-items:center">
-      <div class="section-title" style="margin-bottom:14px;align-self:flex-start">Claude.ai vs API vs Claude Code Split</div>
+      <div class="section-title" style="margin-bottom:14px;align-self:flex-start">Claude.ai vs Platform API · Tokens</div>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;width:100%">
         <canvas id="productBreakdownChart" width="200" height="200"></canvas>
       </div>
@@ -1241,15 +1241,11 @@
       <div class="section-title" style="margin-bottom:14px">Product Metrics</div>
       <div style="display:flex;flex-direction:column;gap:12px">
         <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(108,99,255,0.1);border-radius:6px">
-          <span style="color:var(--muted)">Claude.ai Tokens</span>
+          <span style="color:var(--muted)">Claude.ai Tokens <span style="font-size:0.7rem;opacity:0.7">(incl. Code, Cowork)</span></span>
           <span style="color:#a89cff;font-weight:700" id="product-claude-tokens">-</span>
         </div>
-        <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(0,212,170,0.1);border-radius:6px">
-          <span style="color:var(--muted)">Claude Code Tokens</span>
-          <span style="color:#00d4aa;font-weight:700" id="product-code-tokens">-</span>
-        </div>
         <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(255,167,38,0.1);border-radius:6px">
-          <span style="color:var(--muted)">API Usage Tokens</span>
+          <span style="color:var(--muted)">Platform API Tokens</span>
           <span style="color:#ffa726;font-weight:700" id="product-api-tokens">-</span>
         </div>
         <div style="display:flex;justify-content:space-between;padding:10px;background:rgba(76,175,80,0.1);border-radius:6px;border-top:1px solid rgba(255,255,255,0.1);margin-top:6px">
@@ -1814,17 +1810,22 @@ function populateSpendsTab() {
     document.getElementById('spend-cursor-subscription').textContent = fmtSub(cursorSub);
     document.getElementById('spend-cursor-seats-label').textContent =
       spendData.cursor.seats + ' seats × $' + spendData.cursor.perSeat + '/seat · Fixed monthly';
-    document.getElementById('spend-cursor-mtd').textContent   = '$' + spendData.cursor.mtd.toFixed(2);
-    document.getElementById('spend-cursor-daily').textContent = '$' + spendData.cursor.daily.toFixed(2);
-    document.getElementById('spend-cursor-date').textContent  = updatedDate ? 'Updated ' + updatedDate : '';
+    // Cursor/Windsurf are flat seat-fee tools — there's no usage-based billing
+    // to report, so show "n/a" rather than a broken-looking $0.00. The real
+    // cost is the subscription shown in the card hero above.
+    const cursorHasUsage = spendData.cursor.mtd > 0;
+    document.getElementById('spend-cursor-mtd').textContent   = cursorHasUsage ? '$' + spendData.cursor.mtd.toFixed(2) : 'n/a';
+    document.getElementById('spend-cursor-daily').textContent = cursorHasUsage ? '$' + spendData.cursor.daily.toFixed(2) : 'n/a';
+    document.getElementById('spend-cursor-date').textContent  = cursorHasUsage ? (updatedDate ? 'Updated ' + updatedDate : '') : 'Flat-fee plan · no usage-based billing';
 
     // Populate Windsurf
     document.getElementById('spend-windsurf-subscription').textContent = fmtSub(windsurfSub);
     document.getElementById('spend-windsurf-seats-label').textContent =
       spendData.windsurf.seats + ' seats × $' + spendData.windsurf.perSeat + '/seat · Fixed monthly';
-    document.getElementById('spend-windsurf-mtd').textContent   = '$' + spendData.windsurf.mtd.toFixed(2);
-    document.getElementById('spend-windsurf-daily').textContent = '$' + spendData.windsurf.daily.toFixed(2);
-    document.getElementById('spend-windsurf-date').textContent  = updatedDate ? 'Updated ' + updatedDate : '';
+    const windsurfHasUsage = spendData.windsurf.mtd > 0;
+    document.getElementById('spend-windsurf-mtd').textContent   = windsurfHasUsage ? '$' + spendData.windsurf.mtd.toFixed(2) : 'n/a';
+    document.getElementById('spend-windsurf-daily').textContent = windsurfHasUsage ? '$' + spendData.windsurf.daily.toFixed(2) : 'n/a';
+    document.getElementById('spend-windsurf-date').textContent  = windsurfHasUsage ? (updatedDate ? 'Updated ' + updatedDate : '') : 'Flat-fee plan · no usage-based billing';
 
     // Populate API Agents card (Spends tab)
     if (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.asOf) {
@@ -2277,21 +2278,32 @@ function renderProductBreakdown() {
   const canvas = document.getElementById('productBreakdownChart');
   if (!canvas) return;
 
-  let claudeTokens = (typeof DATA !== 'undefined' && DATA.claudeAITokens) ? DATA.claudeAITokens : 0;
-  let codeTokens = (typeof DATA !== 'undefined' && DATA.claudeCodeTokens) ? DATA.claudeCodeTokens : 0;
-  let apiTokens = (typeof DATA !== 'undefined' && DATA.apiTokens) ? DATA.apiTokens : 0;
+  // Token totals from the data that actually exists:
+  //  • Claude.ai product (Claude.ai + Cowork + Claude Code) — Claude Analytics
+  //    API, in DATA.modelUsage.
+  //  • Platform API (pay-as-you-go agent keys) — cost report, in
+  //    API_AGENTS_DATA.globalModelTokens.
+  // These are separate billing surfaces (no overlap). Claude.ai vs Claude Code
+  // can't be separated from the analytics feed, so they're reported together
+  // rather than fabricating a split.
+  const mu = (typeof DATA !== 'undefined' && DATA.modelUsage) ? DATA.modelUsage : {};
+  let claudeTokens = 0;
+  Object.values(mu).forEach(v => {
+    claudeTokens += (v.input_tokens||0) + (v.output_tokens||0) + (v.cache_read_tokens||0) + (v.cache_creation_tokens||0);
+  });
+  const gmt = (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.globalModelTokens) ? API_AGENTS_DATA.globalModelTokens : {};
+  let apiTokens = 0;
+  Object.values(gmt).forEach(v => { apiTokens += Object.values(v).reduce((s,n)=>s+(n||0),0); });
 
-  // No fallback — show real data only
+  const total = claudeTokens + apiTokens;
 
-  const total = claudeTokens + codeTokens + apiTokens;
-
-  document.getElementById('product-claude-tokens').textContent = total > 0 ? fmt(claudeTokens) : '-';
-  document.getElementById('product-code-tokens').textContent = total > 0 ? fmt(codeTokens) : '-';
-  document.getElementById('product-api-tokens').textContent = total > 0 ? fmt(apiTokens) : '-';
-  document.getElementById('product-total-tokens').textContent = total > 0 ? fmt(total) : '-';
+  const setTok = (id,val) => { const el=document.getElementById(id); if(el) el.textContent = total>0 ? fmt(val) : '-'; };
+  setTok('product-claude-tokens', claudeTokens);
+  setTok('product-api-tokens', apiTokens);
+  setTok('product-total-tokens', total);
 
   if (total === 0) {
-    canvas.parentElement.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px">Product breakdown data not yet available.</div>';
+    canvas.parentElement.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px">Token data not yet available.</div>';
     return;
   }
 
@@ -2301,10 +2313,10 @@ function renderProductBreakdown() {
   window.productBreakdownChartInstance = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['Claude.ai', 'Claude Code', 'API'],
+      labels: ['Claude.ai (incl. Code, Cowork)', 'Platform API'],
       datasets: [{
-        data: [claudeTokens, codeTokens, apiTokens],
-        backgroundColor: ['#a89cff', '#00d4aa', '#ffa726'],
+        data: [claudeTokens, apiTokens],
+        backgroundColor: ['#a89cff', '#ffa726'],
         borderColor: '#1a1d27',
         borderWidth: 2
       }]
@@ -2320,14 +2332,15 @@ function renderProductBreakdown() {
   });
 
   const legend = document.getElementById('product-breakdown-legend');
-  const total_pct = total > 0 ? [claudeTokens/total*100, codeTokens/total*100, apiTokens/total*100] : [0, 0, 0];
-  legend.innerHTML = `
-    <div style="display:flex;gap:16px;width:100%">
-      <div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#a89cff;border-radius:2px"></div><span style="font-size:0.8rem;color:var(--muted)">Claude.ai (${total_pct[0].toFixed(1)}%)</span></div>
-      <div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#00d4aa;border-radius:2px"></div><span style="font-size:0.8rem;color:var(--muted)">Claude Code (${total_pct[1].toFixed(1)}%)</span></div>
-      <div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#ffa726;border-radius:2px"></div><span style="font-size:0.8rem;color:var(--muted)">API (${total_pct[2].toFixed(1)}%)</span></div>
-    </div>
-  `;
+  if (legend) {
+    const pc = [claudeTokens/total*100, apiTokens/total*100];
+    legend.innerHTML = `
+      <div style="display:flex;gap:16px;width:100%;justify-content:center">
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#a89cff;border-radius:2px"></div><span style="font-size:0.8rem;color:var(--muted)">Claude.ai (${pc[0].toFixed(1)}%)</span></div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="width:12px;height:12px;background:#ffa726;border-radius:2px"></div><span style="font-size:0.8rem;color:var(--muted)">Platform API (${pc[1].toFixed(1)}%)</span></div>
+      </div>
+    `;
+  }
 }
 
 function applyGlobalFilters() {
@@ -5784,29 +5797,44 @@ renderOverviewKPIs();
 renderDeptScorecardTable();
 renderToolStrips();
 
+// Real monthly snapshots — one entry per month, appended by update_dashboard.py
+// from that month's actual metrics (seeded with the current month). Replaces the
+// old fabricated Feb–Apr history so the Trends tab is built only from real data.
+const MONTHLY_SNAPSHOTS = [{"monthKey":"2026-06","month":"June 2026","monthShort":"Jun 2026","lines":723255,"activeMembers":84,"chatsPerDay":140,"chatUserPct":90,"coworkDAU":40,"cursorDAU":6,"cursorEvents":90,"projectsCreated":98,"artifactUserPct":11}];
+
 // ==================== TRENDS TAB ====================
 function initTrendsTab() {
-  // Month labels derived from the live current month (DATA.monthLabel) so the
-  // latest column / comparison always matches the data instead of being
-  // hardcoded to "May 2026" (which silently went stale once the month rolled).
-  const _TM_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const _tmParts  = (DATA.monthLabel || '').split(' ');
-  const _tmIdx    = _TM_NAMES.indexOf(_tmParts[0]);
-  const _tmYear   = parseInt(_tmParts[1], 10);
-  const _tmCur    = (_tmIdx >= 0 && !isNaN(_tmYear)) ? new Date(_tmYear, _tmIdx, 1) : new Date();
-  const _tmLbl    = (back) => { const d = new Date(_tmCur); d.setMonth(d.getMonth() - back); return d.toLocaleDateString('en-US',{month:'short',year:'numeric'}); };
-  const _tmShort  = (back) => { const d = new Date(_tmCur); d.setMonth(d.getMonth() - back); return d.toLocaleDateString('en-US',{month:'short'}); };
-  const TMONTHS        = [_tmLbl(3), _tmLbl(2), _tmLbl(1), _tmLbl(0)];  // 4 months ending at current
-  const CUR_MON_SHORT  = _tmShort(0);   // e.g. "Jun"
-  const PREV_MON_SHORT = _tmShort(1);   // e.g. "May"
+  // Build the trend series from REAL monthly snapshots (appended once per month
+  // by update_dashboard.py). No fabricated history: the tab shows only months
+  // we've actually recorded and fills in as more months accumulate. Falls back
+  // to a single current-month point synthesized from DATA if the file is empty.
+  const SNAPS = (typeof MONTHLY_SNAPSHOTS !== 'undefined' && MONTHLY_SNAPSHOTS.length)
+    ? MONTHLY_SNAPSHOTS.slice()
+    : [{ month: DATA.monthLabel, monthShort: DATA.monthLabel,
+         lines: DATA.totalLines, activeMembers: DATA.activeMembers, chatsPerDay: DATA.chatsPerDay,
+         chatUserPct: DATA.chatUserPct, coworkDAU: DATA.coworkDailyUsers, cursorDAU: 0,
+         cursorEvents: 0, projectsCreated: DATA.projectsCreated, artifactUserPct: DATA.artifactUserPct }];
+  const TM = SNAPS.map(s => ({
+    lines: s.lines||0, activeMembers: s.activeMembers||0, chatsPerDay: s.chatsPerDay||0,
+    chatUserPct: s.chatUserPct||0, coworkDAU: s.coworkDAU||0, cursorDAU: s.cursorDAU||0,
+    cursorEvents: s.cursorEvents||0, projectsCreated: s.projectsCreated||0, artifactUserPct: s.artifactUserPct||0,
+  }));
+  const TMONTHS = SNAPS.map(s => s.monthShort || s.month);
+  const curr  = TM[TM.length-1];
+  const prev  = TM.length > 1 ? TM[TM.length-2] : null;
+  const first = TM[0];
+  const _short = lbl => (lbl||'').split(' ')[0];
+  const CUR_LBL        = SNAPS[SNAPS.length-1].monthShort || SNAPS[SNAPS.length-1].month || DATA.monthLabel;
+  const FIRST_LBL      = SNAPS[0].monthShort || SNAPS[0].month;
+  const CUR_MON_SHORT  = _short(CUR_LBL);
+  const PREV_MON_SHORT = prev ? _short(SNAPS[SNAPS.length-2].monthShort || SNAPS[SNAPS.length-2].month) : '';
 
-  // Sync the static section headers / badges / table labels in this tab to the
-  // derived months (these have no live data binding otherwise).
+  // Sync static section headers / badges / table labels to the real snapshot months.
   const _setTxt = (id, txt) => { const e = document.getElementById(id); if (e) e.textContent = txt; };
-  _setTxt('tr-mom-compare-title', PREV_MON_SHORT + ' -> ' + CUR_MON_SHORT + ' Comparison');
-  _setTxt('tr-trendlines-badge',  TMONTHS[0] + ' -> ' + TMONTHS[3]);
+  _setTxt('tr-mom-compare-title', prev ? (PREV_MON_SHORT + ' -> ' + CUR_MON_SHORT + ' Comparison') : (CUR_LBL + ' · first month tracked'));
+  _setTxt('tr-trendlines-badge',  SNAPS.length > 1 ? (FIRST_LBL + ' -> ' + CUR_LBL) : CUR_LBL);
   _setTxt('tr-active-seats-sub',  'Members with any lines · of ' + DATA.licensedSeats + ' licensed seats');
-  _setTxt('tr-dept-badge',        TMONTHS[3] + ' MTD');
+  _setTxt('tr-dept-badge',        CUR_LBL + ' MTD');
   _setTxt('tr-th-cclines',        'CC Lines (' + CUR_MON_SHORT + ')');
   _setTxt('tr-th-cursorev',       'Cursor Events (' + CUR_MON_SHORT + ')');
   // The daily chart plots DATA.chatsDailyData, whose month may lag behind the
@@ -5814,16 +5842,9 @@ function initTrendsTab() {
   // actual data month, not "this month".
   const _dailyMon = (DATA.chatsDailyData && DATA.chatsDailyData.length)
     ? new Date(DATA.chatsDailyData[0].date + 'T00:00:00').toLocaleDateString('en-US',{month:'short',year:'numeric'})
-    : TMONTHS[3];
+    : CUR_LBL;
   _setTxt('tr-daily-title', 'Daily Activity - ' + _dailyMon);
   _setTxt('tr-daily-badge', 'Weekdays');
-  // Historical monthly snapshots - add a new row each month
-  const TM = [
-    {lines:0,      activeMembers:0,  chatsPerDay:0,   chatUserPct:0,  coworkDAU:0,  cursorDAU:0,  cursorEvents:0,     projectsCreated:0,  artifactUserPct:0},
-    {lines:85000,  activeMembers:28, chatsPerDay:72,  chatUserPct:55, coworkDAU:8,  cursorDAU:18, cursorEvents:4200,  projectsCreated:12, artifactUserPct:4},
-    {lines:310000, activeMembers:62, chatsPerDay:118, chatUserPct:80, coworkDAU:15, cursorDAU:28, cursorEvents:9800,  projectsCreated:38, artifactUserPct:7},
-    {lines:DATA.totalLines, activeMembers:DATA.activeMembers, chatsPerDay:DATA.chatsPerDay, chatUserPct:DATA.chatUserPct, coworkDAU:DATA.coworkDailyUsers, cursorDAU:35, cursorEvents:14200, projectsCreated:DATA.projectsCreated, artifactUserPct:DATA.artifactUserPct},
-  ];
 
   // Dept breakdown - computed live from members[], adoptUTotals, ALL_EMPLOYEES
   const TR_DEPTS = (function() {
@@ -5871,10 +5892,9 @@ function initTrendsTab() {
     }));
   })();
 
-  const curr = TM[3], prev = TM[2], first = TM[1];
-
+  // (curr / prev / first derived above from real snapshots)
   function trPct(a,b){ return b ? Math.round((a-b)/b*100) : 0; }
-  function trDeltaStr(v){ return v>0?'↑ +'+v+'%':v<0?'↓ '+v+'%':'-> flat'; }
+  function trDeltaStr(v){ return v===null?'— no prior month':v>0?'↑ +'+v+'%':v<0?'↓ '+v+'%':'-> flat'; }
   function trDeltaClr(v){ return v>0?'#00d4aa':v<0?'#ff6b6b':'#8b92b8'; }
   function trHeat(v,hi,mid){
     if(!v)return'background:rgba(46,50,80,0.5);color:#8b92b8';
@@ -5888,53 +5908,75 @@ function initTrendsTab() {
     return '<span style="color:#8b92b8">-> Stable</span>';
   }
 
-  // KPI Row
+  // KPI Row (deltas only when we have a prior month to compare against)
+  const _dp = (a, b) => prev ? trPct(a, b) : null;
   const kpis = [
-    {label:'CC Lines ('+CUR_MON_SHORT+' MTD)', val:fmt(curr.lines), delta:trPct(curr.lines,prev.lines),         cls:'c1'},
-    {label:'CC Active Members',  val:curr.activeMembers,     delta:trPct(curr.activeMembers,prev.activeMembers), cls:'c2'},
-    {label:'Chats / Day (avg)',  val:curr.chatsPerDay,       delta:trPct(curr.chatsPerDay,prev.chatsPerDay),     cls:'c3'},
-    {label:'Cowork DAU',         val:curr.coworkDAU,         delta:trPct(curr.coworkDAU,prev.coworkDAU),         cls:'c4'},
-    {label:'Claude.ai Users %',  val:curr.chatUserPct+'%',  delta:curr.chatUserPct-prev.chatUserPct,            cls:'c5'},
+    {label:'CC Lines ('+CUR_MON_SHORT+' MTD)', val:fmt(curr.lines), delta:_dp(curr.lines, prev&&prev.lines),                 cls:'c1'},
+    {label:'CC Active Members',  val:curr.activeMembers,     delta:_dp(curr.activeMembers, prev&&prev.activeMembers),         cls:'c2'},
+    {label:'Chats / Day (avg)',  val:curr.chatsPerDay,       delta:_dp(curr.chatsPerDay, prev&&prev.chatsPerDay),             cls:'c3'},
+    {label:'Cowork DAU',         val:curr.coworkDAU,         delta:_dp(curr.coworkDAU, prev&&prev.coworkDAU),                 cls:'c4'},
+    {label:'Claude.ai Users %',  val:curr.chatUserPct+'%',  delta:prev ? (curr.chatUserPct-prev.chatUserPct) : null,         cls:'c5'},
   ];
   document.getElementById('trends-mom-kpis').innerHTML = kpis.map(k=>`
     <div class="kpi ${k.cls}">
       <div class="kpi-label">${k.label}</div>
       <div class="kpi-value">${k.val}</div>
-      <div class="kpi-sub" style="color:${trDeltaClr(k.delta)};font-weight:600;margin-top:5px">${trDeltaStr(k.delta)} <span style="color:var(--muted);font-weight:400">vs ${PREV_MON_SHORT}</span></div>
+      <div class="kpi-sub" style="color:${trDeltaClr(k.delta)};font-weight:600;margin-top:5px">${trDeltaStr(k.delta)}${prev?` <span style="color:var(--muted);font-weight:400">vs ${PREV_MON_SHORT}</span>`:''}</div>
     </div>`).join('');
 
-  // MoM Strip
-  const cards = [
-    {title:'Claude Code Lines',  apr:fmt(prev.lines),        may:fmt(curr.lines),        delta:trPct(curr.lines,prev.lines),        color:'#6c63ff'},
-    {title:'Claude.ai Chats/Day',apr:prev.chatsPerDay,       may:curr.chatsPerDay,        delta:trPct(curr.chatsPerDay,prev.chatsPerDay),color:'#00d4aa'},
-    {title:'Cowork Daily Users', apr:prev.coworkDAU,         may:curr.coworkDAU,          delta:trPct(curr.coworkDAU,prev.coworkDAU), color:'#ffa726'},
-    {title:'Cursor Events',      apr:fmt(prev.cursorEvents), may:fmt(curr.cursorEvents), delta:trPct(curr.cursorEvents,prev.cursorEvents),color:'#26c6da'},
-    {title:'Projects Created',   apr:prev.projectsCreated,   may:curr.projectsCreated,   delta:trPct(curr.projectsCreated,prev.projectsCreated),color:'#ab47bc'},
-  ];
-  document.getElementById('trends-mom-strip').innerHTML = cards.map(c=>{
-    const dc=trDeltaClr(c.delta), ds=trDeltaStr(c.delta);
-    return `<div class="card" style="display:flex;flex-direction:column;gap:8px">
-      <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600">${c.title}</div>
-      <div style="display:flex;justify-content:space-between"><span style="font-size:0.78rem;color:var(--muted)">${TMONTHS[2]}</span><span style="font-weight:700;color:var(--muted)">${c.apr}</span></div>
-      <div style="display:flex;justify-content:space-between"><span style="font-size:0.78rem;color:var(--muted)">${TMONTHS[3]}</span><span style="font-weight:700;color:${c.color}">${c.may}</span></div>
-      <div style="text-align:center;font-size:1.3rem;color:${dc};border-top:1px solid var(--border);padding-top:6px">${c.delta>0?'↑':c.delta<0?'↓':'->'}</div>
-      <div style="text-align:center;font-size:0.82rem;font-weight:700;color:${dc}">${ds} MoM</div>
-    </div>`;
-  }).join('');
+  // MoM Strip — needs a prior month; otherwise show a "first month" note.
+  const momStripEl = document.getElementById('trends-mom-strip');
+  if (!prev) {
+    momStripEl.innerHTML =
+      `<div class="card" style="grid-column:1/-1;color:var(--muted);font-size:0.85rem;padding:16px">`
+      + `<strong style="color:#fff">${CUR_LBL}</strong> is the first recorded month — month-over-month comparison appears once the next month is captured.</div>`;
+  } else {
+    const PREV_LBL = SNAPS[SNAPS.length-2].monthShort || SNAPS[SNAPS.length-2].month;
+    const cards = [
+      {title:'Claude Code Lines',  pv:fmt(prev.lines),        cv:fmt(curr.lines),        delta:trPct(curr.lines,prev.lines),                color:'#6c63ff'},
+      {title:'Claude.ai Chats/Day',pv:prev.chatsPerDay,       cv:curr.chatsPerDay,       delta:trPct(curr.chatsPerDay,prev.chatsPerDay),    color:'#00d4aa'},
+      {title:'Cowork Daily Users', pv:prev.coworkDAU,         cv:curr.coworkDAU,         delta:trPct(curr.coworkDAU,prev.coworkDAU),        color:'#ffa726'},
+      {title:'Cursor Events',      pv:fmt(prev.cursorEvents), cv:fmt(curr.cursorEvents), delta:trPct(curr.cursorEvents,prev.cursorEvents),  color:'#26c6da'},
+      {title:'Projects Created',   pv:prev.projectsCreated,   cv:curr.projectsCreated,   delta:trPct(curr.projectsCreated,prev.projectsCreated),color:'#ab47bc'},
+    ];
+    momStripEl.innerHTML = cards.map(c=>{
+      const dc=trDeltaClr(c.delta), ds=trDeltaStr(c.delta);
+      return `<div class="card" style="display:flex;flex-direction:column;gap:8px">
+        <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600">${c.title}</div>
+        <div style="display:flex;justify-content:space-between"><span style="font-size:0.78rem;color:var(--muted)">${PREV_LBL}</span><span style="font-weight:700;color:var(--muted)">${c.pv}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="font-size:0.78rem;color:var(--muted)">${CUR_LBL}</span><span style="font-weight:700;color:${c.color}">${c.cv}</span></div>
+        <div style="text-align:center;font-size:1.3rem;color:${dc};border-top:1px solid var(--border);padding-top:6px">${c.delta>0?'↑':c.delta<0?'↓':'->'}</div>
+        <div style="text-align:center;font-size:0.82rem;font-weight:700;color:${dc}">${ds} MoM</div>
+      </div>`;
+    }).join('');
+  }
 
   // Insight box
-  const lineGrowth = trPct(curr.lines, first.lines);
-  const chatGrowth = trPct(curr.chatsPerDay, first.chatsPerDay);
-  document.getElementById('trends-insight-body').innerHTML =
-    `Claude Code lines grew <strong style="color:#fff">${lineGrowth}%</strong> from ${TMONTHS[1]} -> ${TMONTHS[3]} `
-    +`(${fmt(first.lines)} -> ${fmt(curr.lines)}). `
-    +`Claude.ai daily chats grew <strong style="color:#fff">${chatGrowth}%</strong> in the same period. `
-    +`Active members on Claude Code: <strong style="color:#fff">${first.activeMembers}</strong> -> <strong style="color:#fff">${curr.activeMembers}</strong> `
-    +`(+${curr.activeMembers - first.activeMembers} people onboarded). `
-    +`Cowork: <strong style="color:#fff">${curr.coworkDAU} users/day</strong> avg in ${CUR_MON_SHORT} (was ${first.coworkDAU} in ${_tmShort(2)}).<br><br>`
-    +`<strong style="color:#fff">Biggest gaps remaining:</strong> `
-    +`Projects (${curr.chatUserPct - DATA.projectUserPct}pp below chat adoption) · `
-    +`Artifacts (${25 - curr.artifactUserPct}% below 25% target).`;
+  const gapsLine =
+    `<strong style="color:#fff">Biggest gaps remaining:</strong> `
+    + `Projects (${curr.chatUserPct - DATA.projectUserPct}pp below chat adoption) · `
+    + `Artifacts (${25 - curr.artifactUserPct}% below 25% target).`;
+  if (SNAPS.length < 2) {
+    document.getElementById('trends-insight-body').innerHTML =
+      `<strong style="color:#fff">${CUR_LBL}</strong> is the first month of trend tracking. Current: `
+      + `<strong style="color:#fff">${fmt(curr.lines)}</strong> Claude Code lines · `
+      + `<strong style="color:#fff">${curr.activeMembers}</strong> active members · `
+      + `<strong style="color:#fff">${curr.chatsPerDay}</strong> chats/day · `
+      + `<strong style="color:#fff">${curr.coworkDAU}</strong> Cowork users/day. `
+      + `Month-over-month trends will appear as more months are recorded.<br><br>`
+      + gapsLine;
+  } else {
+    const lineGrowth = trPct(curr.lines, first.lines);
+    const chatGrowth = trPct(curr.chatsPerDay, first.chatsPerDay);
+    document.getElementById('trends-insight-body').innerHTML =
+      `Claude Code lines grew <strong style="color:#fff">${lineGrowth}%</strong> from ${FIRST_LBL} -> ${CUR_LBL} `
+      +`(${fmt(first.lines)} -> ${fmt(curr.lines)}). `
+      +`Claude.ai daily chats grew <strong style="color:#fff">${chatGrowth}%</strong> in the same period. `
+      +`Active members on Claude Code: <strong style="color:#fff">${first.activeMembers}</strong> -> <strong style="color:#fff">${curr.activeMembers}</strong> `
+      +`(+${curr.activeMembers - first.activeMembers} people onboarded). `
+      +`Cowork: <strong style="color:#fff">${curr.coworkDAU} users/day</strong> avg in ${CUR_MON_SHORT} (was ${first.coworkDAU} in ${_short(FIRST_LBL)}).<br><br>`
+      + gapsLine;
+  }
 
   // Chart helper
   function trLine(id,labels,data,color,yFmt){
