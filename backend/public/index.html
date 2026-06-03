@@ -3297,8 +3297,15 @@ function initFromData() {
   set('overview-month-label', d.monthLabel);
   // Sync all month labels throughout the dashboard
   const _ml = d.monthLabel, _ms = _ml.split(' ')[0]; // e.g. "May 2026", "May"
-  ['month-lbl-overview','month-lbl-cowork','month-lbl-cu-note',
-   'month-lbl-adopt','month-lbl-heatmap','month-lbl-user-summary'].forEach(id => set(id, _ml));
+  // The Claude.ai analytics feed lags several days, so its data is often still
+  // in the previous calendar month — label Claude.ai/Cowork sections by the
+  // ACTUAL data month rather than the current month.
+  const _claudeAsOf = d.chatsDataAsOf || d.dataAsOf || '';
+  const claudeMonthLabel = _claudeAsOf
+    ? new Date(_claudeAsOf + 'T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'})
+    : _ml;
+  ['month-lbl-overview','month-lbl-cowork'].forEach(id => set(id, claudeMonthLabel));
+  ['month-lbl-cu-note','month-lbl-adopt','month-lbl-heatmap','month-lbl-user-summary'].forEach(id => set(id, _ml));
   set('month-lbl-cu-short', _ms);
 
   // Key Takeaways box
@@ -3394,8 +3401,10 @@ function initFromData() {
   set('kpi-code-total-lines', fmt(d.totalLines));
   set('kpi-code-month', d.monthLabel);
   set('kpi-code-accept-rate', `${d.acceptRate}%`);
+  // Two distinct counts: members who wrote Claude Code lines (activeCnt) vs
+  // members active on ANY Claude tool (DATA.activeMembers). Show both, labeled.
   set('kpi-code-active-members', `${activeCnt} / ${DATA.totalMembers}`);
-  set('kpi-code-active-pct', `${activePct}% of licensed seats active · ${DATA.totalMembers - activeCnt} seats idle`);
+  set('kpi-code-active-pct', `${activeCnt} writing code · ${DATA.activeMembers} active on any Claude tool · ${DATA.totalMembers - activeCnt} not coding`);
   set('kpi-code-license-util', `${activePct}%`);
   set('kpi-code-license-sub', `${activeCnt} of ${DATA.totalMembers} seats used · ${DATA.totalMembers - activeCnt} idle`);
   set('kpi-code-avg-lines', fmt(d.avgLinesActive));
@@ -3403,22 +3412,22 @@ function initFromData() {
 
   // Claude.ai tab
   set('kpi-ai-chats', d.chatsPerDay);
-  set('kpi-ai-chats-sub', `MTD daily avg · ${d.monthLabel}`);
+  set('kpi-ai-chats-sub', `MTD daily avg · ${claudeMonthLabel}`);
   set('kpi-ai-chat-user-pct', `${d.chatUserPct}% of seats engaged`);
-  set('kpi-ai-chat-user-sub', `MTD ${d.monthLabel} · of ${d.licensedSeats} licensed seats`);
+  set('kpi-ai-chat-user-sub', `MTD ${claudeMonthLabel} · of ${d.licensedSeats} licensed seats`);
   // WAU / MAU KPIs
   set('kpi-ai-wau', d.wau || '-');
   set('kpi-ai-wau-sub', `of ${d.licensedSeats} seats · ${d.wau ? Math.round(d.wau/d.licensedSeats*100)+'% weekly reach' : ''}`);
   set('kpi-ai-mau', d.mau || '-');
   set('kpi-ai-mau-sub', `of ${d.licensedSeats} seats · ${d.mau ? Math.round(d.mau/d.licensedSeats*100)+'% monthly reach' : ''}`);
   set('kpi-ai-projects', d.projectsCreated);
-  set('kpi-ai-projects-month', `MTD ${d.monthLabel}`);
+  set('kpi-ai-projects-month', `MTD ${claudeMonthLabel}`);
   set('kpi-ai-project-user-pct', `${d.projectUserPct}% of seats used projects`);
-  set('kpi-ai-project-user-sub', `MTD ${d.monthLabel} · of ${d.licensedSeats} licensed seats`);
+  set('kpi-ai-project-user-sub', `MTD ${claudeMonthLabel} · of ${d.licensedSeats} licensed seats`);
   const projTotal = PROJECTS_DATA.topUsers.reduce((s,p) => s+p.projects, 0);
   set('kpi-ai-projects-total', `${projTotal} existing across top ${PROJECTS_DATA.topUsers.length} users (cumulative)`);
   set('kpi-ai-artifacts', d.artifactsCreated);
-  set('kpi-ai-artifact-sub', `MTD ${d.monthLabel} · ${d.artifactUserPct}% created >=1 artifact`);
+  set('kpi-ai-artifact-sub', `MTD ${claudeMonthLabel} · ${d.artifactUserPct}% created >=1 artifact`);
   const artTotal = ARTIFACTS_DATA.topUsers.reduce((s,p) => s+p.artifacts, 0);
   set('kpi-ai-artifacts-total', `${artTotal} existing across top ${ARTIFACTS_DATA.topUsers.length} users (cumulative)`);
   set('insight-chat-pct', d.chatUserPct);
@@ -3457,7 +3466,7 @@ function initFromData() {
 
   // FQQ values for Claude Code
   const fqqCCFreqEl = document.getElementById('fqq-cc-freq');
-  if(fqqCCFreqEl) fqqCCFreqEl.textContent = d.activeMembers + ' of ' + d.totalMembers;
+  if(fqqCCFreqEl) fqqCCFreqEl.textContent = activeCnt + ' of ' + DATA.totalMembers;  // 'lines > 0' count, not any-activity
   const fqqCCQtyEl = document.getElementById('fqq-cc-qty');
   if(fqqCCQtyEl) fqqCCQtyEl.textContent = fmt(d.avgLinesActive);
   const fqqCCQualEl = document.getElementById('fqq-cc-qual');
