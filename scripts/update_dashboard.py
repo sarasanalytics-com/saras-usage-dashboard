@@ -25,6 +25,7 @@ ADOPTION_PATH = REPO_ROOT / "data" / "saras-daily-adoption.json"
 COLLECTED_PATH = REPO_ROOT / "data" / "daily_collected.json"
 CLAUDE_STATS_PATH = REPO_ROOT / "data" / "claude_ai_stats.json"
 API_AGENTS_PATH   = REPO_ROOT / "data" / "api_agents_stats.json"
+MONTHLY_SNAPSHOTS_PATH = REPO_ROOT / "data" / "monthly_snapshots.json"
 
 
 def log(msg):
@@ -547,6 +548,61 @@ if api_agents:
         log("  [WARN] API_AGENTS_DATA placeholder not found in HTML")
 else:
     log("  API_AGENTS_DATA: no data file yet — placeholder kept as-is")
+
+# ── Update MONTHLY_SNAPSHOTS (real per-month trend history) ────────────────────
+# Record this month's actual metrics once per month so the Trends tab builds a
+# real trend over time instead of relying on fabricated history. The current
+# month's entry is upserted on every run; prior months are preserved.
+try:
+    month_key = TODAY[:7]
+    cur_days = [d for d in adoption.get("days", []) if d.get("date", "")[:7] == month_key]
+    cursor_events = 0
+    cursor_daily_counts = []
+    for d in cur_days:
+        cur = d.get("cursor") or {}
+        cursor_events += sum(cur.values())
+        if cur:
+            cursor_daily_counts.append(len(cur))
+    cursor_dau = round(sum(cursor_daily_counts) / len(cursor_daily_counts)) if cursor_daily_counts else 0
+
+    snapshot = {
+        "monthKey":        month_key,
+        "month":           MONTH_LABEL,
+        "monthShort":      datetime.strptime(TODAY, "%Y-%m-%d").strftime("%b %Y"),
+        "lines":           total_lines,
+        "activeMembers":   active_members,
+        "chatsPerDay":     cc.get("chatsPerDay", 0),
+        "chatUserPct":     cc.get("chatUserPct", 0),
+        "coworkDAU":       cowork_daily_avg,
+        "cursorDAU":       cursor_dau,
+        "cursorEvents":    cursor_events,
+        "projectsCreated": cc.get("projectsCreated", 0),
+        "artifactUserPct": cc.get("artifactUserPct", 0),
+    }
+
+    snaps = []
+    if MONTHLY_SNAPSHOTS_PATH.exists():
+        try:
+            snaps = json.loads(MONTHLY_SNAPSHOTS_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            snaps = []
+    snaps = [s for s in snaps if s.get("monthKey") != month_key]   # drop stale current-month entry
+    snaps.append(snapshot)
+    snaps.sort(key=lambda s: s.get("monthKey", ""))
+
+    # Only persist real data — never overwrite history with an all-zero run.
+    if total_lines > 0 or active_members > 0:
+        MONTHLY_SNAPSHOTS_PATH.write_text(json.dumps(snaps, indent=2) + "\n", encoding="utf-8")
+        snaps_js = json.dumps(snaps, separators=(",", ":"))
+        html = re.sub(r"const MONTHLY_SNAPSHOTS = \[.*?\];",
+                      lambda m: "const MONTHLY_SNAPSHOTS = " + snaps_js + ";",
+                      html, count=1, flags=re.DOTALL)
+        log(f"  MONTHLY_SNAPSHOTS: {len(snaps)} month(s), latest {month_key}")
+    else:
+        log("  MONTHLY_SNAPSHOTS: API returned zeros — keeping existing snapshots")
+except Exception as e:
+    log(f"  [WARN] MONTHLY_SNAPSHOTS update failed: {e}")
+
 
 # ── Inject OAuth credentials ──────────────────────────────────────────────────
 microsoft_client_id = os.getenv('MICROSOFT_CLIENT_ID', '__MICROSOFT_CLIENT_ID__')
