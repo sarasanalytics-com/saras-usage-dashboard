@@ -1,68 +1,75 @@
 {
-  "asOf": "2026-06-03",
+  "asOf": "2026-06-05",
   "monthStart": "2026-06-01",
-  "dataRange": "2026-05-25 to 2026-06-03",
-  "dataRangeSpan": "10 days",
-  "totalApiSpendMtd": 2291.4222,
-  "dailyAvg": 229.14222,
-  "projectedMonthly": 6874.27,
-  "projectedYearly": 82491.2,
-  "daysElapsed": 3,
+  "dataRange": "2026-06-01 to 2026-06-05",
+  "dataRangeSpan": "5 days",
+  "totalApiSpendMtd": 1394.9906,
+  "dailyAvg": 278.998129,
+  "projectedMonthly": 8369.94,
+  "projectedYearly": 100439.33,
+  "daysElapsed": 5,
   "daysInMonth": 30,
   "analyticsWorking": true,
   "adminKeyValid": true,
   "globalModelCost": {
-    "claude-sonnet-4-6": 993.671417,
-    "claude-opus-4-6": 723.078884,
-    "claude-opus-4-7": 378.524958,
-    "claude-sonnet-4-5-20250929": 129.072369,
-    "claude-haiku-4-5-20251001": 62.72189,
-    "claude-opus-4-8": 4.352685
+    "claude-sonnet-4-6": 907.77132,
+    "claude-sonnet-4-5-20250929": 183.516643,
+    "claude-opus-4-6": 153.031999,
+    "claude-opus-4-7": 80.915278,
+    "claude-opus-4-8": 39.522936,
+    "claude-haiku-4-5-20251001": 30.198583,
+    "claude-sonnet-4-20250514": 0.033885
   },
   "globalModelTokens": {
     "claude-haiku-4-5-20251001": {
-      "input": 11209434,
-      "output": 2545222,
-      "cache_read": 192575451,
-      "cache_write": 15424408
+      "input": 7755241,
+      "output": 1490170,
+      "cache_read": 61888395,
+      "cache_write": 5852857
     },
     "claude-sonnet-4-5-20250929": {
-      "input": 1735944,
-      "cache_read": 67707940,
-      "cache_write": 14959584,
-      "output": 3163581
-    },
-    "claude-opus-4-7": {
-      "input": 434397,
-      "cache_read": 446089333,
-      "cache_write": 16499901,
-      "output": 2007357
+      "input": 1808265,
+      "cache_read": 103342881,
+      "cache_write": 17883473,
+      "output": 5335064
     },
     "claude-opus-4-6": {
-      "input": 4483309,
-      "cache_read": 467951128,
-      "cache_write": 43264168,
-      "output": 7851429
+      "input": 397889,
+      "cache_read": 82276828,
+      "cache_write": 8887823,
+      "output": 2124707
     },
     "claude-sonnet-4-6": {
-      "input": 16288666,
-      "cache_read": 985220552,
-      "cache_write": 116070019,
-      "output": 13463794
+      "input": 21340532,
+      "cache_read": 957652219,
+      "cache_write": 82969203,
+      "output": 8395285
+    },
+    "claude-opus-4-7": {
+      "input": 602506,
+      "cache_read": 13726322,
+      "cache_write": 1534322,
+      "output": 2458003
+    },
+    "claude-sonnet-4-20250514": {
+      "input": 2955,
+      "output": 1668
     },
     "claude-opus-4-8": {
-      "input": 376527,
-      "output": 98802
+      "input": 45918,
+      "cache_read": 37044741,
+      "cache_write": 2078876,
+      "output": 311120
     }
   },
   "spendComparison": {
-    "previousMonthTotal": 0,
+    "previousMonthTotal": 7463.874,
     "previousMonthLabel": "May 2026",
-    "currentMonthMtd": 2291.4222,
+    "currentMonthMtd": 1394.9906,
     "currentMonthLabel": "June 2026",
-    "trendAmount": 2291.4222,
-    "trendPercentage": 0,
-    "trendDirection": "up"
+    "trendAmount": -6068.8834,
+    "trendPercentage": -81.3,
+    "trendDirection": "down"
   },
   "agents": [
     {
@@ -70,109 +77,18 @@
       "name": "de-agent-prod",
       "status": "active",
       "workspace": "Pulse",
-      "costMtd": 1326.4667,
+      "costMtd": 790.3772,
       "usage": {},
       "modelCosts": {
-        "claude-sonnet-4-6": 817.749448,
-        "claude-opus-4-6": 463.512814,
-        "claude-haiku-4-5-20251001": 45.204469
+        "claude-sonnet-4-6": 709.09686,
+        "claude-opus-4-6": 60.976805,
+        "claude-haiku-4-5-20251001": 20.303489
       },
       "dailyCosts": {
-        "2026-05-25": 174.031396,
-        "2026-05-26": 239.781506,
-        "2026-05-27": 227.803902,
-        "2026-05-28": 142.317199,
-        "2026-05-29": 221.665075,
-        "2026-05-30": 13.725758,
-        "2026-05-31": 9.242659,
-        "2026-06-01": 119.44458,
-        "2026-06-02": 178.454657
-      }
-    },
-    {
-      "id": "apikey_01TWteLmjZfx4BoBQXbEG7XJ",
-      "name": "iq-dev-test",
-      "status": "active",
-      "workspace": "IQ",
-      "costMtd": 226.8564,
-      "usage": {},
-      "modelCosts": {
-        "claude-opus-4-6": 189.600563,
-        "claude-sonnet-4-5-20250929": 24.250787,
-        "claude-opus-4-7": 4.965708,
-        "claude-opus-4-8": 4.352685,
-        "claude-haiku-4-5-20251001": 3.686665
-      },
-      "dailyCosts": {
-        "2026-05-25": 29.739716,
-        "2026-05-26": 11.229188,
-        "2026-05-27": 17.556703,
-        "2026-05-28": 8.973285,
-        "2026-05-29": 23.079521,
-        "2026-05-30": 40.289753,
-        "2026-05-31": 10.6348,
-        "2026-06-01": 72.249071,
-        "2026-06-02": 13.104371
-      }
-    },
-    {
-      "id": "apikey_0178RC4kYTU4rUmByNi31wuV",
-      "name": "Dev-Sparsh",
-      "status": "active",
-      "workspace": "Sparsh",
-      "costMtd": 211.6565,
-      "usage": {},
-      "modelCosts": {
-        "claude-opus-4-7": 210.772424,
-        "claude-haiku-4-5-20251001": 0.884079
-      },
-      "dailyCosts": {
-        "2026-05-25": 88.919035,
-        "2026-05-26": 80.23963,
-        "2026-05-27": 42.345048,
-        "2026-06-02": 0.152789
-      }
-    },
-    {
-      "id": "apikey_01GgVoW7yLUSaJ8DKmJ4zhCm",
-      "name": "data-quality-agent",
-      "status": "active",
-      "workspace": "Data Quality Agent - Abhishek",
-      "costMtd": 162.6835,
-      "usage": {},
-      "modelCosts": {
-        "claude-sonnet-4-6": 139.757914,
-        "claude-opus-4-6": 20.806684,
-        "claude-haiku-4-5-20251001": 2.118899
-      },
-      "dailyCosts": {
-        "2026-05-25": 29.338932,
-        "2026-05-26": 27.993264,
-        "2026-05-27": 3.785775,
-        "2026-05-29": 19.880823,
-        "2026-05-30": 19.240491,
-        "2026-05-31": 16.02604,
-        "2026-06-01": 21.924676,
-        "2026-06-02": 24.493497
-      }
-    },
-    {
-      "id": "apikey_01QUA6cRtnSF6sGQtf7BBvaD",
-      "name": "autoship-key",
-      "status": "active",
-      "workspace": "Autoship",
-      "costMtd": 149.7966,
-      "usage": {},
-      "modelCosts": {
-        "claude-opus-4-7": 104.604914,
-        "claude-opus-4-6": 37.122027,
-        "claude-haiku-4-5-20251001": 4.316383,
-        "claude-sonnet-4-6": 3.753267
-      },
-      "dailyCosts": {
-        "2026-05-25": 109.18667,
-        "2026-06-01": 20.394379,
-        "2026-06-02": 20.215542
+        "2026-06-01": 134.955099,
+        "2026-06-02": 201.323713,
+        "2026-06-03": 201.688182,
+        "2026-06-04": 252.410159
       }
     },
     {
@@ -180,37 +96,93 @@
       "name": "iq-prod",
       "status": "active",
       "workspace": "IQ",
-      "costMtd": 106.915,
+      "costMtd": 160.9168,
       "usage": {},
       "modelCosts": {
-        "claude-sonnet-4-5-20250929": 104.821583,
-        "claude-haiku-4-5-20251001": 2.093414
+        "claude-sonnet-4-5-20250929": 158.724554,
+        "claude-haiku-4-5-20251001": 2.192233
       },
       "dailyCosts": {
-        "2026-05-25": 6.27005,
-        "2026-05-26": 14.125809,
-        "2026-05-27": 17.065328,
-        "2026-05-28": 10.606147,
-        "2026-05-29": 7.743452,
-        "2026-05-30": 0.981339,
-        "2026-05-31": 4.229626,
         "2026-06-01": 23.857167,
-        "2026-06-02": 22.036078
+        "2026-06-02": 22.036078,
+        "2026-06-03": 28.54671,
+        "2026-06-04": 86.476832
       }
     },
     {
-      "id": "apikey_01BnyvVEy9bNgr9uCpsUX3xs",
-      "name": "dev-key",
+      "id": "apikey_01QUA6cRtnSF6sGQtf7BBvaD",
+      "name": "autoship-key",
       "status": "active",
       "workspace": "Autoship",
-      "costMtd": 57.726,
+      "costMtd": 141.3345,
       "usage": {},
       "modelCosts": {
-        "claude-opus-4-7": 57.425768,
-        "claude-haiku-4-5-20251001": 0.300217
+        "claude-opus-4-7": 75.229922,
+        "claude-sonnet-4-6": 54.719774,
+        "claude-opus-4-6": 9.798796,
+        "claude-haiku-4-5-20251001": 1.58602
       },
       "dailyCosts": {
-        "2026-05-25": 57.725985
+        "2026-06-01": 20.40733,
+        "2026-06-02": 20.226651,
+        "2026-06-03": 57.616704,
+        "2026-06-04": 43.083827
+      }
+    },
+    {
+      "id": "apikey_01GgVoW7yLUSaJ8DKmJ4zhCm",
+      "name": "data-quality-agent",
+      "status": "active",
+      "workspace": "Data Quality Agent - Abhishek",
+      "costMtd": 126.4347,
+      "usage": {},
+      "modelCosts": {
+        "claude-sonnet-4-6": 116.565206,
+        "claude-opus-4-6": 8.522922,
+        "claude-haiku-4-5-20251001": 1.34661
+      },
+      "dailyCosts": {
+        "2026-06-01": 24.508112,
+        "2026-06-02": 27.789208,
+        "2026-06-03": 36.10338,
+        "2026-06-04": 38.034037
+      }
+    },
+    {
+      "id": "apikey_01TWteLmjZfx4BoBQXbEG7XJ",
+      "name": "iq-dev-test",
+      "status": "active",
+      "workspace": "IQ",
+      "costMtd": 101.8496,
+      "usage": {},
+      "modelCosts": {
+        "claude-opus-4-6": 69.748971,
+        "claude-sonnet-4-5-20250929": 24.792089,
+        "claude-opus-4-7": 5.422163,
+        "claude-haiku-4-5-20251001": 1.88638
+      },
+      "dailyCosts": {
+        "2026-06-01": 72.694851,
+        "2026-06-02": 13.17252,
+        "2026-06-03": 6.416674,
+        "2026-06-04": 9.565557
+      }
+    },
+    {
+      "id": "apikey_0178RC4kYTU4rUmByNi31wuV",
+      "name": "Dev-Sparsh",
+      "status": "active",
+      "workspace": "Sparsh",
+      "costMtd": 39.4911,
+      "usage": {},
+      "modelCosts": {
+        "claude-opus-4-8": 38.837775,
+        "claude-haiku-4-5-20251001": 0.50106,
+        "claude-opus-4-7": 0.152273
+      },
+      "dailyCosts": {
+        "2026-06-02": 0.152789,
+        "2026-06-04": 39.338319
       }
     },
     {
@@ -218,61 +190,18 @@
       "name": "edm-code-review",
       "status": "active",
       "workspace": "Pulse",
-      "costMtd": 45.4748,
+      "costMtd": 31.7695,
       "usage": {},
       "modelCosts": {
-        "claude-sonnet-4-6": 31.80686,
-        "claude-opus-4-6": 12.036796,
-        "claude-haiku-4-5-20251001": 1.631139
+        "claude-sonnet-4-6": 26.978884,
+        "claude-opus-4-6": 3.984505,
+        "claude-haiku-4-5-20251001": 0.806081
       },
       "dailyCosts": {
-        "2026-05-25": 1.775968,
-        "2026-05-26": 11.7825,
-        "2026-05-27": 4.238245,
-        "2026-05-28": 4.601341,
-        "2026-05-29": 8.060473,
-        "2026-06-01": 7.397056,
-        "2026-06-02": 7.61921
-      }
-    },
-    {
-      "id": "apikey_01MeQvFF7YkZek87us2AcV5P",
-      "name": "slimslack-bheem",
-      "status": "active",
-      "workspace": "slimslack",
-      "costMtd": 1.3061,
-      "usage": {},
-      "modelCosts": {
-        "claude-haiku-4-5-20251001": 1.306066
-      },
-      "dailyCosts": {
-        "2026-05-26": 0.00507,
-        "2026-05-27": 0.035508,
-        "2026-05-28": 0.32269,
-        "2026-05-29": 0.874216,
-        "2026-05-30": 0.002135,
-        "2026-06-01": 0.066447
-      }
-    },
-    {
-      "id": "apikey_012RhVPSUHQAdDTRTtRXZy1W",
-      "name": "Sentry Clickup Agent",
-      "status": "active",
-      "workspace": "UI Team",
-      "costMtd": 1.1117,
-      "usage": {},
-      "modelCosts": {
-        "claude-haiku-4-5-20251001": 1.111727
-      },
-      "dailyCosts": {
-        "2026-05-26": 0.109882,
-        "2026-05-27": 0.103123,
-        "2026-05-28": 0.103125,
-        "2026-05-29": 0.159582,
-        "2026-05-30": 0.136912,
-        "2026-05-31": 0.021421,
-        "2026-06-01": 0.372606,
-        "2026-06-02": 0.105076
+        "2026-06-01": 8.110082,
+        "2026-06-02": 8.327715,
+        "2026-06-03": 10.812757,
+        "2026-06-04": 4.518918
       }
     },
     {
@@ -280,15 +209,48 @@
       "name": "IQ Evaluator",
       "status": "active",
       "workspace": "UI Team",
-      "costMtd": 0.8249,
+      "costMtd": 0.9342,
       "usage": {},
       "modelCosts": {
-        "claude-opus-4-7": 0.756145,
-        "claude-haiku-4-5-20251001": 0.068794
+        "claude-haiku-4-5-20251001": 0.7894,
+        "claude-opus-4-7": 0.11092,
+        "claude-sonnet-4-20250514": 0.033885
       },
       "dailyCosts": {
-        "2026-05-27": 0.154349,
-        "2026-05-28": 0.67059
+        "2026-06-03": 0.9146,
+        "2026-06-04": 0.019605
+      }
+    },
+    {
+      "id": "apikey_012RhVPSUHQAdDTRTtRXZy1W",
+      "name": "Sentry Clickup Agent",
+      "status": "active",
+      "workspace": "UI Team",
+      "costMtd": 0.7203,
+      "usage": {},
+      "modelCosts": {
+        "claude-haiku-4-5-20251001": 0.720311
+      },
+      "dailyCosts": {
+        "2026-06-01": 0.372606,
+        "2026-06-02": 0.105076,
+        "2026-06-03": 0.119872,
+        "2026-06-04": 0.122757
+      }
+    },
+    {
+      "id": "apikey_01K3BSm1WQ5XrckCXKLTD6N4",
+      "name": "DE team",
+      "status": "active",
+      "workspace": "Pulse",
+      "costMtd": 0.6857,
+      "usage": {},
+      "modelCosts": {
+        "claude-opus-4-8": 0.685161,
+        "claude-haiku-4-5-20251001": 0.000527
+      },
+      "dailyCosts": {
+        "2026-06-03": 0.685688
       }
     },
     {
@@ -296,16 +258,29 @@
       "name": "TCGenBot",
       "status": "active",
       "workspace": "TCGenBot",
-      "costMtd": 0.6039,
+      "costMtd": 0.4106,
       "usage": {},
       "modelCosts": {
-        "claude-sonnet-4-6": 0.603927
+        "claude-sonnet-4-6": 0.410595
       },
       "dailyCosts": {
-        "2026-05-27": 0.111903,
-        "2026-05-29": 0.15909,
         "2026-06-01": 0.084045,
-        "2026-06-02": 0.248889
+        "2026-06-02": 0.248889,
+        "2026-06-03": 0.077661
+      }
+    },
+    {
+      "id": "apikey_01MeQvFF7YkZek87us2AcV5P",
+      "name": "slimslack-bheem",
+      "status": "active",
+      "workspace": "slimslack",
+      "costMtd": 0.0664,
+      "usage": {},
+      "modelCosts": {
+        "claude-haiku-4-5-20251001": 0.066447
+      },
+      "dailyCosts": {
+        "2026-06-01": 0.066447
       }
     },
     {
@@ -316,37 +291,26 @@
       "costMtd": 0.0,
       "usage": {},
       "modelCosts": {
-        "claude-haiku-4-5-20251001": 3.9e-05
+        "claude-haiku-4-5-20251001": 2.6e-05
       },
       "dailyCosts": {
-        "2026-05-28": 1.3e-05,
-        "2026-05-29": 1.3e-05,
-        "2026-06-01": 1.3e-05
+        "2026-06-01": 1.3e-05,
+        "2026-06-03": 1.3e-05
       }
     },
     {
-      "id": "apikey_01Cp55mC4s5TRjMi14VbD5vt",
-      "name": "shopify-mcp",
-      "status": "active",
-      "workspace": "Pulse",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
-      "id": "apikey_01SR1LvpypLoEGmYvcBFmn8S",
-      "name": "iq-saras",
+      "id": "apikey_01AWEuMQVdHjrLjnRSezxa7C",
+      "name": "dev-key",
       "status": "archived",
-      "workspace": "",
+      "workspace": "Autoship",
       "costMtd": 0,
       "usage": {},
       "modelCosts": {},
       "dailyCosts": {}
     },
     {
-      "id": "apikey_01EwcUzeegpRtoFcJQadaamq",
-      "name": "edm-code-review",
+      "id": "apikey_01HbynVVfZzWE4K7yXXwRJ89",
+      "name": "shopify-mcp",
       "status": "archived",
       "workspace": "",
       "costMtd": 0,
@@ -365,16 +329,6 @@
       "dailyCosts": {}
     },
     {
-      "id": "apikey_01NcSfZTjT2nce36EGwwHCis",
-      "name": "DE-agents-testing",
-      "status": "archived",
-      "workspace": "",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
       "id": "apikey_01EgNpQKspfPWeGrUC1bqFti",
       "name": "Daton assistant",
       "status": "archived",
@@ -385,60 +339,10 @@
       "dailyCosts": {}
     },
     {
-      "id": "apikey_01SnFCkVLqVinadgfqndA5ZW",
-      "name": "api-key-1",
+      "id": "apikey_01S7ULjiARYwcvipMRxxi33P",
+      "name": "Test ",
       "status": "archived",
-      "workspace": "Connector Studio AI project",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
-      "id": "apikey_01K3BSm1WQ5XrckCXKLTD6N4",
-      "name": "DE team",
-      "status": "active",
-      "workspace": "Pulse",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
-      "id": "apikey_0177vm9xVR4uh1ZtwXd2QcXf",
-      "name": "autoship",
-      "status": "archived",
-      "workspace": "",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
-      "id": "apikey_01AWEuMQVdHjrLjnRSezxa7C",
-      "name": "dev-key",
-      "status": "archived",
-      "workspace": "Autoship",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
-      "id": "apikey_01J3GwkcMqvgVES8ifC8rSwZ",
-      "name": "sonnet-3.5",
-      "status": "archived",
-      "workspace": "UI Team",
-      "costMtd": 0,
-      "usage": {},
-      "modelCosts": {},
-      "dailyCosts": {}
-    },
-    {
-      "id": "apikey_01TYpnvTycefsNxjNm2yofBr",
-      "name": "de-agent-dev",
-      "status": "archived",
-      "workspace": "Pulse",
+      "workspace": "Saras Analytics INC",
       "costMtd": 0,
       "usage": {},
       "modelCosts": {},
@@ -455,6 +359,26 @@
       "dailyCosts": {}
     },
     {
+      "id": "apikey_01EwcUzeegpRtoFcJQadaamq",
+      "name": "edm-code-review",
+      "status": "archived",
+      "workspace": "",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
+      "id": "apikey_01SR1LvpypLoEGmYvcBFmn8S",
+      "name": "iq-saras",
+      "status": "archived",
+      "workspace": "",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
       "id": "apikey_01GMgQTtquVCeDvhNtVRy3a3",
       "name": "pulse-de-agent",
       "status": "archived",
@@ -465,10 +389,30 @@
       "dailyCosts": {}
     },
     {
-      "id": "apikey_01GGZum9cZwumfNgabKBMfRP",
-      "name": "dev-key",
+      "id": "apikey_0177vm9xVR4uh1ZtwXd2QcXf",
+      "name": "autoship",
       "status": "archived",
-      "workspace": "Autoship",
+      "workspace": "",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
+      "id": "apikey_01Cp55mC4s5TRjMi14VbD5vt",
+      "name": "shopify-mcp",
+      "status": "archived",
+      "workspace": "Pulse",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
+      "id": "apikey_01SnFCkVLqVinadgfqndA5ZW",
+      "name": "api-key-1",
+      "status": "archived",
+      "workspace": "Connector Studio AI project",
       "costMtd": 0,
       "usage": {},
       "modelCosts": {},
@@ -495,9 +439,9 @@
       "dailyCosts": {}
     },
     {
-      "id": "apikey_01AYT7Rs5io2E1DpStxbZGfb",
-      "name": "pocs",
-      "status": "active",
+      "id": "apikey_01GGZum9cZwumfNgabKBMfRP",
+      "name": "dev-key",
+      "status": "archived",
       "workspace": "Autoship",
       "costMtd": 0,
       "usage": {},
@@ -505,10 +449,10 @@
       "dailyCosts": {}
     },
     {
-      "id": "apikey_01S7ULjiARYwcvipMRxxi33P",
-      "name": "Test ",
+      "id": "apikey_01J3GwkcMqvgVES8ifC8rSwZ",
+      "name": "sonnet-3.5",
       "status": "archived",
-      "workspace": "Saras Analytics INC",
+      "workspace": "UI Team",
       "costMtd": 0,
       "usage": {},
       "modelCosts": {},
@@ -525,10 +469,40 @@
       "dailyCosts": {}
     },
     {
-      "id": "apikey_01HbynVVfZzWE4K7yXXwRJ89",
-      "name": "shopify-mcp",
+      "id": "apikey_01TYpnvTycefsNxjNm2yofBr",
+      "name": "de-agent-dev",
+      "status": "archived",
+      "workspace": "Pulse",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
+      "id": "apikey_01NcSfZTjT2nce36EGwwHCis",
+      "name": "DE-agents-testing",
       "status": "archived",
       "workspace": "",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
+      "id": "apikey_01BnyvVEy9bNgr9uCpsUX3xs",
+      "name": "dev-key",
+      "status": "active",
+      "workspace": "Autoship",
+      "costMtd": 0,
+      "usage": {},
+      "modelCosts": {},
+      "dailyCosts": {}
+    },
+    {
+      "id": "apikey_01AYT7Rs5io2E1DpStxbZGfb",
+      "name": "pocs",
+      "status": "active",
+      "workspace": "Autoship",
       "costMtd": 0,
       "usage": {},
       "modelCosts": {},
