@@ -476,7 +476,7 @@
     <div class="kpi c3">
       <div class="kpi-label">Avg Active Days / User</div>
       <div class="kpi-value" id="kpi-cursor-avgdays-ov">-</div>
-      <div class="kpi-sub">Cursor · May MTD</div>
+      <div class="kpi-sub" id="ov-cursor-mtd-sub">Cursor · May MTD</div>
     </div>
     <div class="kpi c4">
       <div class="kpi-label">Windsurf Users Tracked</div>
@@ -1162,7 +1162,7 @@
 
   <div class="section-divider" style="margin-top:32px"><span>Model Cost Trends</span></div>
   <div class="card">
-    <div class="section-title" style="margin-bottom:14px">Daily Model Spending (May 2026)</div>
+    <div class="section-title" style="margin-bottom:14px" id="model-trend-title">Daily Model Spending (May 2026)</div>
     <div style="height:300px;position:relative">
       <canvas id="model-cost-trend-chart"></canvas>
     </div>
@@ -1297,7 +1297,7 @@
       <div class="kpi-meta"><strong>Source:</strong> ClickUp API &nbsp;·&nbsp; <strong>Period:</strong> Current snapshot &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div>
     </div>
     <div class="kpi c2">
-      <div class="kpi-label">Closed May MTD</div>
+      <div class="kpi-label" id="cu-closed-label">Closed May MTD</div>
       <div class="kpi-value" id="cu-kpi-done">-</div>
       <div class="kpi-sub">tickets completed this month</div>
       <div class="kpi-meta"><strong>Source:</strong> ClickUp API &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div>
@@ -1389,7 +1389,7 @@
   <div class="kpi-grid">
     <div class="kpi c1"><div class="kpi-label">Cursor Active / Licensed</div><div class="kpi-value" id="adopt-cursor-latest" style="font-size:1.5rem">-</div><div class="kpi-sub" id="adopt-cursor-latest-sub">most recent day with data</div><div class="kpi-meta"><strong>Source:</strong> Cursor Admin API &nbsp;·&nbsp; <strong>Period:</strong> Most recent day &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div></div>
     <div class="kpi c2"><div class="kpi-label">Windsurf Active Today</div><div class="kpi-value" id="adopt-ws-today">-</div><div class="kpi-sub">from last-active timestamp</div><div class="kpi-meta"><strong>Source:</strong> Windsurf API &nbsp;·&nbsp; <strong>Period:</strong> Last-active timestamp &nbsp;·&nbsp; <strong>Lag:</strong> Per-feature</div></div>
-    <div class="kpi c3"><div class="kpi-label">Cursor Events (May MTD)</div><div class="kpi-value" id="adopt-cursor-mtd">-</div><div class="kpi-sub" id="adopt-cursor-users">across all users</div><div class="kpi-meta"><strong>Source:</strong> Cursor Admin API &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div></div>
+    <div class="kpi c3"><div class="kpi-label" id="adopt-cursor-mtd-label">Cursor Events (May MTD)</div><div class="kpi-value" id="adopt-cursor-mtd">-</div><div class="kpi-sub" id="adopt-cursor-users">across all users</div><div class="kpi-meta"><strong>Source:</strong> Cursor Admin API &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div></div>
     <div class="kpi c4"><div class="kpi-label">Avg Active Days</div><div class="kpi-value" id="adopt-avg-days">-</div><div class="kpi-sub">avg per active Cursor user</div><div class="kpi-meta"><strong>Source:</strong> Cursor Admin API &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div></div>
   </div>
   <!-- DEPT METRICS -->
@@ -2079,6 +2079,11 @@ function renderModelCostTrend(modelCosts) {
     canvas.parentElement.innerHTML = '<div style="color:var(--muted);text-align:center;padding:24px">Daily trend data not yet available — will appear after next workflow run.</div>';
     return;
   }
+
+  // Title reflects the actual data month (Claude.ai cost can lag a few days).
+  const _trendMonth = new Date(dates[dates.length-1] + 'T00:00:00').toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const _trendTitle = document.getElementById('model-trend-title');
+  if (_trendTitle) _trendTitle.textContent = 'Daily Model Spending (' + _trendMonth + ')';
 
   // Collect all unique model families present in the data
   const families = { sonnet: [], opus: [], haiku: [] };
@@ -3325,6 +3330,10 @@ function initFromData() {
   ['month-lbl-overview','month-lbl-cowork'].forEach(id => set(id, claudeMonthLabel));
   ['month-lbl-cu-note','month-lbl-adopt','month-lbl-heatmap','month-lbl-user-summary'].forEach(id => set(id, _ml));
   set('month-lbl-cu-short', _ms);
+  // Real-time current-month labels (Cursor / ClickUp are not lagged)
+  set('adopt-cursor-mtd-label', `Cursor Events (${_ms} MTD)`);
+  set('ov-cursor-mtd-sub', `Cursor · ${_ms} MTD`);
+  set('cu-closed-label', `Closed ${_ms} MTD`);
 
   // Key Takeaways box
   const ccActive = members.filter(m => m.lines > 0).length;
