@@ -303,6 +303,8 @@ new_data_block = f"""const DATA = {{
   modelUsage: {model_usage_json},
   modelCost: {model_cost_json},
   modelCostDaily: {model_cost_daily_json},
+  lastMonthClaudeCost: {cc.get('lastMonthModelCost', 0)},
+  lastMonthLabel: '{cc.get('lastMonthLabel', '')}',
   userUsage: {user_usage_json},
   userCost: {user_cost_json},
   userDailyAvg: {user_daily_avg_json},

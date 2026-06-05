@@ -312,6 +312,35 @@ except Exception as e:
     log(f"  [WARN] cost_report fetch failed: {e}")
     model_cost = {}
 
+# ── 4a-2. Previous full-month Claude.ai cost (for MoM + yearly projection) ────
+last_month_model_cost = 0.0
+last_month_label = (month_start - timedelta(days=1)).strftime("%B %Y")
+try:
+    pm_start = (month_start - timedelta(days=1)).replace(day=1)
+    pm_params = {
+        "starting_at":  pm_start.strftime("%Y-%m-%dT00:00:00Z"),
+        "ending_at":    month_start.strftime("%Y-%m-%dT00:00:00Z"),  # exclusive → full prev month
+        "bucket_width": "1d",
+        "group_by":     ["model"],
+    }
+    pm_resp = get_json("cost_report", pm_params)
+    while True:
+        for bucket in pm_resp.get("data", []):
+            for item in bucket.get("results", []):
+                amt = item.get("amount", "0") or "0"
+                try:
+                    last_month_model_cost += float(amt) / 100.0
+                except (ValueError, TypeError):
+                    pass
+        if not pm_resp.get("has_more"):
+            break
+        pm_params["page"] = pm_resp.get("next_page")
+        pm_resp = get_json("cost_report", pm_params)
+        time.sleep(0.2)
+    log(f"  Previous month ({last_month_label}) Claude.ai cost: ${last_month_model_cost:.2f}")
+except Exception as e:
+    log(f"  [WARN] previous-month cost_report fetch failed: {e}")
+
 # ── 4b. Token usage by model ─────────────────────────────────────────────────
 try:
     usage_params = {
@@ -420,6 +449,8 @@ result = {
     "modelUsage":           model_usage,
     "modelCost":            model_cost,
     "modelCostDaily":       model_cost_daily,
+    "lastMonthModelCost":   round(last_month_model_cost, 4),
+    "lastMonthLabel":       last_month_label,
     "claudeSpend":          claude_spend,
     "cursorSpend":          cursor_spend,
     "windsurfSpend":        windsurf_spend,
