@@ -82,11 +82,15 @@ jobs:
         run: |
           git config user.name  "Dashboard Bot"
           git config user.email "dashboard-bot@sarasanalytics.com"
-          git add index.html backend/public/index.html data/saras-daily-adoption.json data/daily_collected.json data/claude_ai_stats.json data/api_agents_stats.json
+          # Stage every generated data file (data/*.json now includes
+          # monthly_snapshots.json) plus the HTML. Staging all of them keeps the
+          # working tree clean so the later `git pull --rebase` doesn't abort
+          # with "cannot pull with rebase: you have unstaged changes".
+          git add index.html backend/public/index.html data/*.json
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
             git commit -m "Daily update $(date -u +'%Y-%m-%d')"
-            git pull --rebase
+            git pull --rebase --autostash
             git push
           fi
