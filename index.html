@@ -295,7 +295,7 @@
   
   <!-- TOTAL SPEND KPI -->
   <div style="background:linear-gradient(135deg,rgba(255,167,38,0.15),rgba(255,193,7,0.1));border-radius:8px;padding:20px;margin-bottom:24px;border-left:4px solid #ffa726">
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:16px">
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">TOTAL MONTHLY SPEND</div>
         <div style="font-size:2rem;font-weight:700;color:#fff" id="total-spend-monthly">-</div>
@@ -305,7 +305,7 @@
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">YEARLY PROJECTION</div>
         <div style="font-size:2rem;font-weight:700;color:#fff" id="total-spend-yearly">-</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px">Annualized (incl. Platform API)</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px" id="total-spend-yearly-sub">Annualized (incl. Platform API)</div>
       </div>
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">CLAUDE.AI MODEL COST</div>
@@ -318,10 +318,20 @@
         </div>
       </div>
       <div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">LAST MONTH CLAUDE.AI</div>
+        <div style="font-size:2rem;font-weight:700;color:#fff" id="ov-claude-lastmonth">-</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px" id="ov-claude-lastmonth-sub">previous month model cost</div>
+      </div>
+      <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">PLATFORM API MTD</div>
         <div style="font-size:2rem;font-weight:700;color:#ce93d8" id="ov-api-mtd">-</div>
         <div style="font-size:0.75rem;color:var(--muted);margin-top:4px" id="ov-api-mtd-sub">Platform API agents</div>
         <div style="font-size:0.8rem;color:var(--muted);margin-top:6px">Daily avg: <span style="color:#ce93d8;font-weight:600" id="ov-api-daily">-</span></div>
+      </div>
+      <div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">LAST MONTH PLATFORM API</div>
+        <div style="font-size:2rem;font-weight:700;color:#ce93d8" id="ov-api-lastmonth">-</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px" id="ov-api-lastmonth-sub">previous month total</div>
       </div>
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">API MODEL BREAKDOWN</div>
@@ -1746,21 +1756,54 @@ function populateSpendsTab() {
   const agApiDaily = (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.analyticsWorking)
                       ? (API_AGENTS_DATA.dailyAvg || 0) : 0;
 
-  // Grand totals: API model costs + fixed subscriptions + platform API agents
-  // spendData.claude.monthly = Claude.ai model cost (from Anthropic Analytics)
-  // Cursor and Windsurf API costs are $0 until their APIs are integrated
+  // Current monthly spend (TOTAL MONTHLY SPEND card): subscriptions +
+  // Claude.ai model cost MTD + Platform API MTD. Cursor/Windsurf usage is $0
+  // (flat-fee, already in subscriptions).
+  const subsMonthly  = claudeSub + cursorSub + windsurfSub;
   const totalMonthly = spendData.claude.monthly + spendData.cursor.monthly + spendData.windsurf.monthly
-                     + claudeSub + cursorSub + windsurfSub + agApiMtd;
-  const totalYearly  = totalMonthly * 12;
+                     + subsMonthly + agApiMtd;
   const totalDaily   = Math.round((totalMonthly / daysThisMonth) * 100) / 100;
 
-    // Populate total spend in overview (includes model costs + platform API)
+  // Yearly projection: blend each VARIABLE component's last-full-month actual
+  // with its current-month run-rate (MTD scaled to a full month), then ×12.
+  // Flat subscriptions count in full. Falls back to run-rate alone when a
+  // prior-month figure isn't available yet.
+  const lastClaude    = (typeof DATA !== 'undefined' && DATA.lastMonthClaudeCost) ? DATA.lastMonthClaudeCost : 0;
+  const lastPlatform  = (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.spendComparison)
+                        ? (API_AGENTS_DATA.spendComparison.previousMonthTotal || 0) : 0;
+  // Run-rate = MTD ÷ calendar days elapsed × days-in-month. Using calendar days
+  // (not just the 2 lagged days of Claude.ai data) keeps the denominator stable
+  // and avoids wildly over-extrapolating early in the month.
+  const _daysElapsed = (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.daysElapsed) ? API_AGENTS_DATA.daysElapsed : new Date().getDate();
+  const _daysInMo    = (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.daysInMonth) ? API_AGENTS_DATA.daysInMonth : daysThisMonth;
+  const claudeRunRate   = _daysElapsed > 0 ? (spendData.claude.monthly / _daysElapsed) * _daysInMo : spendData.claude.monthly;
+  const platformRunRate = _daysElapsed > 0 ? (agApiMtd / _daysElapsed) * _daysInMo : agApiMtd;
+  const claudeBlend   = lastClaude   > 0 ? (lastClaude   + claudeRunRate)   / 2 : claudeRunRate;
+  const platformBlend = lastPlatform > 0 ? (lastPlatform + platformRunRate) / 2 : platformRunRate;
+  const monthlyBlend  = subsMonthly + claudeBlend + platformBlend;
+  const totalYearly   = monthlyBlend * 12;
+
+    // Populate total spend cards
     const elMonthly = document.getElementById('total-spend-monthly');
     if (elMonthly) elMonthly.textContent = '$' + Math.round(totalMonthly).toLocaleString();
     const elYearly = document.getElementById('total-spend-yearly');
     if (elYearly) elYearly.textContent = '$' + Math.round(totalYearly).toLocaleString();
+    const elYearlySub = document.getElementById('total-spend-yearly-sub');
+    if (elYearlySub) elYearlySub.textContent = 'Blend: last month + current run-rate · ×12';
     const elDaily = document.getElementById('total-spend-daily');
     if (elDaily) elDaily.textContent = '$' + totalDaily.toFixed(2);
+
+    // Last-month spend cards (Claude.ai model cost + Platform API)
+    const _lastLbl = (typeof DATA !== 'undefined' && DATA.lastMonthLabel) ? DATA.lastMonthLabel
+                   : ((typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.spendComparison && API_AGENTS_DATA.spendComparison.previousMonthLabel) || 'last month');
+    const elLmClaude = document.getElementById('ov-claude-lastmonth');
+    if (elLmClaude) elLmClaude.textContent = lastClaude > 0 ? '$' + Math.round(lastClaude).toLocaleString() : '—';
+    const elLmClaudeSub = document.getElementById('ov-claude-lastmonth-sub');
+    if (elLmClaudeSub) elLmClaudeSub.textContent = lastClaude > 0 ? (_lastLbl + ' · model cost') : 'pending next data sync';
+    const elLmApi = document.getElementById('ov-api-lastmonth');
+    if (elLmApi) elLmApi.textContent = lastPlatform > 0 ? '$' + Math.round(lastPlatform).toLocaleString() : '—';
+    const elLmApiSub = document.getElementById('ov-api-lastmonth-sub');
+    if (elLmApiSub) elLmApiSub.textContent = lastPlatform > 0 ? (_lastLbl + ' · Platform API') : 'pending next data sync';
 
   // Populate model cost KPI elements — sum MTD by family
   const familyMtd = (key) => modelCosts
