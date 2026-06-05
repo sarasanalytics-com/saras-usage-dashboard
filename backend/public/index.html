@@ -318,20 +318,20 @@
         </div>
       </div>
       <div>
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">LAST MONTH CLAUDE.AI</div>
-        <div style="font-size:2rem;font-weight:700;color:#fff" id="ov-claude-lastmonth">-</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px" id="ov-claude-lastmonth-sub">previous month model cost</div>
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">LAST MONTH TOTAL SPEND</div>
+        <div style="font-size:2rem;font-weight:700;color:#fff" id="ov-lastmonth-total">-</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px" id="ov-lastmonth-total-sub">previous month, all-in</div>
+        <div style="font-size:0.85rem;color:#fff;line-height:1.6;margin-top:6px">
+          <div>Subscriptions: <span style="color:#ffd54f;font-weight:600" id="ov-lastmonth-subs">-</span></div>
+          <div>Claude.ai: <span style="color:#a89cff;font-weight:600" id="ov-lastmonth-claude">-</span></div>
+          <div>Platform API: <span style="color:#ce93d8;font-weight:600" id="ov-lastmonth-platform">-</span></div>
+        </div>
       </div>
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">PLATFORM API MTD</div>
         <div style="font-size:2rem;font-weight:700;color:#ce93d8" id="ov-api-mtd">-</div>
         <div style="font-size:0.75rem;color:var(--muted);margin-top:4px" id="ov-api-mtd-sub">Platform API agents</div>
         <div style="font-size:0.8rem;color:var(--muted);margin-top:6px">Daily avg: <span style="color:#ce93d8;font-weight:600" id="ov-api-daily">-</span></div>
-      </div>
-      <div>
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">LAST MONTH PLATFORM API</div>
-        <div style="font-size:2rem;font-weight:700;color:#ce93d8" id="ov-api-lastmonth">-</div>
-        <div style="font-size:0.75rem;color:var(--muted);margin-top:4px" id="ov-api-lastmonth-sub">previous month total</div>
       </div>
       <div>
         <div style="font-size:0.8rem;color:var(--muted);margin-bottom:8px">API MODEL BREAKDOWN</div>
@@ -1793,17 +1793,17 @@ function populateSpendsTab() {
     const elDaily = document.getElementById('total-spend-daily');
     if (elDaily) elDaily.textContent = '$' + totalDaily.toFixed(2);
 
-    // Last-month spend cards (Claude.ai model cost + Platform API)
+    // Last-month TOTAL spend card: subscriptions (flat) + Claude.ai + Platform API
     const _lastLbl = (typeof DATA !== 'undefined' && DATA.lastMonthLabel) ? DATA.lastMonthLabel
                    : ((typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.spendComparison && API_AGENTS_DATA.spendComparison.previousMonthLabel) || 'last month');
-    const elLmClaude = document.getElementById('ov-claude-lastmonth');
-    if (elLmClaude) elLmClaude.textContent = lastClaude > 0 ? '$' + Math.round(lastClaude).toLocaleString() : '—';
-    const elLmClaudeSub = document.getElementById('ov-claude-lastmonth-sub');
-    if (elLmClaudeSub) elLmClaudeSub.textContent = lastClaude > 0 ? (_lastLbl + ' · model cost') : 'pending next data sync';
-    const elLmApi = document.getElementById('ov-api-lastmonth');
-    if (elLmApi) elLmApi.textContent = lastPlatform > 0 ? '$' + Math.round(lastPlatform).toLocaleString() : '—';
-    const elLmApiSub = document.getElementById('ov-api-lastmonth-sub');
-    if (elLmApiSub) elLmApiSub.textContent = lastPlatform > 0 ? (_lastLbl + ' · Platform API') : 'pending next data sync';
+    const _usd = v => '$' + Math.round(v).toLocaleString();
+    const _setTxt = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+    const lastMonthTotal = subsMonthly + lastClaude + lastPlatform;  // subscriptions are flat month-to-month
+    _setTxt('ov-lastmonth-total', _usd(lastMonthTotal));
+    _setTxt('ov-lastmonth-total-sub', _lastLbl + (lastClaude > 0 ? ' · all-in' : ' · Claude.ai pending'));
+    _setTxt('ov-lastmonth-subs', _usd(subsMonthly));
+    _setTxt('ov-lastmonth-claude', lastClaude > 0 ? _usd(lastClaude) : 'pending');
+    _setTxt('ov-lastmonth-platform', lastPlatform > 0 ? _usd(lastPlatform) : '—');
 
   // Populate model cost KPI elements — sum MTD by family
   const familyMtd = (key) => modelCosts
