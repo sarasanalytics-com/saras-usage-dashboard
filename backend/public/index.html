@@ -1309,7 +1309,7 @@
       <div class="kpi-meta"><strong>Source:</strong> ClickUp API &nbsp;·&nbsp; <strong>Period:</strong> Current snapshot &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div>
     </div>
     <div class="kpi c4">
-      <div class="kpi-label">Top Closer (May)</div>
+      <div class="kpi-label" id="cu-top-closer-label">Top Closer (May)</div>
       <div class="kpi-value" id="cu-kpi-top-closer" style="font-size:1.3rem">-</div>
       <div class="kpi-sub" id="cu-kpi-top-closer-sub"></div>
       <div class="kpi-meta"><strong>Source:</strong> ClickUp API &nbsp;·&nbsp; <strong>Period:</strong> MTD &nbsp;·&nbsp; <strong>Lag:</strong> Real-time</div>
@@ -3334,6 +3334,7 @@ function initFromData() {
   set('adopt-cursor-mtd-label', `Cursor Events (${_ms} MTD)`);
   set('ov-cursor-mtd-sub', `Cursor · ${_ms} MTD`);
   set('cu-closed-label', `Closed ${_ms} MTD`);
+  set('cu-top-closer-label', `Top Closer (${_ms})`);
 
   // Key Takeaways box
   const ccActive = members.filter(m => m.lines > 0).length;
