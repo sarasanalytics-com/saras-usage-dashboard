@@ -16,6 +16,10 @@ permissions:
 jobs:
   daily-report:
     runs-on: ubuntu-latest
+    # Safety net: the whole pipeline normally finishes in a few minutes. Cap it
+    # well under the 6h default so a hung collector fails fast instead of
+    # silently burning the runner and skipping the daily commit.
+    timeout-minutes: 25
 
     steps:
       # ── 1. Checkout ──────────────────────────────────────────────────────────
@@ -35,6 +39,7 @@ jobs:
 
       # ── 3. Collect Claude.ai analytics via Anthropic Analytics API ───────────────
       - name: Collect Claude.ai analytics (API — no browser needed)
+        timeout-minutes: 15
         env:
           ANTHROPIC_ANALYTICS_KEY: ${{ secrets.ANTHROPIC_ANALYTICS_KEY }}
           ANTHROPIC_ADMIN_KEY:     ${{ secrets.ANTHROPIC_ADMIN_KEY }}
