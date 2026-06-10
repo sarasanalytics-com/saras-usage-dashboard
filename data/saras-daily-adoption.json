@@ -1672,6 +1672,33 @@
         "ashyam.zubair@sarasanalytics.com": 211,
         "sreeram.ravuri@sarasanalytics.com": 25
       }
+    },
+    {
+      "date": "2026-06-10",
+      "cursor": {
+        "swayam.satapathy@sarasanalytics.com": 14,
+        "purna.subhash@sarasanalytics.com": 2
+      },
+      "windsurf": {},
+      "clickup": {
+        "bheem@sarasanalytics.com": 1,
+        "sriram.mandala@sarasanalytics.com": 1,
+        "saiteja.katrapati@sarasanalytics.com": 1,
+        "sreeram.ravuri@sarasanalytics.com": 1,
+        "ravikant.singh@sarasanalytics.com": 1,
+        "shivang.mishra@sarasanalytics.com": 1,
+        "anuj.dandawate@sarasanalytics.com": 1,
+        "gaurav.sharma@sarasanalytics.com": 1,
+        "bharath.p@sarasanalytics.com": 1,
+        "waheedul.akbar@sarasanalytics.com": 1
+      },
+      "claudeCodeDaily": {
+        "arijit.bhattacharyya@sarasanalytics.com": 2980,
+        "manya.shukla@sarasanalytics.com": 2048,
+        "krishna@sarasanalytics.com": 3073,
+        "iq@sarasanalytics.com": 711,
+        "deepankar.jain@sarasanalytics.com": 654
+      }
     }
   ],
   "claudeCodeMTD": {
@@ -1679,8 +1706,8 @@
     "bheem@sarasanalytics.com": 19435,
     "bhawna.kumari@sarasanalytics.com": 15339,
     "saiteja.katrapati@sarasanalytics.com": 12931,
+    "arijit.bhattacharyya@sarasanalytics.com": 12518,
     "anudeep.kolla@sarasanalytics.com": 9878,
-    "arijit.bhattacharyya@sarasanalytics.com": 9538,
     "neelima.routhu@sarasanalytics.com": 8541,
     "lakshay.virmani@sarasanalytics.com": 6501,
     "fridolin@sarasanalytics.com": 6130,
@@ -1689,7 +1716,9 @@
     "ritvik.vemula@sarasanalytics.com": 4357,
     "saivarun.pathi@sarasanalytics.com": 3938,
     "srinivas.sampathirao@sarasanalytics.com": 3837,
+    "manya.shukla@sarasanalytics.com": 3509,
     "birhane@sarasanalytics.com": 3309,
+    "krishna@sarasanalytics.com": 3073,
     "sairaj.kujala@sarasanalytics.com": 3066,
     "siddhartha.chitteti@sarasanalytics.com": 2203,
     "harsh.sharma@sarasanalytics.com": 1941,
@@ -1698,14 +1727,15 @@
     "john.joseph@sarasanalytics.com": 1683,
     "ravikant.singh@sarasanalytics.com": 1628,
     "anusha@sarasanalytics.com": 1507,
-    "manya.shukla@sarasanalytics.com": 1461,
     "qurrat.gudu@sarasanalytics.com": 1322,
     "katharin.benson@sarasanalytics.com": 1185,
     "koundinya@sarasanalytics.com": 1140,
     "srireddy.jayasatya@sarasanalytics.com": 924,
     "gaurav.sharma@sarasanalytics.com": 916,
     "abhignya.pinnoju@sarasanalytics.com": 805,
+    "iq@sarasanalytics.com": 711,
     "saad@sarasanalytics.com": 708,
+    "deepankar.jain@sarasanalytics.com": 654,
     "komal.s@sarasanalytics.com": 468,
     "yashveer.gaur@sarasanalytics.com": 451,
     "deep.kumar@sarasanalytics.com": 368,
@@ -1738,7 +1768,6 @@
     "bhavana.b@sarasanalytics.com": 0,
     "chahat.kochar@sarasanalytics.com": 0,
     "chaitanya.bhairy@sarasanalytics.com": 0,
-    "deepankar.jain@sarasanalytics.com": 0,
     "dinesh.kavuru@sarasanalytics.com": 0,
     "harshit.kumar@sarasanalytics.com": 0,
     "harshita.kaushik@sarasanalytics.com": 0,
@@ -1746,7 +1775,6 @@
     "jatin.sahu@sarasanalytics.com": 0,
     "kedar.dave@sarasanalytics.com": 0,
     "kranthi.kumar@sarasanalytics.com": 0,
-    "krishna@sarasanalytics.com": 0,
     "mahadas.srianshu@sarasanalytics.com": 0,
     "manas.gavva@sarasanalytics.com": 0,
     "manas.pradhan@sarasanalytics.com": 0,
@@ -1826,9 +1854,10 @@
     "anoop.joshi@sarasanalytics.com": 0,
     "anusha.danda@sarasanalytics.com": 0,
     "eswar.penta@sarasanalytics.com": 0,
-    "iq@sarasanalytics.com": 0,
     "joseph.george@sarasanalytics.com": 0,
-    "niharika.namala@sarasanalytics.com": 0
+    "niharika.namala@sarasanalytics.com": 0,
+    "k.rishna@sarasanalytics.com": 0,
+    "sparsh.gupta@sarasanalytics.com": 0
   },
-  "lastUpdated": "2026-06-09T02:29:49.977729+00:00"
+  "lastUpdated": "2026-06-10T02:32:19.796366+00:00"
 }
