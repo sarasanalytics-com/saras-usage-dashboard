@@ -1154,11 +1154,11 @@
   <!-- Claude.ai cost per person: flat bundled seat + usage (seat ROI) -->
   <div class="section-divider"><span>Claude.ai Cost per Person — Chat · Code · Cowork <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
   <div class="card-full">
-    <div class="section-sub" style="margin-bottom:12px">Claude.ai is one bundled <strong>$20 / seat</strong> covering Chat + Claude Code + Cowork. Anthropic bills the org <strong>per seat, not per person</strong>, so the $ is the flat seat cost — there is no per-person usage bill. Usage columns show who's actually using their paid seat (idle seats = reclaimable $20/mo).
+    <div class="section-sub" style="margin-bottom:12px"><strong style="color:#ffa726">Usage $ (est.)</strong> = the real total Claude.ai model/overage cost (on top of seats) <strong>allocated by each person's Chat · Code · Cowork usage</strong>. Anthropic doesn't meter Claude.ai usage per person, so this is an allocation estimate, not a per-person bill. The flat $20 seat is shown small, for reference only.
       <input class="search-input" placeholder="Search name…" style="width:180px;margin-left:8px" oninput="searchRows('cai-cost-tbody',this.value)">
     </div>
     <table class="data-table">
-      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Seat $/mo</th><th style="text-align:right">Chats</th><th style="text-align:right">CC Lines</th><th style="text-align:right">Cowork</th><th>Seat use</th></tr></thead>
+      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Usage $ (est.)</th><th style="text-align:right">Chats</th><th style="text-align:right">CC Lines</th><th style="text-align:right">Cowork</th><th style="text-align:right">Seat $</th></tr></thead>
       <tbody id="cai-cost-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Loading…</td></tr></tbody>
     </table>
   </div>
@@ -2197,32 +2197,41 @@ function renderClaudeAiCostTable(seat) {
   const chats  = (typeof CLAUDE_AI_USERS !== 'undefined') ? CLAUDE_AI_USERS : {};
   const cowork = (typeof COWORK_USERS   !== 'undefined') ? COWORK_USERS   : {};
   const roster = (typeof members !== 'undefined') ? members : [];
+  // Real total Claude.ai model/overage cost (on top of the flat seats).
+  const totalModelCost = (typeof DATA !== 'undefined' && DATA.modelCost)
+    ? Object.values(DATA.modelCost).reduce((s, v) => s + (v || 0), 0) : 0;
   const rows = roster.map(m => ({
     name: m.name, email: m.email, dept: m.dept,
     lines: m.lines || 0, chats: chats[m.email] || 0, cowork: cowork[m.email] || 0,
   }));
-  rows.forEach(r => r.use = r.chats + r.cowork + (r.lines > 0 ? 1 : 0));
-  rows.sort((a, b) => (b.use - a.use) || (b.lines - a.lines));
-  const idleCount = rows.filter(r => r.use === 0).length;
+  // Allocate the real model cost by each person's usage, giving each product
+  // (Chat / Code / Cowork) equal weight in its own usage distribution. This is
+  // an ESTIMATE — Claude.ai usage isn't metered per person.
+  const totLines  = rows.reduce((s, r) => s + r.lines, 0)  || 1;
+  const totChats  = rows.reduce((s, r) => s + r.chats, 0)  || 1;
+  const totCowork = rows.reduce((s, r) => s + r.cowork, 0) || 1;
+  rows.forEach(r => { r.w = (r.lines/totLines) + (r.chats/totChats) + (r.cowork/totCowork); });
+  const totW = rows.reduce((s, r) => s + r.w, 0) || 1;
+  rows.forEach(r => { r.usd = (r.w / totW) * totalModelCost; });
+  rows.sort((a, b) => (b.usd - a.usd) || (b.lines - a.lines));
+  const idleCount = rows.filter(r => r.lines === 0 && r.chats === 0 && r.cowork === 0).length;
   tb.innerHTML = rows.map((r, i) => {
-    const idle = r.use === 0;
-    const flag = idle
-      ? '<span style="color:#ff6b6b;font-weight:600">⚠ idle</span>'
-      : '<span style="color:#00d4aa">active</span>';
-    return `<tr${idle ? ' style="opacity:0.6"' : ''}>
+    const idle = (r.lines === 0 && r.chats === 0 && r.cowork === 0);
+    return `<tr${idle ? ' style="opacity:0.5"' : ''}>
       <td class="rank">${i + 1}</td>
       <td><div class="name-cell">${r.name}</div><div class="email-muted">${r.email}</div></td>
       <td>${deptBadge(r.dept)}</td>
-      <td class="num-cell">$${seat.toFixed(2)}</td>
+      <td class="num-cell" style="color:#ffa726;font-weight:700">$${r.usd.toFixed(2)}</td>
       <td class="num-cell">${r.chats ? fmt(r.chats) : '-'}</td>
       <td class="num-cell">${r.lines ? fmt(r.lines) : '-'}</td>
       <td class="num-cell">${r.cowork ? fmt(r.cowork) : '-'}</td>
-      <td>${flag}</td>
+      <td class="num-cell" style="color:var(--muted);font-size:0.8rem">$${seat.toFixed(0)}</td>
     </tr>`;
   }).join('') + `<tr style="border-top:2px solid var(--border);font-weight:700">
-      <td></td><td>${rows.length} seats · ${idleCount} idle</td><td></td>
-      <td class="num-cell">$${(rows.length * seat).toLocaleString()}</td>
-      <td colspan="4" style="color:var(--muted);font-weight:400;font-size:0.8rem">flat seat total · idle seats = $${(idleCount * seat).toLocaleString()}/mo reclaimable</td>
+      <td></td><td>${rows.length} people · ${idleCount} idle</td><td></td>
+      <td class="num-cell" style="color:#ffa726">$${Math.round(totalModelCost).toLocaleString()}</td>
+      <td colspan="3" style="color:var(--muted);font-weight:400;font-size:0.78rem">est. usage/overage allocated by Chat·Code·Cowork</td>
+      <td class="num-cell" style="color:var(--muted);font-size:0.8rem">$${(rows.length*seat).toLocaleString()}</td>
     </tr>`;
 }
 
