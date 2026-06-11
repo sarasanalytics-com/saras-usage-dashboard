@@ -1151,6 +1151,18 @@
   </div>
 
   <!-- Model Breakdown Section -->
+  <!-- Claude.ai cost per person: flat bundled seat + usage (seat ROI) -->
+  <div class="section-divider"><span>Claude.ai Cost per Person — Chat · Code · Cowork <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="card-full">
+    <div class="section-sub" style="margin-bottom:12px">Claude.ai is one bundled <strong>$20 / seat</strong> covering Chat + Claude Code + Cowork. Anthropic bills the org <strong>per seat, not per person</strong>, so the $ is the flat seat cost — there is no per-person usage bill. Usage columns show who's actually using their paid seat (idle seats = reclaimable $20/mo).
+      <input class="search-input" placeholder="Search name…" style="width:180px;margin-left:8px" oninput="searchRows('cai-cost-tbody',this.value)">
+    </div>
+    <table class="data-table">
+      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Seat $/mo</th><th style="text-align:right">Chats</th><th style="text-align:right">CC Lines</th><th style="text-align:right">Cowork</th><th>Seat use</th></tr></thead>
+      <tbody id="cai-cost-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
   <div class="section-divider"><span>🤖 Model Usage <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
   <div class="card-full">
     <div class="section-header">
@@ -1958,6 +1970,9 @@ function populateSpendsTab() {
     if (document.getElementById('spend-apikey-tbody')) {
       renderApiKeySpendTable();
     }
+    if (document.getElementById('cai-cost-tbody')) {
+      renderClaudeAiCostTable(spendData.claude.perSeat);
+    }
     if (document.getElementById('daily-usage-trend-chart')) {
       renderDailyUsageTrend();
     }
@@ -2173,6 +2188,42 @@ function renderUserUsageTable() {
       <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%;background:#a89cff"></div></div><span style="font-size:0.75rem;color:var(--muted)">${pct}%</span></div></td>
     </tr>`;
   }).join('');
+}
+
+function renderClaudeAiCostTable(seat) {
+  const tb = document.getElementById('cai-cost-tbody');
+  if (!tb) return;
+  seat = seat || 20;
+  const chats  = (typeof CLAUDE_AI_USERS !== 'undefined') ? CLAUDE_AI_USERS : {};
+  const cowork = (typeof COWORK_USERS   !== 'undefined') ? COWORK_USERS   : {};
+  const roster = (typeof members !== 'undefined') ? members : [];
+  const rows = roster.map(m => ({
+    name: m.name, email: m.email, dept: m.dept,
+    lines: m.lines || 0, chats: chats[m.email] || 0, cowork: cowork[m.email] || 0,
+  }));
+  rows.forEach(r => r.use = r.chats + r.cowork + (r.lines > 0 ? 1 : 0));
+  rows.sort((a, b) => (b.use - a.use) || (b.lines - a.lines));
+  const idleCount = rows.filter(r => r.use === 0).length;
+  tb.innerHTML = rows.map((r, i) => {
+    const idle = r.use === 0;
+    const flag = idle
+      ? '<span style="color:#ff6b6b;font-weight:600">⚠ idle</span>'
+      : '<span style="color:#00d4aa">active</span>';
+    return `<tr${idle ? ' style="opacity:0.6"' : ''}>
+      <td class="rank">${i + 1}</td>
+      <td><div class="name-cell">${r.name}</div><div class="email-muted">${r.email}</div></td>
+      <td>${deptBadge(r.dept)}</td>
+      <td class="num-cell">$${seat.toFixed(2)}</td>
+      <td class="num-cell">${r.chats ? fmt(r.chats) : '-'}</td>
+      <td class="num-cell">${r.lines ? fmt(r.lines) : '-'}</td>
+      <td class="num-cell">${r.cowork ? fmt(r.cowork) : '-'}</td>
+      <td>${flag}</td>
+    </tr>`;
+  }).join('') + `<tr style="border-top:2px solid var(--border);font-weight:700">
+      <td></td><td>${rows.length} seats · ${idleCount} idle</td><td></td>
+      <td class="num-cell">$${(rows.length * seat).toLocaleString()}</td>
+      <td colspan="4" style="color:var(--muted);font-weight:400;font-size:0.8rem">flat seat total · idle seats = $${(idleCount * seat).toLocaleString()}/mo reclaimable</td>
+    </tr>`;
 }
 
 function renderApiKeySpendTable() {
