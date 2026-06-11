@@ -792,7 +792,7 @@
   <div class="section-divider"><span>Member Leaderboard <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
   <div class="card-full">
     <div class="section-header">
-      <div><div class="section-title" id="code-table-title"></div><div class="section-sub">Full roster · sorted by contribution · Claude Code CLI only · <span style="color:#ffa726">Model $ = estimate</span> (Claude.ai model cost allocated by each member's share of lines — not a per-seat bill)</div></div>
+      <div><div class="section-title" id="code-table-title"></div><div class="section-sub">Full roster · sorted by contribution · Claude Code CLI only</div></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div class="filter-bar">
           <button class="filter-btn active" onclick="filterCode('all',this)">All</button>
@@ -806,7 +806,7 @@
       </div>
     </div>
     <table class="data-table">
-      <thead><tr id="codeTableHead"><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Lines MTD</th><th style="text-align:right" title="Estimated model spend — Claude.ai model cost allocated by each member's share of accepted lines. Not a per-seat bill.">Model $ (est.)</th><th>Share of Total</th><th>Tier</th></tr></thead>
+      <thead><tr id="codeTableHead"><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Lines MTD</th><th>Share of Total</th><th>Tier</th></tr></thead>
       <tbody id="codeTableBody"></tbody>
     </table>
   </div>
@@ -1138,6 +1138,16 @@
       </div>
     </div>
 
+  </div>
+
+  <!-- Actual per-key Platform API spend (the only real per-person metered cost) -->
+  <div class="section-divider"><span>Actual Spend by API Key (Per Person) <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="card-full">
+    <div class="section-sub" style="margin-bottom:12px">Real metered spend per Platform API key — the only <strong>actual</strong> per-person cost. Most people use shared flat-fee seats (Claude Code / Cursor, $20/seat) and won't appear here. Source: platform.claude.com cost report.</div>
+    <table class="data-table">
+      <thead><tr><th>#</th><th>API Key / Owner</th><th>Workspace</th><th style="text-align:right">Actual MTD $</th><th>Share</th></tr></thead>
+      <tbody id="spend-apikey-tbody"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">Loading…</td></tr></tbody>
+    </table>
   </div>
 
   <!-- Model Breakdown Section -->
@@ -1945,6 +1955,9 @@ function populateSpendsTab() {
     if (document.getElementById('userCostTableBody')) {
       renderUserCostTable();
     }
+    if (document.getElementById('spend-apikey-tbody')) {
+      renderApiKeySpendTable();
+    }
     if (document.getElementById('daily-usage-trend-chart')) {
       renderDailyUsageTrend();
     }
@@ -2158,6 +2171,29 @@ function renderUserUsageTable() {
       <td><div class="name-cell">${r.email.split('@')[0]}</div><div class="email-muted">${r.email}</div></td>
       <td class="num-cell">${fmt(r.tokens)}</td>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%;background:#a89cff"></div></div><span style="font-size:0.75rem;color:var(--muted)">${pct}%</span></div></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderApiKeySpendTable() {
+  const tb = document.getElementById('spend-apikey-tbody');
+  if (!tb) return;
+  const ags = (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.agents) ? API_AGENTS_DATA.agents : [];
+  const rows = ags.filter(a => !a.isAggregate && (a.costMtd || 0) > 0)
+                  .sort((a, b) => (b.costMtd || 0) - (a.costMtd || 0));
+  if (rows.length === 0) {
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">No metered API-key spend this month.</td></tr>';
+    return;
+  }
+  const total = rows.reduce((s, a) => s + (a.costMtd || 0), 0);
+  tb.innerHTML = rows.map((a, i) => {
+    const pct = total > 0 ? ((a.costMtd / total) * 100).toFixed(1) : '0.0';
+    return `<tr>
+      <td class="rank">${i + 1}</td>
+      <td><div class="name-cell">${a.name || a.id}</div></td>
+      <td>${a.workspace || '—'}</td>
+      <td class="num-cell">$${(a.costMtd || 0).toFixed(2)}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%;background:#ce93d8"></div></div><span style="font-size:0.75rem;color:var(--muted)">${pct}%</span></div></td>
     </tr>`;
   }).join('');
 }
@@ -3094,17 +3130,11 @@ function renderCodeTable() {
     if (codeSortCol==='tier')  return d*(a.lines-b.lines);
     return d*(a.lines-b.lines);
   });
-  // Estimated per-person Claude Code model spend = each member's share of
-  // accepted lines × the total Claude.ai model cost (usage-weighted estimate;
-  // Claude Code has no real per-user billing — it's a flat seat).
-  const _totalModelCost = (typeof DATA !== 'undefined' && DATA.modelCost)
-    ? Object.values(DATA.modelCost).reduce((s,v) => s + (v||0), 0) : 0;
   document.getElementById('codeTableHead').innerHTML = [
     '<th>#</th>',
     _thSort('Member','name',codeSortCol,codeSortDir,'sortCodeTable'),
     _thSort('Dept','dept',codeSortCol,codeSortDir,'sortCodeTable'),
     _thSort('Lines MTD','lines',codeSortCol,codeSortDir,'sortCodeTable','right'),
-    '<th style="text-align:right" title="Estimated model spend — Claude.ai model cost allocated by share of accepted lines. Not a per-seat bill.">Model $ (est.)</th>',
     '<th>Share of Total</th>',
     _thSort('Tier','tier',codeSortCol,codeSortDir,'sortCodeTable'),
   ].join('');
@@ -3117,7 +3147,6 @@ function renderCodeTable() {
       <td><div class="name-cell">${m.name}</div><div class="email-muted">${m.email}</div></td>
       <td>${deptBadge(m.dept)}</td>
       <td class="num-cell">${fmt(m.lines)}</td>
-      <td class="num-cell">${DATA.totalLines > 0 ? '$' + ((m.lines/DATA.totalLines)*_totalModelCost).toFixed(2) : '$0.00'}</td>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar"><div class="mini-bar-fill" style="width:${bw}%;background:${barColor(m.lines)}"></div></div><span style="font-size:0.75rem;color:var(--muted)">${pct}%</span></div></td>
       <td><span class="tier ${t.cls}">${t.label}</span></td>
     </tr>`;
