@@ -792,7 +792,7 @@
   <div class="section-divider"><span>Member Leaderboard <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
   <div class="card-full">
     <div class="section-header">
-      <div><div class="section-title" id="code-table-title"></div><div class="section-sub">Full roster · sorted by contribution · Claude Code CLI only</div></div>
+      <div><div class="section-title" id="code-table-title"></div><div class="section-sub">Full roster · sorted by contribution · Claude Code CLI only · <span style="color:#ffa726">Model $ = estimate</span> (Claude.ai model cost allocated by each member's share of lines — not a per-seat bill)</div></div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div class="filter-bar">
           <button class="filter-btn active" onclick="filterCode('all',this)">All</button>
@@ -806,7 +806,7 @@
       </div>
     </div>
     <table class="data-table">
-      <thead><tr id="codeTableHead"><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Lines MTD</th><th>Share of Total</th><th>Tier</th></tr></thead>
+      <thead><tr id="codeTableHead"><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Lines MTD</th><th style="text-align:right" title="Estimated model spend — Claude.ai model cost allocated by each member's share of accepted lines. Not a per-seat bill.">Model $ (est.)</th><th>Share of Total</th><th>Tier</th></tr></thead>
       <tbody id="codeTableBody"></tbody>
     </table>
   </div>
@@ -3094,11 +3094,17 @@ function renderCodeTable() {
     if (codeSortCol==='tier')  return d*(a.lines-b.lines);
     return d*(a.lines-b.lines);
   });
+  // Estimated per-person Claude Code model spend = each member's share of
+  // accepted lines × the total Claude.ai model cost (usage-weighted estimate;
+  // Claude Code has no real per-user billing — it's a flat seat).
+  const _totalModelCost = (typeof DATA !== 'undefined' && DATA.modelCost)
+    ? Object.values(DATA.modelCost).reduce((s,v) => s + (v||0), 0) : 0;
   document.getElementById('codeTableHead').innerHTML = [
     '<th>#</th>',
     _thSort('Member','name',codeSortCol,codeSortDir,'sortCodeTable'),
     _thSort('Dept','dept',codeSortCol,codeSortDir,'sortCodeTable'),
     _thSort('Lines MTD','lines',codeSortCol,codeSortDir,'sortCodeTable','right'),
+    '<th style="text-align:right" title="Estimated model spend — Claude.ai model cost allocated by share of accepted lines. Not a per-seat bill.">Model $ (est.)</th>',
     '<th>Share of Total</th>',
     _thSort('Tier','tier',codeSortCol,codeSortDir,'sortCodeTable'),
   ].join('');
@@ -3111,6 +3117,7 @@ function renderCodeTable() {
       <td><div class="name-cell">${m.name}</div><div class="email-muted">${m.email}</div></td>
       <td>${deptBadge(m.dept)}</td>
       <td class="num-cell">${fmt(m.lines)}</td>
+      <td class="num-cell">${DATA.totalLines > 0 ? '$' + ((m.lines/DATA.totalLines)*_totalModelCost).toFixed(2) : '$0.00'}</td>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar"><div class="mini-bar-fill" style="width:${bw}%;background:${barColor(m.lines)}"></div></div><span style="font-size:0.75rem;color:var(--muted)">${pct}%</span></div></td>
       <td><span class="tier ${t.cls}">${t.label}</span></td>
     </tr>`;
