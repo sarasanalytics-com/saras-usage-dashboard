@@ -1140,6 +1140,16 @@
 
   </div>
 
+  <!-- Actual per-key Platform API spend (the only real per-person metered cost) -->
+  <div class="section-divider"><span>Actual Spend by API Key (Per Person) <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
+  <div class="card-full">
+    <div class="section-sub" style="margin-bottom:12px">Real metered spend per Platform API key — the only <strong>actual</strong> per-person cost. Most people use shared flat-fee seats (Claude Code / Cursor, $20/seat) and won't appear here. Source: platform.claude.com cost report.</div>
+    <table class="data-table">
+      <thead><tr><th>#</th><th>API Key / Owner</th><th>Workspace</th><th style="text-align:right">Actual MTD $</th><th>Share</th></tr></thead>
+      <tbody id="spend-apikey-tbody"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
   <!-- Model Breakdown Section -->
   <div class="section-divider"><span>🤖 Model Usage <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
   <div class="card-full">
@@ -1945,6 +1955,9 @@ function populateSpendsTab() {
     if (document.getElementById('userCostTableBody')) {
       renderUserCostTable();
     }
+    if (document.getElementById('spend-apikey-tbody')) {
+      renderApiKeySpendTable();
+    }
     if (document.getElementById('daily-usage-trend-chart')) {
       renderDailyUsageTrend();
     }
@@ -2158,6 +2171,29 @@ function renderUserUsageTable() {
       <td><div class="name-cell">${r.email.split('@')[0]}</div><div class="email-muted">${r.email}</div></td>
       <td class="num-cell">${fmt(r.tokens)}</td>
       <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%;background:#a89cff"></div></div><span style="font-size:0.75rem;color:var(--muted)">${pct}%</span></div></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderApiKeySpendTable() {
+  const tb = document.getElementById('spend-apikey-tbody');
+  if (!tb) return;
+  const ags = (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.agents) ? API_AGENTS_DATA.agents : [];
+  const rows = ags.filter(a => !a.isAggregate && (a.costMtd || 0) > 0)
+                  .sort((a, b) => (b.costMtd || 0) - (a.costMtd || 0));
+  if (rows.length === 0) {
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">No metered API-key spend this month.</td></tr>';
+    return;
+  }
+  const total = rows.reduce((s, a) => s + (a.costMtd || 0), 0);
+  tb.innerHTML = rows.map((a, i) => {
+    const pct = total > 0 ? ((a.costMtd / total) * 100).toFixed(1) : '0.0';
+    return `<tr>
+      <td class="rank">${i + 1}</td>
+      <td><div class="name-cell">${a.name || a.id}</div></td>
+      <td>${a.workspace || '—'}</td>
+      <td class="num-cell">$${(a.costMtd || 0).toFixed(2)}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%;background:#ce93d8"></div></div><span style="font-size:0.75rem;color:var(--muted)">${pct}%</span></div></td>
     </tr>`;
   }).join('');
 }
