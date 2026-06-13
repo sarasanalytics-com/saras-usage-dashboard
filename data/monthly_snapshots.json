@@ -3,14 +3,14 @@
     "monthKey": "2026-06",
     "month": "June 2026",
     "monthShort": "Jun 2026",
-    "lines": 263429,
+    "lines": 294192,
     "activeMembers": 87,
-    "chatsPerDay": 103,
-    "chatUserPct": 81,
+    "chatsPerDay": 100,
+    "chatUserPct": 82,
     "coworkDAU": 38,
     "cursorDAU": 4,
     "cursorEvents": 161,
-    "projectsCreated": 22,
-    "artifactUserPct": 2
+    "projectsCreated": 23,
+    "artifactUserPct": 3
   }
 ]
