@@ -23,6 +23,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_PATH = REPO_ROOT / "data" / "claude_ai_stats.json"
 
 API_KEY  = os.environ["ANTHROPIC_ANALYTICS_KEY"].strip()  # strip trailing newline if any
+ADMIN_KEY = os.environ.get("ANTHROPIC_ADMIN_KEY", "").strip()  # for per-user Claude Code cost
 BASE_URL = "https://api.anthropic.com/v1/organizations/analytics"
 HEADERS  = {
     "x-api-key":          API_KEY,
@@ -49,6 +50,42 @@ def get_json(path, params=None, timeout=60):
     req = urllib.request.Request(url, headers=HEADERS)
     with urllib.request.urlopen(req, timeout=timeout) as r:
         return json.loads(r.read())
+
+
+def get_claude_code_user_costs(dates):
+    """Per-user Claude Code estimated cost (USD) — the REAL per-person cost from
+    Anthropic's Claude Code Analytics Admin API (/usage_report/claude_code),
+    which returns actor.email_address and model_breakdown[].estimated_cost.amount
+    (cents). Returns {email: usd}. Empty if no Admin key or no data."""
+    if not ADMIN_KEY:
+        log("  [per-user cost] no ANTHROPIC_ADMIN_KEY set — skipping")
+        return {}
+    base = "https://api.anthropic.com/v1/organizations/usage_report/claude_code"
+    headers = {"x-api-key": ADMIN_KEY, "anthropic-version": "2023-06-01"}
+    out = {}
+    for d in dates:
+        page = None
+        while True:
+            url = f"{base}?starting_at={d}&limit=1000" + (f"&page={urllib.request.quote(page)}" if page else "")
+            try:
+                req = urllib.request.Request(url, headers=headers)
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    data = json.loads(r.read())
+            except Exception as e:
+                log(f"  [per-user cost] {d}: {e}")
+                break
+            for rec in data.get("data", []):
+                email = ((rec.get("actor") or {}).get("email_address") or "").lower().strip()
+                if not email:
+                    continue
+                for mb in rec.get("model_breakdown", []):
+                    amt = (mb.get("estimated_cost") or {}).get("amount") or 0
+                    out[email] = out.get(email, 0.0) + amt / 100.0   # cents → USD
+            if not data.get("has_more"):
+                break
+            page = data.get("next_page")
+            time.sleep(0.2)
+    return out
 
 
 # ── Date range ────────────────────────────────────────────────────────────────
@@ -417,6 +454,18 @@ for date_str, chats, cowork in zip(all_dates, daily_chat_convos, daily_cowork_se
         chats_daily_data.append({"date": date_str, "chats": chats})
         cowork_daily_data.append({"date": date_str, "users": cowork})
 
+# ── Per-user Claude Code cost (real, from Anthropic's Claude Code Analytics API)
+try:
+    user_cost = get_claude_code_user_costs(all_dates)
+    if user_cost:
+        log(f"  Per-user Claude Code cost: {len(user_cost)} users, ${sum(user_cost.values()):.2f} total")
+    else:
+        log("  Per-user Claude Code cost: none returned (dashboard falls back to estimate)")
+except Exception as e:
+    log(f"  [WARN] per-user cost fetch failed: {e}")
+    user_cost = {}
+
+
 result = {
     "asOf":                 data_until.strftime("%Y-%m-%d"),
     "_dataDelay":           "3-day API delay — most recent available date",
@@ -450,6 +499,7 @@ result = {
     "modelCost":            model_cost,
     "modelCostDaily":       model_cost_daily,
     "lastMonthModelCost":   round(last_month_model_cost, 4),
+    "userCost":             {e: round(c, 4) for e, c in sorted(user_cost.items(), key=lambda x: -x[1])},
     "lastMonthLabel":       last_month_label,
     "claudeSpend":          claude_spend,
     "cursorSpend":          cursor_spend,

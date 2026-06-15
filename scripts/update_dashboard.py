@@ -262,8 +262,9 @@ cowork_users = cc.get("coworkUsers", {})
 # userUsage: chat counts per user (shown as "Chat Activity by User")
 user_usage = dict(chat_users)
 
-# userCost: not estimated — no real per-user API cost data available
-user_cost = {}
+# userCost: real per-user Claude Code cost from Anthropic's Claude Code
+# Analytics API (collected in collect_claude_ai.py). {email: usd}.
+user_cost = cc.get("userCost", {})
 
 # userDailyAvg: daily chat average per user (chats / working days MTD)
 days_elapsed = max(1, len(cc.get("chatsDailyData", [])))
