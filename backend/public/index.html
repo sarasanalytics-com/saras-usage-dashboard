@@ -1154,11 +1154,11 @@
   <!-- Claude.ai cost per person: flat bundled seat + usage (seat ROI) -->
   <div class="section-divider"><span>Claude.ai Cost per Person — Chat · Code · Cowork <span class="timeframe-badge tbadge-mtd">MTD</span></span></div>
   <div class="card-full">
-    <div class="section-sub" style="margin-bottom:12px"><strong style="color:#ffa726">Usage $ (est.)</strong> = the real total Claude.ai model/overage cost (on top of seats) <strong>allocated by each person's Chat · Code · Cowork usage</strong>. Anthropic doesn't meter Claude.ai usage per person, so this is an allocation estimate, not a per-person bill. The flat $20 seat is shown small, for reference only.
+    <div class="section-sub" style="margin-bottom:12px" id="cai-cost-sub"><strong style="color:#ffa726">Usage $ (est.)</strong> = the real total Claude.ai model/overage cost (on top of seats) <strong>allocated by each person's Chat · Code · Cowork usage</strong>. Anthropic doesn't meter Claude.ai usage per person, so this is an allocation estimate, not a per-person bill. The flat $20 seat is shown small, for reference only.
       <input class="search-input" placeholder="Search name…" style="width:180px;margin-left:8px" oninput="searchRows('cai-cost-tbody',this.value)">
     </div>
     <table class="data-table">
-      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right">Usage $ (est.)</th><th style="text-align:right">Chats</th><th style="text-align:right">CC Lines</th><th style="text-align:right">Cowork</th><th style="text-align:right">Seat $</th></tr></thead>
+      <thead><tr><th>#</th><th>Member</th><th>Dept</th><th style="text-align:right" id="cai-usage-th">Usage $ (est.)</th><th style="text-align:right">Chats</th><th style="text-align:right">CC Lines</th><th style="text-align:right">Cowork</th><th style="text-align:right">Seat $</th></tr></thead>
       <tbody id="cai-cost-tbody"><tr><td colspan="8" style="text-align:center;padding:24px;color:var(--muted)">Loading…</td></tr></tbody>
     </table>
   </div>
@@ -2204,15 +2204,29 @@ function renderClaudeAiCostTable(seat) {
     name: m.name, email: m.email, dept: m.dept,
     lines: m.lines || 0, chats: chats[m.email] || 0, cowork: cowork[m.email] || 0,
   }));
-  // Allocate the real model cost by each person's usage, giving each product
-  // (Chat / Code / Cowork) equal weight in its own usage distribution. This is
-  // an ESTIMATE — Claude.ai usage isn't metered per person.
-  const totLines  = rows.reduce((s, r) => s + r.lines, 0)  || 1;
-  const totChats  = rows.reduce((s, r) => s + r.chats, 0)  || 1;
-  const totCowork = rows.reduce((s, r) => s + r.cowork, 0) || 1;
-  rows.forEach(r => { r.w = (r.lines/totLines) + (r.chats/totChats) + (r.cowork/totCowork); });
-  const totW = rows.reduce((s, r) => s + r.w, 0) || 1;
-  rows.forEach(r => { r.usd = (r.w / totW) * totalModelCost; });
+  // Prefer REAL per-user cost from Anthropic's Claude Code Analytics API
+  // (DATA.userCost = {email: usd}); fall back to a usage-weighted allocation of
+  // the org model cost only when that real data isn't available yet.
+  const realCost  = (typeof DATA !== 'undefined' && DATA.userCost) ? DATA.userCost : {};
+  const usingReal = Object.keys(realCost).length > 0;
+  if (usingReal) {
+    rows.forEach(r => { r.usd = realCost[r.email] || 0; });
+  } else {
+    const totLines  = rows.reduce((s, r) => s + r.lines, 0)  || 1;
+    const totChats  = rows.reduce((s, r) => s + r.chats, 0)  || 1;
+    const totCowork = rows.reduce((s, r) => s + r.cowork, 0) || 1;
+    rows.forEach(r => { r.w = (r.lines/totLines) + (r.chats/totChats) + (r.cowork/totCowork); });
+    const totW = rows.reduce((s, r) => s + r.w, 0) || 1;
+    rows.forEach(r => { r.usd = (r.w / totW) * totalModelCost; });
+  }
+  const grandTotal = usingReal ? rows.reduce((s, r) => s + r.usd, 0) : totalModelCost;
+  // Relabel the column + caption depending on whether the figure is real.
+  const _th = document.getElementById('cai-usage-th');
+  if (_th) _th.textContent = usingReal ? 'Usage $ (Anthropic)' : 'Usage $ (est.)';
+  const _sub = document.getElementById('cai-cost-sub');
+  if (_sub) _sub.innerHTML = usingReal
+    ? `<strong style="color:#ffa726">Usage $ (Anthropic)</strong> = real per-user Claude Code cost from Anthropic's Claude Code Analytics API (each person's actual estimated_cost across models). The flat $20 seat is shown small, for reference.`
+    : `<strong style="color:#ffa726">Usage $ (est.)</strong> = the real total Claude.ai model/overage cost split by each person's Chat · Code · Cowork usage — an allocation estimate (used until Anthropic's per-user cost syncs). Flat $20 seat shown small, for reference.`;
   rows.sort((a, b) => (b.usd - a.usd) || (b.lines - a.lines));
   const idleCount = rows.filter(r => r.lines === 0 && r.chats === 0 && r.cowork === 0).length;
   tb.innerHTML = rows.map((r, i) => {
@@ -2229,8 +2243,8 @@ function renderClaudeAiCostTable(seat) {
     </tr>`;
   }).join('') + `<tr style="border-top:2px solid var(--border);font-weight:700">
       <td></td><td>${rows.length} people · ${idleCount} idle</td><td></td>
-      <td class="num-cell" style="color:#ffa726">$${Math.round(totalModelCost).toLocaleString()}</td>
-      <td colspan="3" style="color:var(--muted);font-weight:400;font-size:0.78rem">est. usage/overage allocated by Chat·Code·Cowork</td>
+      <td class="num-cell" style="color:#ffa726">$${Math.round(grandTotal).toLocaleString()}</td>
+      <td colspan="3" style="color:var(--muted);font-weight:400;font-size:0.78rem">${usingReal ? 'real per-user Claude Code cost (Anthropic Claude Code Analytics API)' : 'est. usage/overage allocated by Chat·Code·Cowork'}</td>
       <td class="num-cell" style="color:var(--muted);font-size:0.8rem">$${(rows.length*seat).toLocaleString()}</td>
     </tr>`;
 }
