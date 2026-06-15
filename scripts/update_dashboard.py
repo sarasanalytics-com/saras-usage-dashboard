@@ -32,6 +32,15 @@ def log(msg):
     print(msg, flush=True)
 
 
+def _js_safe(val):
+    """Escape a value for a double-quoted JS string literal. Strips control
+    chars and U+2028/U+2029 (line/paragraph separators), which are legal in
+    JSON but break a JS source string — the cause of the live-site
+    'Invalid or unexpected token' from a ClickUp title with a newline."""
+    s = re.sub(r"[\x00-\x1f\x7f\u2028\u2029]+", " ", val or "")
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
 # ── Load data ─────────────────────────────────────────────────────────────────
 with COLLECTED_PATH.open(encoding="utf-8") as f:
     fresh = json.load(f)
@@ -152,7 +161,7 @@ for email, rec in fresh["clickup"]["people"].items():
     tasks = rec.get("tasks", [])
     safe_tasks = []
     for t in tasks:
-        title_raw = (t.get("title") or "").replace("\\", "\\\\").replace('"', '\\"').replace('[', '(').replace(']', ')')
+        title_raw = _js_safe(t.get("title")).replace('[', '(').replace(']', ')')
         # Truncate to 80 chars
         # NOTE: We don't check for balanced quotes here because they're already escaped
         # The escaped \" sequence will not cause JavaScript issues
@@ -172,13 +181,13 @@ for email, rec in fresh["clickup"]["people"].items():
                     title = title[:-1]
         due      = t.get("due")
         due_js   = f'"{due}"' if due else "null"
-        url      = (t.get("url") or "").replace("\\", "\\\\").replace('"', '\\"')
+        url      = _js_safe(t.get("url"))
         prio     = t.get("priority") or "normal"
         safe_tasks.append(f'{{title:"{title}",priority:"{prio}",due:{due_js},url:"{url}"}}')
     tasks_js    = "[" + ",".join(safe_tasks) + "]"
     next_due    = rec.get("nextDue")
     next_due_js = f'"{next_due}"' if next_due else "null"
-    name_safe   = nm.replace("\\", "\\\\").replace('"', '\\"')
+    name_safe   = _js_safe(nm)
     people.append({
         "sort_open": rec.get("open", 0),
         "js": (
