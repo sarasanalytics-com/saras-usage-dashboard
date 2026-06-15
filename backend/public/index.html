@@ -1064,7 +1064,10 @@
 <!-- SPENDS -->
 <div class="page" id="tab-spends">
   <div class="section-divider"><span>AI Tool Spending</span></div>
-  
+
+  <!-- Idle-seat callout: paid Claude.ai seats with zero usage this month -->
+  <div id="idle-seats-callout" style="display:none;background:linear-gradient(135deg,rgba(244,67,54,0.10),rgba(244,67,54,0.05));border:1px solid rgba(244,67,54,0.25);border-radius:10px;padding:14px 18px;margin-bottom:20px;font-size:0.88rem;color:var(--text)"></div>
+
   <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px">
 
     <!-- Claude.ai Card -->
@@ -1973,6 +1976,9 @@ function populateSpendsTab() {
     if (document.getElementById('cai-cost-tbody')) {
       renderClaudeAiCostTable(spendData.claude.perSeat);
     }
+    if (document.getElementById('idle-seats-callout')) {
+      renderIdleSeatsCallout(spendData.claude.perSeat);
+    }
     if (document.getElementById('daily-usage-trend-chart')) {
       renderDailyUsageTrend();
     }
@@ -2188,6 +2194,22 @@ function renderUserUsageTable() {
       <td><div style="display:flex;align-items:center;gap:8px"><div class="mini-bar"><div class="mini-bar-fill" style="width:${pct}%;background:#a89cff"></div></div><span style="font-size:0.75rem;color:var(--muted)">${pct}%</span></div></td>
     </tr>`;
   }).join('');
+}
+
+function renderIdleSeatsCallout(seat) {
+  const el = document.getElementById('idle-seats-callout');
+  if (!el) return;
+  seat = seat || 20;
+  const chats  = (typeof CLAUDE_AI_USERS !== 'undefined') ? CLAUDE_AI_USERS : {};
+  const cowork = (typeof COWORK_USERS   !== 'undefined') ? COWORK_USERS   : {};
+  const roster = (typeof members !== 'undefined') ? members : [];
+  const idle = roster.filter(m => !(m.lines > 0) && !((chats[m.email]||0) > 0) && !((cowork[m.email]||0) > 0));
+  if (idle.length === 0) { el.style.display = 'none'; return; }
+  const reclaim = idle.length * seat;
+  el.style.display = 'block';
+  el.innerHTML = `<strong style="color:#f44336">⚠ ${idle.length} paid Claude.ai seats had zero usage this month</strong>`
+    + ` — chat, Claude Code, and Cowork all idle. That's <strong>$${reclaim.toLocaleString()}/mo</strong>`
+    + ` (~$${(reclaim*12).toLocaleString()}/yr) you could reclaim or reassign. See "Claude.ai Cost per Person" below for who.`;
 }
 
 function renderClaudeAiCostTable(seat) {

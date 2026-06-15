@@ -297,16 +297,21 @@ try:
         {"page": 1, "pageSize": 1000},
         cursor_headers,
     )
-    # Sum up spend from all team members (spendCents converted to dollars)
+    # Sum spend, and keep the real per-member breakdown (spendCents → USD)
+    cursor_spend_users = {}
     for member in spend_resp.get("data", []):
-        spend_cents = member.get("spendCents", 0)
+        spend_cents = member.get("spendCents", 0) or 0
         cursor_spend_mtd += spend_cents
+        em = (member.get("email") or "").lower().strip()
+        if em and spend_cents:
+            cursor_spend_users[em] = round(cursor_spend_users.get(em, 0) + spend_cents / 100, 2)
     cursor_spend_mtd = round(cursor_spend_mtd / 100, 2)  # Convert cents to dollars
     cursor_spend_data = {
         "mtd": cursor_spend_mtd,
         "monthly": cursor_spend_mtd,
+        "users": cursor_spend_users,   # email → real per-person USD spend
     }
-    log(f"  Cursor MTD spend: ${cursor_spend_mtd}")
+    log(f"  Cursor MTD spend: ${cursor_spend_mtd} · {len(cursor_spend_users)} members with non-zero spend")
 except Exception as e:
     log(f"  [WARN] Cursor spend fetch failed: {e}")
     cursor_spend_data = None
