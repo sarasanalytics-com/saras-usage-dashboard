@@ -137,6 +137,7 @@ user_rejected      = defaultdict(int)   # email → total tool rejects
 user_cc_active     = set()              # emails with any CC session MTD
 user_chats         = defaultdict(int)   # email → total chat conversations MTD
 user_cowork        = defaultdict(int)   # email → total cowork sessions MTD
+user_est_cost      = defaultdict(float) # email → estimated USD cost (Enterprise /users feed, all products)
 
 daily_chat_convos   = []             # total conversations per day
 daily_cowork_sess   = []             # total cowork sessions per day
@@ -172,6 +173,24 @@ for date_str in all_dates:
             email = user["user"]["email_address"].lower().strip()
 
             ccm = user.get("claude_code_metrics", {})
+
+            # ── Per-user estimated cost (USD) ─────────────────────────────────
+            # The Enterprise Analytics /users feed includes an estimated_cost
+            # field (amount in cents) covering all Claude.ai products. Its exact
+            # nesting can vary, so probe the likely locations defensively.
+            def _ec_usd(ec):
+                if isinstance(ec, dict):
+                    return (ec.get("amount") or 0) / 100.0
+                if isinstance(ec, (int, float)):
+                    return ec / 100.0
+                return 0.0
+            _uc = _ec_usd(user.get("estimated_cost")) + _ec_usd(user.get("cost"))
+            for _mb in (user.get("model_breakdown") or user.get("cost_breakdown") or []):
+                _uc += _ec_usd(_mb.get("estimated_cost"))
+            for _blk in ("chat_metrics", "claude_code_metrics", "cowork_metrics"):
+                _uc += _ec_usd((user.get(_blk) or {}).get("estimated_cost"))
+            if _uc:
+                user_est_cost[email] += _uc
 
             # ── Claude Code tool actions ──────────────────────────────────────
             ta = ccm.get("tool_actions", {})
@@ -454,16 +473,21 @@ for date_str, chats, cowork in zip(all_dates, daily_chat_convos, daily_cowork_se
         chats_daily_data.append({"date": date_str, "chats": chats})
         cowork_daily_data.append({"date": date_str, "users": cowork})
 
-# ── Per-user Claude Code cost (real, from Anthropic's Claude Code Analytics API)
-try:
-    user_cost = get_claude_code_user_costs(all_dates)
-    if user_cost:
-        log(f"  Per-user Claude Code cost: {len(user_cost)} users, ${sum(user_cost.values()):.2f} total")
-    else:
-        log("  Per-user Claude Code cost: none returned (dashboard falls back to estimate)")
-except Exception as e:
-    log(f"  [WARN] per-user cost fetch failed: {e}")
-    user_cost = {}
+# ── Per-user cost (real) ──────────────────────────────────────────────────────
+# Prefer estimated_cost from the Enterprise /users feed (covers all Claude.ai
+# products and uses the Analytics key we already have working). Fall back to the
+# Claude Code Analytics Admin API if the /users feed carried no cost field.
+user_cost = {e: round(c, 4) for e, c in user_est_cost.items() if c > 0}
+if user_cost:
+    log(f"  Per-user cost (Enterprise /users): {len(user_cost)} users, ${sum(user_cost.values()):.2f} total")
+else:
+    try:
+        user_cost = get_claude_code_user_costs(all_dates)
+        log(f"  Per-user cost (Claude Code API): {len(user_cost)} users, ${sum(user_cost.values()):.2f} total"
+            if user_cost else "  Per-user cost: none returned (dashboard falls back to estimate)")
+    except Exception as e:
+        log(f"  [WARN] per-user cost fetch failed: {e}")
+        user_cost = {}
 
 
 result = {
