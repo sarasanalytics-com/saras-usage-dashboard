@@ -73,7 +73,7 @@ TODAY_LABEL = dt.strftime("%B %d, %Y").replace(" 0", " ")  # Remove leading zero
 existing_dept = {}
 existing_name = {}
 
-clickup_block_match = re.search(r"const CLICKUP_DATA = \{.*?\n\};", html, flags=re.DOTALL)
+clickup_block_match = re.search(r"const CLICKUP_DATA = \{.*?\n?\};", html, flags=re.DOTALL)
 if clickup_block_match:
     blk = clickup_block_match.group(0)
     # Match both single and double quoted fields for backwards compatibility
