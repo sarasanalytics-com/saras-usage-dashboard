@@ -598,9 +598,10 @@
 <!-- DAILY -->
 <div class="page" id="tab-daily">
   <div style="text-align:center;padding:28px 0 32px;border-bottom:1px solid var(--border);margin-bottom:28px">
-    <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">AI Tool Adoption · Yesterday</div>
+    <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">AI Tool Adoption · Latest Available</div>
     <div style="font-size:2.4rem;font-weight:800;color:#fff;line-height:1.2" id="dy-hero-date">-</div>
     <div style="font-size:1rem;color:var(--muted);margin-top:8px">Cursor AI · Claude Code · Windsurf · ClickUp</div>
+    <div id="dy-lag-note" style="font-size:0.74rem;color:var(--muted);margin-top:8px;opacity:0.85"></div>
   </div>
 
   <div class="section-divider"><span>Activity Summary <span class="timeframe-badge tbadge-7d" id="dy-summary-badge">Yesterday</span></span></div>
@@ -608,12 +609,12 @@
     <div class="kpi c1"><div class="kpi-label">Employees Active</div><div class="kpi-value" id="dy-active-users">-</div><div class="kpi-sub" id="dy-active-sub">on any AI tool yesterday</div></div>
     <div class="kpi c2"><div class="kpi-label">Cursor Requests</div><div class="kpi-value" id="dy-cursor-req">-</div><div class="kpi-sub" id="dy-cursor-sub">Cursor AI actions</div></div>
     <div class="kpi c3"><div class="kpi-label">CC Lines Written</div><div class="kpi-value" id="dy-cc-lines">-</div><div class="kpi-sub" id="dy-cc-sub">Claude Code lines</div></div>
-    <div class="kpi c4" style="border-top-color:#ffa726"><div class="kpi-label">Claude.ai Users</div><div class="kpi-value" id="dy-ai-count">-</div><div class="kpi-sub" id="dy-ai-sub">MTD chats this month</div></div>
+    <div class="kpi c4" style="border-top-color:#ffa726"><div class="kpi-label">Claude.ai Users (MTD)</div><div class="kpi-value" id="dy-ai-count">-</div><div class="kpi-sub" id="dy-ai-sub">MTD chats this month</div></div>
     <div class="kpi c5"><div class="kpi-label">Windsurf Sessions</div><div class="kpi-value" id="dy-ws-count">-</div><div class="kpi-sub" id="dy-ws-sub">active Windsurf users</div></div>
     <div class="kpi c1"><div class="kpi-label">ClickUp Active</div><div class="kpi-value" id="dy-cu-count">-</div><div class="kpi-sub" id="dy-cu-sub">users with ClickUp activity</div></div>
   </div>
 
-  <div class="section-divider"><span>All Activity Yesterday</span></div>
+  <div class="section-divider"><span>All Activity — Latest Available <span class="timeframe-badge tbadge-7d" style="opacity:0.8">per-tool dates below</span></span></div>
   <div class="card-full">
     <table class="data-table">
       <thead id="dy-thead"><tr>
@@ -4765,7 +4766,10 @@ function renderDailyTab() {
   const ccDates = ADOPTION_DAYS
     .filter(d => d.cc && Object.values(d.cc).some(v => v > 0))
     .map(d => d.date).sort();
-  const ccDate = ccDates.length ? ccDates[ccDates.length-1] : null;
+  // Exclude today's still-accumulating partial — use the latest COMPLETE day.
+  const ccDatesPast = ccDates.filter(d => d < todayStr);
+  const ccDate = ccDatesPast.length ? ccDatesPast[ccDatesPast.length-1]
+               : (ccDates.length ? ccDates[ccDates.length-1] : null);
 
   // Claude.ai data-as-of date (from DATA object)
   const aiAsOf = (typeof DATA !== 'undefined' && DATA.dataAsOf) ? DATA.dataAsOf : null;
@@ -4814,7 +4818,9 @@ function renderDailyTab() {
   set('dy-ai-count',     aiMTDCount);
 
   // Dynamic subtitles with dates
-  set('dy-active-sub',  `active on any AI tool · ${fmtShort(yesterday)}`);
+  set('dy-summary-badge', 'Latest');
+  set('dy-active-sub',  `on Cursor · Code · Windsurf · ClickUp · ${fmtShort(yesterday)} (Claude.ai daily n/a — see MTD →)`);
+  set('dy-lag-note', `Cursor & ClickUp are real-time; Claude Code shows its latest complete day${ccDate ? ' ('+fmtShort(ccDate)+')' : ''}; Claude.ai & Cowork lag ~2–3 days and are shown month-to-date${aiAsOf ? ' (as of '+fmtShort(aiAsOf)+')' : ''}.`);
   set('dy-cursor-sub',  `Cursor AI actions · ${fmtShort(yesterday)}`);
   set('dy-cc-sub',      ccDate ? `Claude Code lines · ${fmtShort(ccDate)}` : 'Claude Code lines');
   set('dy-ws-sub',      `active Windsurf users · ${fmtShort(yesterday)}`);
