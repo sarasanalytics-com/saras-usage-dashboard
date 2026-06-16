@@ -52,6 +52,38 @@ def get_json(path, params=None, timeout=60):
         return json.loads(r.read())
 
 
+def get_user_cost_report(start_date, end_date):
+    """REAL per-user Claude.ai cost (all products) via the Enterprise Analytics
+    /user_cost_report endpoint. One aggregated row per user over the period;
+    actor.email + amount (fractional cents → /100 = USD). Returns {email: usd}."""
+    out = {}
+    params = {
+        "starting_at": start_date.strftime("%Y-%m-%dT00:00:00Z"),
+        "ending_at":   end_date.strftime("%Y-%m-%dT00:00:00Z"),
+        "order_by":    "amount",
+        "limit":       1000,
+    }
+    page = None
+    while True:
+        p = dict(params)
+        if page:
+            p["page"] = page
+        data = get_json("user_cost_report", p)
+        for row in data.get("data", []):
+            email = ((row.get("actor") or {}).get("email") or "").lower().strip()
+            if not email:
+                continue
+            try:
+                out[email] = out.get(email, 0.0) + float(row.get("amount") or 0) / 100.0
+            except (ValueError, TypeError):
+                pass
+        if not data.get("has_more"):
+            break
+        page = data.get("next_page")
+        time.sleep(0.2)
+    return out
+
+
 def get_claude_code_user_costs(dates):
     """Per-user Claude Code estimated cost (USD) — the REAL per-person cost from
     Anthropic's Claude Code Analytics Admin API (/usage_report/claude_code),
@@ -474,13 +506,22 @@ for date_str, chats, cowork in zip(all_dates, daily_chat_convos, daily_cowork_se
         cowork_daily_data.append({"date": date_str, "users": cowork})
 
 # ── Per-user cost (real) ──────────────────────────────────────────────────────
-# Prefer estimated_cost from the Enterprise /users feed (covers all Claude.ai
-# products and uses the Analytics key we already have working). Fall back to the
-# Claude Code Analytics Admin API if the /users feed carried no cost field.
-user_cost = {e: round(c, 4) for e, c in user_est_cost.items() if c > 0}
-if user_cost:
-    log(f"  Per-user cost (Enterprise /users): {len(user_cost)} users, ${sum(user_cost.values()):.2f} total")
-else:
+# Authoritative: Enterprise Analytics /user_cost_report (real per-user USD, all
+# Claude.ai products). Falls back to the /users estimated_cost field, then the
+# Claude Code Analytics Admin API, then (in the dashboard) the allocation est.
+user_cost = {}
+try:
+    user_cost = {e: round(c, 4) for e, c in get_user_cost_report(month_start, data_until + timedelta(days=1)).items() if c > 0}
+    if user_cost:
+        log(f"  Per-user cost (user_cost_report): {len(user_cost)} users, ${sum(user_cost.values()):.2f} total")
+except Exception as e:
+    log(f"  [WARN] user_cost_report failed: {e}")
+
+if not user_cost:
+    user_cost = {e: round(c, 4) for e, c in user_est_cost.items() if c > 0}
+    if user_cost:
+        log(f"  Per-user cost (Enterprise /users): {len(user_cost)} users, ${sum(user_cost.values()):.2f} total")
+if not user_cost:
     try:
         user_cost = get_claude_code_user_costs(all_dates)
         log(f"  Per-user cost (Claude Code API): {len(user_cost)} users, ${sum(user_cost.values()):.2f} total"
