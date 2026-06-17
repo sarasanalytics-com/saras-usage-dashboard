@@ -1876,6 +1876,25 @@
       "claudeCodeDaily": {
         "subhashree.mohanty@sarasanalytics.com": 361
       }
+    },
+    {
+      "date": "2026-06-17",
+      "cursor": {},
+      "windsurf": {
+        "nithin.dornala@sarasanalytics.com": 1
+      },
+      "clickup": {
+        "purna.subhash@sarasanalytics.com": 1,
+        "sreeram.ravuri@sarasanalytics.com": 1,
+        "nithin.dornala@sarasanalytics.com": 1,
+        "naveena.kolli@sarasanalytics.com": 1,
+        "tejaswini.surineni@sarasanalytics.com": 1
+      },
+      "claudeCodeDaily": {
+        "iq@sarasanalytics.com": 58,
+        "kaivalya@sarasanalytics.com": 265,
+        "vignesh@sarasanalytics.com": 383
+      }
     }
   ],
   "claudeCodeMTD": {
@@ -1894,7 +1913,7 @@
     "krishna@sarasanalytics.com": 10555,
     "abhignya.pinnoju@sarasanalytics.com": 9306,
     "manya.shukla@sarasanalytics.com": 7893,
-    "iq@sarasanalytics.com": 7485,
+    "iq@sarasanalytics.com": 7543,
     "kritik.kumar@sarasanalytics.com": 5389,
     "ritvik.vemula@sarasanalytics.com": 4793,
     "srinivas.sampathirao@sarasanalytics.com": 4040,
@@ -1919,16 +1938,16 @@
     "kumar.anunay@sarasanalytics.com": 1584,
     "umesh.chaudhari@sarasanalytics.com": 1567,
     "qurrat.gudu@sarasanalytics.com": 1322,
+    "kaivalya@sarasanalytics.com": 1298,
     "inbound@sarasanalytics.com": 1154,
     "koundinya@sarasanalytics.com": 1140,
+    "vignesh@sarasanalytics.com": 1123,
     "saad@sarasanalytics.com": 1114,
-    "kaivalya@sarasanalytics.com": 1033,
     "rohit.pandey@sarasanalytics.com": 1006,
     "srireddy.jayasatya@sarasanalytics.com": 924,
     "gaurav.sharma@sarasanalytics.com": 916,
     "rahul.chauhan@sarasanalytics.com": 846,
     "sairaj@sarasanalytics.com": 809,
-    "vignesh@sarasanalytics.com": 740,
     "sarath.buchi@sarasanalytics.com": 654,
     "moiz.essaji@sarasanalytics.com": 485,
     "komal.s@sarasanalytics.com": 468,
@@ -2047,5 +2066,5 @@
     "krishna.poda@sarasanalytics.com": 0,
     "susmitha.peeka@sarasanalytics.com": 0
   },
-  "lastUpdated": "2026-06-16T02:29:09.730133+00:00"
+  "lastUpdated": "2026-06-17T02:30:22.677794+00:00"
 }
