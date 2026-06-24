@@ -2080,6 +2080,18 @@
         "pravalika.g@sarasanalytics.com": 29,
         "saurabh.upadhyay@sarasanalytics.com": 2
       }
+    },
+    {
+      "date": "2026-06-24",
+      "cursor": {},
+      "windsurf": {},
+      "clickup": {
+        "gaurav.sharma@sarasanalytics.com": 1
+      },
+      "claudeCodeDaily": {
+        "sairaj@sarasanalytics.com": 1866,
+        "swati.sharma@sarasanalytics.com": 1525
+      }
     }
   ],
   "claudeCodeMTD": {
@@ -2122,6 +2134,7 @@
     "santosh.paila@sarasanalytics.com": 3735,
     "harsh.sharma@sarasanalytics.com": 3537,
     "nithin.dornala@sarasanalytics.com": 3531,
+    "sairaj@sarasanalytics.com": 3526,
     "katharin.benson@sarasanalytics.com": 3367,
     "siddhartha.chitteti@sarasanalytics.com": 3272,
     "sairaj.kujala@sarasanalytics.com": 3171,
@@ -2139,11 +2152,11 @@
     "deepankar.jain@sarasanalytics.com": 1697,
     "nandhini.ilangovan@sarasanalytics.com": 1694,
     "ajay@sarasanalytics.com": 1677,
-    "sairaj@sarasanalytics.com": 1660,
     "ravikant.singh@sarasanalytics.com": 1628,
     "shivang.mishra@sarasanalytics.com": 1588,
     "kumar.anunay@sarasanalytics.com": 1584,
     "umesh.chaudhari@sarasanalytics.com": 1567,
+    "swati.sharma@sarasanalytics.com": 1525,
     "deep.kumar@sarasanalytics.com": 1381,
     "srireddy.jayasatya@sarasanalytics.com": 1320,
     "kaivalya@sarasanalytics.com": 1298,
@@ -2217,7 +2230,6 @@
     "sayeeda.afreen@sarasanalytics.com": 0,
     "srinithi.reddy@sarasanalytics.com": 0,
     "sriraagh.anugu@sarasanalytics.com": 0,
-    "swati.sharma@sarasanalytics.com": 0,
     "thanoj.rahul@sarasanalytics.com": 0,
     "vivek.redasani@sarasanalytics.com": 0,
     "ali.khan@sarasanalytics.com": 0,
@@ -2256,7 +2268,8 @@
     "susmitha.peeka@sarasanalytics.com": 0,
     "brian@sarasanalytics.com": 0,
     "abhishek.baruah@sarasanalytics.com": 0,
-    "uday.aredla@sarasanalytics.com": 0
+    "uday.aredla@sarasanalytics.com": 0,
+    "sandeep.reddy@sarasanalytics.com": 0
   },
-  "lastUpdated": "2026-06-23T02:30:56.207679+00:00"
+  "lastUpdated": "2026-06-24T02:30:45.072457+00:00"
 }
