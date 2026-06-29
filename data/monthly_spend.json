@@ -29,14 +29,14 @@
       "available": true,
       "claudeUsage": 18.27,
       "apiKeys": 5262.64,
-      "claudeSeats": 1850.62,
+      "claudeSeats": 1860.0,
       "claudeSeatCount": 93,
       "cursor": 1260.0,
       "cursorSeatCount": 63,
       "cursorUsage": 979.59,
       "windsurf": 240.0,
       "windsurfSeatCount": 8,
-      "total": 9611.12
+      "total": 9620.5
     },
     {
       "monthKey": "2026-04",
@@ -45,14 +45,14 @@
       "available": true,
       "claudeUsage": 0.0,
       "apiKeys": 4006.4,
-      "claudeSeats": 503.64,
-      "claudeSeatCount": 25,
+      "claudeSeats": 2340.0,
+      "claudeSeatCount": 117,
       "cursor": 1260.0,
       "cursorSeatCount": 63,
       "cursorUsage": 417.31,
       "windsurf": 240.0,
       "windsurfSeatCount": 8,
-      "total": 6427.35
+      "total": 8263.71
     },
     {
       "monthKey": "2026-05",
@@ -61,14 +61,14 @@
       "available": true,
       "claudeUsage": 5559.0,
       "apiKeys": 7463.87,
-      "claudeSeats": 746.17,
-      "claudeSeatCount": 37,
+      "claudeSeats": 3040.0,
+      "claudeSeatCount": 152,
       "cursor": 1260.0,
       "cursorSeatCount": 63,
       "cursorUsage": 0.0,
       "windsurf": 240.0,
       "windsurfSeatCount": 8,
-      "total": 15269.04
+      "total": 17562.87
     },
     {
       "monthKey": "2026-06",
