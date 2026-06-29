@@ -33,7 +33,7 @@ import sys
 import time
 import urllib.request
 import urllib.error
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 from pathlib import Path
 
 REPO_ROOT   = Path(__file__).resolve().parent.parent
@@ -171,9 +171,11 @@ def main():
     for y, m in month_iter(START_YEAR, START_MONTH, today.year, today.month):
         month_start = date(y, m, 1)
         nxt = date(y + 1, 1, 1) if m == 12 else date(y, m + 1, 1)
-        # For the current month, cap the window at tomorrow so we get MTD only.
+        # For the current month, cap the window at tomorrow (today + 1, exclusive)
+        # so we get MTD only. A future ending_at (the 1st of next month) makes the
+        # cost_report return empty for the in-progress month → a spurious $0.
         is_current = (y == today.year and m == today.month)
-        end_d = nxt
+        end_d = (today + timedelta(days=1)) if is_current else nxt
         start_iso = month_start.strftime("%Y-%m-%dT00:00:00Z")
         end_iso   = end_d.strftime("%Y-%m-%dT00:00:00Z")
         label = month_start.strftime("%b %Y")
