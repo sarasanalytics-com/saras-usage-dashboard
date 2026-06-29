@@ -6351,17 +6351,19 @@ function renderMonthlySpend() {
   const money = v => '$' + (v || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
   const money2 = v => '$' + (v || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
-  // Table: Month | Claude seats | Cursor | Windsurf | API keys (metered) | Total | Claude.ai usage (info)
+  // Table: Month | Seats | Claude seats $ | Cursor | Windsurf | API keys (metered) | Total | Claude.ai usage (info)
   const rows = months.map(m => {
     const cur = m.isCurrent;
+    const seats = (m.claudeSeatCount != null) ? m.claudeSeatCount : '—';
     return `<tr>
       <td><strong style="color:#fff">${m.label}</strong>${cur ? ' <span style="font-size:0.68rem;color:var(--muted)">(MTD)</span>' : ''}</td>
-      <td class="num-cell">${money(m.claudeSeats)}</td>
+      <td class="num-cell" style="color:#a89cff;font-weight:700">${seats}</td>
+      <td class="num-cell" title="Monthly run-rate (annual seat contract ÷ 12)">${money(m.claudeSeats)}</td>
       <td class="num-cell">${money(m.cursor)}</td>
       <td class="num-cell">${money(m.windsurf)}</td>
       <td class="num-cell" style="color:var(--accent2);font-weight:700">${money2(m.apiKeys)}</td>
       <td class="num-cell" style="font-weight:800;color:#fff">${money2(m.total)}</td>
-      <td class="num-cell" style="color:var(--muted)" title="Model usage value — already included in the Enterprise seat fee, not added to total">${money2(m.claudeUsage)}</td>
+      <td class="num-cell" style="color:var(--muted)" title="Metered Claude.ai/Code model usage — shown for visibility, not added to total">${money2(m.claudeUsage)}</td>
     </tr>`;
   }).join('');
 
@@ -6371,19 +6373,20 @@ function renderMonthlySpend() {
         <thead><tr>
           <th>Month</th>
           <th style="text-align:right">Claude seats</th>
+          <th style="text-align:right">Claude seat $/mo</th>
           <th style="text-align:right">Cursor</th>
           <th style="text-align:right">Windsurf</th>
           <th style="text-align:right">API keys (metered)</th>
           <th style="text-align:right">Total spend</th>
-          <th style="text-align:right">Claude.ai/Code usage <span style="font-weight:400;color:var(--muted)">(incl.)</span></th>
+          <th style="text-align:right">Claude.ai/Code usage <span style="font-weight:400;color:var(--muted)">(info)</span></th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <div style="font-size:0.72rem;color:var(--muted);margin-top:10px;line-height:1.5">
-        <strong style="color:#8b92b8">Total spend</strong> = flat seat subscriptions + metered Anthropic API-key usage (the real monthly cash outflow).
-        Seat fees (Claude Enterprise, Cursor, Windsurf) are recurring and shown at current rates.
-        <strong style="color:#8b92b8">Claude.ai/Code usage</strong> is consumption value already covered by the Enterprise seat fee — shown for visibility, not added to the total.
-        Source: Anthropic cost reports (real metered spend).
+        <strong style="color:#8b92b8">Total spend</strong> = Claude seats + Cursor + Windsurf + metered Anthropic API-key usage (the real monthly cash outflow).
+        <strong style="color:#8b92b8">Claude seats</strong> use the actual per-month seat counts from Finance, shown as a monthly run-rate (annual seat contract ÷ 12 at $20/seat/mo); Cursor &amp; Windsurf are current flat rates.
+        <strong style="color:#8b92b8">API keys</strong> are real metered pay-as-you-go spend from the Anthropic cost reports.
+        <strong style="color:#8b92b8">Claude.ai/Code usage</strong> is metered model consumption — shown for visibility, not added to the total (Anthropic's analytics endpoint only retains ~2 months, so earlier months read $0).
       </div>
     </div>`;
 

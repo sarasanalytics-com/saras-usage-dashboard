@@ -53,9 +53,24 @@ START_YEAR, START_MONTH = 2026, 2
 # `spendData` block in index.html. These are real committed spend, billed every
 # month regardless of usage.
 SUBSCRIPTIONS = {
-    "claudeSeats": 3820.0,   # Claude Enterprise seats (191 × $20)
+    "claudeSeats": 3820.0,   # Claude Enterprise seats (191 × $20) — current/default
     "cursor":      1260.0,   # Cursor seats (63 × $20)
     "windsurf":     240.0,   # Windsurf seats (8 × $30)
+}
+CLAUDE_SEATS_DEFAULT_COUNT = 191   # current licensed Claude seats
+
+# Per-month Claude seat history, provided by Finance. Each entry is the ANNUAL
+# seat-contract value (USD) and the seat count active that month, at $20/seat/mo
+# ($240/seat/yr). Seat-only: any model-usage bundled into a monthly invoice is
+# excluded here and surfaced separately in the claudeUsage column. The monthly
+# seat cost shown on the dashboard is annual ÷ 12 (run-rate). Months not listed
+# fall back to the current rate (SUBSCRIPTIONS["claudeSeats"], 191 seats).
+CLAUDE_SEAT_HISTORY = {
+    # monthKey:  (annual_seat_contract_usd, seat_count)
+    "2026-02":   (14160.00, 59),
+    "2026-03":   (22207.50, 93),   # 92.5 → 93
+    "2026-04":   ( 6043.69, 25),   # 25.2 → 25
+    "2026-05":   ( 8954.01, 37),   # $14,513.01 invoice − $5,559 model usage; 37.3 → 37
 }
 
 
@@ -150,28 +165,42 @@ def main():
         if ADMIN_KEY:
             api_keys, ak_ok = fetch_cost(ORG_COST_URL, org_headers, start_iso, end_iso, group_by="description")
 
+        month_key = f"{y}-{m:02d}"
+
         # A month counts as "available" if at least one metered source returned
         # data (>$0) OR both calls succeeded (a genuine $0 month inside the
         # retention window). Months entirely outside the window fail both calls.
+        # We also force-include any month with a known Finance seat figure.
         has_data = (claude_usage > 0) or (api_keys > 0)
-        available = has_data or (ca_ok and ak_ok)
+        available = has_data or (ca_ok and ak_ok) or (month_key in CLAUDE_SEAT_HISTORY)
 
-        subs_total = sum(SUBSCRIPTIONS.values())
-        total = round(subs_total + api_keys, 2)  # real outflow: subs + metered API
+        # Per-month Claude seat cost (monthly run-rate = annual ÷ 12) + seat count.
+        if month_key in CLAUDE_SEAT_HISTORY:
+            annual_usd, seat_count = CLAUDE_SEAT_HISTORY[month_key]
+            claude_seats_monthly = round(annual_usd / 12.0, 2)
+        else:
+            claude_seats_monthly = SUBSCRIPTIONS["claudeSeats"]
+            seat_count           = CLAUDE_SEATS_DEFAULT_COUNT
+
+        # Real monthly cash outflow: Claude seats + Cursor + Windsurf + metered API.
+        total = round(claude_seats_monthly + SUBSCRIPTIONS["cursor"]
+                      + SUBSCRIPTIONS["windsurf"] + api_keys, 2)
 
         months.append({
-            "monthKey":    f"{y}-{m:02d}",
-            "label":       label,
-            "isCurrent":   is_current,
-            "available":   available,
-            "claudeUsage": claude_usage,          # informational (incl. in seats)
-            "apiKeys":     api_keys,              # real metered pay-as-you-go
-            "claudeSeats": SUBSCRIPTIONS["claudeSeats"],
-            "cursor":      SUBSCRIPTIONS["cursor"],
-            "windsurf":    SUBSCRIPTIONS["windsurf"],
-            "total":       total,
+            "monthKey":        month_key,
+            "label":           label,
+            "isCurrent":       is_current,
+            "available":       available,
+            "claudeUsage":     claude_usage,          # metered Claude.ai/Code usage (info)
+            "apiKeys":         api_keys,              # real metered pay-as-you-go API keys
+            "claudeSeats":     claude_seats_monthly,  # monthly run-rate (annual ÷ 12)
+            "claudeSeatCount": seat_count,
+            "cursor":          SUBSCRIPTIONS["cursor"],
+            "windsurf":        SUBSCRIPTIONS["windsurf"],
+            "total":           total,
         })
-        log(f"  {label}: available={available} claudeUsage=${claude_usage:.2f} "
+        log(f"  {label}: available={available} seats={seat_count} "
+            f"seatCost=${claude_seats_monthly:.2f}/mo claudeUsage=${claude_usage:.2f} "
             f"apiKeys=${api_keys:.2f} total=${total:.2f}")
         time.sleep(0.2)
 
