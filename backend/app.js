@@ -24,6 +24,24 @@ const ALLOWED_USERS = process.env.ALLOWED_USERS
   ? process.env.ALLOWED_USERS.split(',').map(e => e.trim().toLowerCase())
   : [];
 
+// Admins who may view the dashboard access log (comma-separated; default Anudeep)
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'anudeep.kolla@sarasanalytics.com')
+  .split(',').map(e => e.trim().toLowerCase());
+
+// In-memory dashboard access log (per-user aggregate). Resets when the server
+// restarts; every sign-in is also console.logged so Render keeps full history.
+const serverStart = Date.now();
+const accessLog = new Map(); // email -> { email, name, count, first, last }
+function recordAccess(email, name) {
+  const e = (email || '').toLowerCase();
+  if (!e) return;
+  const now = Date.now();
+  const rec = accessLog.get(e) || { email: e, name, count: 0, first: now, last: now };
+  rec.count += 1; rec.last = now; if (name) rec.name = name;
+  accessLog.set(e, rec);
+  console.log(`[access] ${e} (${rec.name}) signed in — visits ${rec.count}`);
+}
+
 // JWKS client for Microsoft token verification
 const client = jwksClient({
   jwksUri: `https://login.microsoftonline.com/${TENANT_ID}/discovery/v2.0/keys`,
@@ -79,6 +97,8 @@ app.post('/auth/verify', async (req, res) => {
       JSON.stringify({ email, exp: Date.now() + 86400000, iat: Date.now() })
     ).toString('base64');
 
+    recordAccess(email, payload.name || email.split('@')[0]);
+
     res.json({
       success: true,
       sessionToken,
@@ -107,6 +127,23 @@ app.post('/auth/validate', (req, res) => {
     res.json({ valid: true, email: payload.email });
   } catch (err) {
     res.json({ valid: false });
+  }
+});
+
+// Admin-only: who has signed in to the dashboard
+app.post('/auth/access-log', (req, res) => {
+  try {
+    const { sessionToken } = req.body;
+    if (!sessionToken) return res.status(401).json({ error: 'unauthorized' });
+    const payload = JSON.parse(Buffer.from(sessionToken, 'base64').toString());
+    if (!payload.exp || payload.exp < Date.now()) return res.status(401).json({ error: 'expired' });
+    if (!ADMIN_EMAILS.includes((payload.email || '').toLowerCase())) {
+      return res.status(403).json({ error: 'forbidden' });
+    }
+    const users = [...accessLog.values()].sort((a, b) => b.last - a.last);
+    res.json({ since: serverStart, totalVisits: users.reduce((s, u) => s + u.count, 0), users });
+  } catch (err) {
+    res.status(401).json({ error: 'invalid' });
   }
 });
 
