@@ -160,10 +160,30 @@ def month_iter(start_y, start_m, end_y, end_m):
             m, y = 1, y + 1
 
 
+def _load_json(name):
+    try:
+        return json.loads((REPO_ROOT / "data" / name).read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+
 def main():
     today = datetime.now(timezone.utc).date()
     analytics_headers = {"x-api-key": ANALYTICS_KEY, "anthropic-version": "2023-06-01"}
     org_headers       = {"x-api-key": ADMIN_KEY,     "anthropic-version": "2023-06-01"}
+
+    # Live seat counts + Cursor usage from the other collectors' output, so the
+    # current (and future) months auto-pull from the APIs. Historical months
+    # keep their Finance overrides in SEAT_COUNT_HISTORY / CURSOR_USAGE_HISTORY.
+    cstats    = _load_json("claude_ai_stats.json")
+    collected = _load_json("daily_collected.json")
+    if cstats.get("assignedSeats"):     SEATS_DEFAULT_COUNT["claude"]   = int(cstats["assignedSeats"])
+    if collected.get("cursor_seats"):   SEATS_DEFAULT_COUNT["cursor"]   = int(collected["cursor_seats"])
+    if collected.get("windsurf_seats"): SEATS_DEFAULT_COUNT["windsurf"] = int(collected["windsurf_seats"])
+    live_cursor_usage = float(((collected.get("cursor_spend") or {}).get("mtd")) or 0.0)
+    log(f"Live defaults — Claude {SEATS_DEFAULT_COUNT['claude']} seats, "
+        f"Cursor {SEATS_DEFAULT_COUNT['cursor']} seats (usage ${live_cursor_usage:.2f} MTD), "
+        f"Windsurf {SEATS_DEFAULT_COUNT['windsurf']} seats")
 
     log(f"Collecting monthly spend history {START_YEAR}-{START_MONTH:02d} → {today.year}-{today.month:02d}")
 
@@ -189,7 +209,8 @@ def main():
 
         month_key = f"{y}-{m:02d}"
 
-        month_key_in_history = any(month_key in SEAT_HISTORY[a] for a in SEAT_HISTORY)
+        month_key_in_history = (any(month_key in SEAT_COUNT_HISTORY[a] for a in SEAT_COUNT_HISTORY)
+                                 or month_key in CURSOR_USAGE_HISTORY)
 
         # A month counts as "available" if at least one metered source returned
         # data (>$0) OR both calls succeeded (a genuine $0 month inside the
@@ -203,9 +224,14 @@ def main():
         cursor_monthly,       cursor_seat_count   = resolve_seat("cursor",  month_key)
         windsurf_monthly,     windsurf_seat_count = resolve_seat("windsurf", month_key)
 
-        # Cursor metered usage — actual amount billed that month, shown in full
-        # (consistent with Claude.ai/Code usage, which is also a full monthly figure).
-        cursor_usage = round(CURSOR_USAGE_HISTORY.get(month_key, 0.0), 2)
+        # Cursor metered usage — full amount billed that month. Historical months
+        # use the Finance override; the current month auto-pulls live Cursor spend.
+        if month_key in CURSOR_USAGE_HISTORY:
+            cursor_usage = round(CURSOR_USAGE_HISTORY[month_key], 2)
+        elif is_current:
+            cursor_usage = round(live_cursor_usage, 2)
+        else:
+            cursor_usage = 0.0
 
         # Real all-in monthly cash outflow: seat subscriptions + every metered
         # usage line (Cursor usage, Anthropic API keys, Claude.ai/Code usage).
