@@ -6089,6 +6089,7 @@ renderToolStrips();
 // from that month's actual metrics (seeded with the current month). Replaces the
 // old fabricated Feb–Apr history so the Trends tab is built only from real data.
 const MONTHLY_SNAPSHOTS = [{"monthKey":"2026-06","month":"June 2026","monthShort":"Jun 2026","lines":755812,"activeMembers":123,"chatsPerDay":71,"chatUserPct":86,"coworkDAU":38,"cursorDAU":3,"cursorEvents":203,"projectsCreated":29,"artifactUserPct":5}];
+const MONTHLY_SPEND = {"asOf":"","subscriptions":{},"months":[]};
 
 // ==================== TRENDS TAB ====================
 function initTrendsTab() {
@@ -6306,6 +6307,9 @@ function initTrendsTab() {
     plugins:{legend:{display:true,labels:{color:'#8b92b8',font:{size:11}}},tooltip:{mode:'index',intersect:false}},
     scales:{x:{ticks:{color:'#8b92b8'},grid:{display:false}},y:{ticks:{color:'#8b92b8'},grid:{color:'rgba(46,50,80,0.5)'},beginAtZero:true}}}});
 
+  // Monthly spend history (real metered spend + flat subscriptions)
+  try { renderMonthlySpend(); } catch(e) { console.error('[trends] renderMonthlySpend:', e); }
+
   // Dept table
   document.getElementById('tr-deptTableBody').innerHTML = TR_DEPTS.map(d=>`
     <tr>
@@ -6318,6 +6322,85 @@ function initTrendsTab() {
       <td>${trTrend(d.mom)}</td>
     </tr>`).join('');
 }
+
+// ==================== MONTHLY SPEND HISTORY ====================
+// Renders the per-month spend table + stacked bar in the Monthly Trends tab,
+// fed by MONTHLY_SPEND (backfilled from Feb by collect_monthly_spend.py).
+// Real metered Anthropic spend (API keys, pay-as-you-go) + flat seat
+// subscriptions (Claude Enterprise, Cursor, Windsurf). Claude.ai/Code model
+// usage is shown as informational consumption (already covered by seat fees).
+function renderMonthlySpend() {
+  const wrap = document.getElementById('tr-monthly-spend');
+  if (!wrap) return;
+  const MS = (typeof MONTHLY_SPEND !== 'undefined' && MONTHLY_SPEND) ? MONTHLY_SPEND : {};
+  const all = (MS.months || []);
+  const months = all.filter(m => m.available);
+
+  if (!months.length) {
+    wrap.innerHTML =
+      `<div class="card-full" style="color:var(--muted);font-size:0.85rem;padding:18px">`
+      + `Monthly spend history is being collected. It populates from the Anthropic cost reports on the next daily run`
+      + `${all.length ? ' (Anthropic retains a limited window, so only recent months may appear).' : '.'}</div>`;
+    return;
+  }
+
+  const money = v => '$' + (v || 0).toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+  const money2 = v => '$' + (v || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+  // Table: Month | Claude seats | Cursor | Windsurf | API keys (metered) | Total | Claude.ai usage (info)
+  const rows = months.map(m => {
+    const cur = m.isCurrent;
+    return `<tr>
+      <td><strong style="color:#fff">${m.label}</strong>${cur ? ' <span style="font-size:0.68rem;color:var(--muted)">(MTD)</span>' : ''}</td>
+      <td class="num-cell">${money(m.claudeSeats)}</td>
+      <td class="num-cell">${money(m.cursor)}</td>
+      <td class="num-cell">${money(m.windsurf)}</td>
+      <td class="num-cell" style="color:var(--accent2);font-weight:700">${money2(m.apiKeys)}</td>
+      <td class="num-cell" style="font-weight:800;color:#fff">${money2(m.total)}</td>
+      <td class="num-cell" style="color:var(--muted)" title="Model usage value — already included in the Enterprise seat fee, not added to total">${money2(m.claudeUsage)}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div class="card-full" style="overflow-x:auto">
+      <table class="data-table">
+        <thead><tr>
+          <th>Month</th>
+          <th style="text-align:right">Claude seats</th>
+          <th style="text-align:right">Cursor</th>
+          <th style="text-align:right">Windsurf</th>
+          <th style="text-align:right">API keys (metered)</th>
+          <th style="text-align:right">Total spend</th>
+          <th style="text-align:right">Claude.ai/Code usage <span style="font-weight:400;color:var(--muted)">(incl.)</span></th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div style="font-size:0.72rem;color:var(--muted);margin-top:10px;line-height:1.5">
+        <strong style="color:#8b92b8">Total spend</strong> = flat seat subscriptions + metered Anthropic API-key usage (the real monthly cash outflow).
+        Seat fees (Claude Enterprise, Cursor, Windsurf) are recurring and shown at current rates.
+        <strong style="color:#8b92b8">Claude.ai/Code usage</strong> is consumption value already covered by the Enterprise seat fee — shown for visibility, not added to the total.
+        Source: Anthropic cost reports (real metered spend).
+      </div>
+    </div>`;
+
+  // Stacked bar: subscriptions + metered API keys per month
+  const el = document.getElementById('tr-chartMonthlySpend');
+  if (el && typeof Chart !== 'undefined') {
+    const labels = months.map(m => m.label);
+    new Chart(el, {type:'bar', data:{labels, datasets:[
+      {label:'Claude seats', data:months.map(m=>m.claudeSeats), backgroundColor:'rgba(108,99,255,0.8)', borderRadius:4, stack:'s'},
+      {label:'Cursor',       data:months.map(m=>m.cursor),      backgroundColor:'rgba(38,198,218,0.8)', borderRadius:4, stack:'s'},
+      {label:'Windsurf',     data:months.map(m=>m.windsurf),    backgroundColor:'rgba(255,167,38,0.8)', borderRadius:4, stack:'s'},
+      {label:'API keys (metered)', data:months.map(m=>m.apiKeys), backgroundColor:'rgba(0,212,170,0.85)', borderRadius:4, stack:'s'},
+    ]}, options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:true,labels:{color:'#8b92b8',font:{size:11}}},
+        tooltip:{mode:'index',intersect:false,callbacks:{label:c=>c.dataset.label+': $'+(c.parsed.y||0).toLocaleString('en-US',{maximumFractionDigits:2})}}},
+      scales:{x:{stacked:true,ticks:{color:'#8b92b8'},grid:{display:false}},
+              y:{stacked:true,ticks:{color:'#8b92b8',callback:v=>'$'+(v>=1000?(v/1000)+'k':v)},grid:{color:'rgba(46,50,80,0.5)'},beginAtZero:true}}}});
+  }
+}
+// ==================== END MONTHLY SPEND ====================
+
 // ==================== MODEL USAGE RENDERING ====================
 function renderModelUsage() {
   const mu = DATA.modelUsage || {};
@@ -6439,6 +6522,14 @@ try { renderWeeklyTab(); } catch(e) { console.error('[boot] renderWeeklyTab:', e
       <div style="height:210px;margin-top:14px"><canvas id="tr-chartCursor"></canvas></div>
     </div>
   </div>
+
+  <div class="section-divider"><span>Monthly Spend History <span class="timeframe-badge tbadge-mtd">$ / month</span></span></div>
+  <div class="card-full" style="margin-bottom:16px">
+    <div class="section-title">Spend by App &amp; API Keys — per Month</div>
+    <div class="section-sub" style="margin-bottom:16px">Flat seat subscriptions + real metered Anthropic API-key usage · from February · Source: Anthropic cost reports</div>
+    <div style="height:300px"><canvas id="tr-chartMonthlySpend"></canvas></div>
+  </div>
+  <div id="tr-monthly-spend"></div>
 
   <div class="section-divider"><span>All Tools Combined <span class="timeframe-badge tbadge-mtd">MoM</span></span></div>
   <div class="card-full">

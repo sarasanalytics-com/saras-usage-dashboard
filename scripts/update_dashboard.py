@@ -26,6 +26,7 @@ COLLECTED_PATH = REPO_ROOT / "data" / "daily_collected.json"
 CLAUDE_STATS_PATH = REPO_ROOT / "data" / "claude_ai_stats.json"
 API_AGENTS_PATH   = REPO_ROOT / "data" / "api_agents_stats.json"
 MONTHLY_SNAPSHOTS_PATH = REPO_ROOT / "data" / "monthly_snapshots.json"
+MONTHLY_SPEND_PATH = REPO_ROOT / "data" / "monthly_spend.json"
 
 
 def log(msg):
@@ -614,6 +615,33 @@ try:
         log("  MONTHLY_SNAPSHOTS: API returned zeros — keeping existing snapshots")
 except Exception as e:
     log(f"  [WARN] MONTHLY_SNAPSHOTS update failed: {e}")
+
+
+# ── Update MONTHLY_SPEND (per-month spend history, backfilled from Feb) ─────────
+# Written by collect_monthly_spend.py from the Anthropic cost reports. Only
+# inject when the file has at least one month with real data, so we never wipe a
+# populated table with an empty/failed collection run.
+try:
+    if MONTHLY_SPEND_PATH.exists():
+        spend_hist = json.loads(MONTHLY_SPEND_PATH.read_text(encoding="utf-8"))
+        has_data = any(m.get("available") for m in spend_hist.get("months", []))
+        if has_data:
+            spend_js = json.dumps(spend_hist, separators=(",", ":"), ensure_ascii=True)
+            new_spend_hist_line = f"const MONTHLY_SPEND = {spend_js};"
+            if re.search(r"const MONTHLY_SPEND = \{.*?\};", html, flags=re.DOTALL):
+                html = re.sub(r"const MONTHLY_SPEND = \{.*?\};",
+                              lambda _: new_spend_hist_line,
+                              html, count=1, flags=re.DOTALL)
+                avail = sum(1 for m in spend_hist.get("months", []) if m.get("available"))
+                log(f"  MONTHLY_SPEND: {avail} month(s) with data")
+            else:
+                log("  [WARN] MONTHLY_SPEND placeholder not found in HTML")
+        else:
+            log("  MONTHLY_SPEND: no months with data yet — placeholder kept as-is")
+    else:
+        log("  MONTHLY_SPEND: no data file yet — placeholder kept as-is")
+except Exception as e:
+    log(f"  [WARN] MONTHLY_SPEND update failed: {e}")
 
 
 # ── Inject OAuth credentials ──────────────────────────────────────────────────
