@@ -13,10 +13,14 @@
       "available": true,
       "claudeUsage": 5.89,
       "apiKeys": 348.61,
-      "claudeSeats": 3820.0,
-      "cursor": 1260.0,
+      "claudeSeats": 1180.0,
+      "claudeSeatCount": 59,
+      "cursor": 1532.81,
+      "cursorSeatCount": 77,
+      "cursorUsage": 350.51,
       "windsurf": 240.0,
-      "total": 5668.61
+      "windsurfSeatCount": 8,
+      "total": 3657.82
     },
     {
       "monthKey": "2026-03",
@@ -25,10 +29,14 @@
       "available": true,
       "claudeUsage": 18.27,
       "apiKeys": 5262.64,
-      "claudeSeats": 3820.0,
-      "cursor": 1260.0,
+      "claudeSeats": 1850.62,
+      "claudeSeatCount": 93,
+      "cursor": 234.01,
+      "cursorSeatCount": 12,
+      "cursorUsage": 979.59,
       "windsurf": 240.0,
-      "total": 10582.64
+      "windsurfSeatCount": 8,
+      "total": 8585.13
     },
     {
       "monthKey": "2026-04",
@@ -37,10 +45,14 @@
       "available": true,
       "claudeUsage": 0.0,
       "apiKeys": 4006.4,
-      "claudeSeats": 3820.0,
-      "cursor": 1260.0,
+      "claudeSeats": 503.64,
+      "claudeSeatCount": 25,
+      "cursor": 793.85,
+      "cursorSeatCount": 40,
+      "cursorUsage": 417.31,
       "windsurf": 240.0,
-      "total": 9326.4
+      "windsurfSeatCount": 8,
+      "total": 5961.2
     },
     {
       "monthKey": "2026-05",
@@ -49,22 +61,30 @@
       "available": true,
       "claudeUsage": 5559.0,
       "apiKeys": 7463.87,
-      "claudeSeats": 3820.0,
-      "cursor": 1260.0,
+      "claudeSeats": 746.17,
+      "claudeSeatCount": 37,
+      "cursor": 51.38,
+      "cursorSeatCount": 3,
+      "cursorUsage": 0.0,
       "windsurf": 240.0,
-      "total": 12783.87
+      "windsurfSeatCount": 8,
+      "total": 14060.42
     },
     {
       "monthKey": "2026-06",
       "label": "Jun 2026",
       "isCurrent": true,
       "available": true,
-      "claudeUsage": 4088.1,
+      "claudeUsage": 4100.21,
       "apiKeys": 9501.81,
       "claudeSeats": 3820.0,
+      "claudeSeatCount": 191,
       "cursor": 1260.0,
+      "cursorSeatCount": 63,
+      "cursorUsage": 0.0,
       "windsurf": 240.0,
-      "total": 14821.81
+      "windsurfSeatCount": 8,
+      "total": 18922.02
     }
   ]
 }
