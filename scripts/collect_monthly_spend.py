@@ -80,14 +80,18 @@ def _qs(params):
     return "&".join(parts)
 
 
-def fetch_cost(base_url, headers, start_iso, end_iso):
+def fetch_cost(base_url, headers, start_iso, end_iso, group_by="description"):
     """Sum cost_report amount (cents → USD) over [start, end). Returns (usd, ok).
-    ok=False means the call failed outright (vs a genuine $0 month)."""
+    ok=False means the call failed outright (vs a genuine $0 month).
+
+    group_by differs per endpoint: the org cost_report accepts "description",
+    but the analytics/cost_report endpoint only accepts "model" (passing
+    "description" there 400s and silently yields $0)."""
     params = {
         "starting_at":  start_iso,
         "ending_at":    end_iso,
         "bucket_width": "1d",
-        "group_by":     ["description"],
+        "group_by":     [group_by],
     }
     total_cents = 0.0
     try:
@@ -141,10 +145,10 @@ def main():
 
         claude_usage, ca_ok = (0.0, False)
         if ANALYTICS_KEY:
-            claude_usage, ca_ok = fetch_cost(ANALYTICS_COST_URL, analytics_headers, start_iso, end_iso)
+            claude_usage, ca_ok = fetch_cost(ANALYTICS_COST_URL, analytics_headers, start_iso, end_iso, group_by="model")
         api_keys, ak_ok = (0.0, False)
         if ADMIN_KEY:
-            api_keys, ak_ok = fetch_cost(ORG_COST_URL, org_headers, start_iso, end_iso)
+            api_keys, ak_ok = fetch_cost(ORG_COST_URL, org_headers, start_iso, end_iso, group_by="description")
 
         # A month counts as "available" if at least one metered source returned
         # data (>$0) OR both calls succeeded (a genuine $0 month inside the
