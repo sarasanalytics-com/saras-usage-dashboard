@@ -15,12 +15,12 @@
       "apiKeys": 348.61,
       "claudeSeats": 1180.0,
       "claudeSeatCount": 59,
-      "cursor": 1532.81,
-      "cursorSeatCount": 77,
+      "cursor": 1260.0,
+      "cursorSeatCount": 63,
       "cursorUsage": 350.51,
       "windsurf": 240.0,
       "windsurfSeatCount": 8,
-      "total": 3657.82
+      "total": 3385.01
     },
     {
       "monthKey": "2026-03",
@@ -31,12 +31,12 @@
       "apiKeys": 5262.64,
       "claudeSeats": 1850.62,
       "claudeSeatCount": 93,
-      "cursor": 234.01,
-      "cursorSeatCount": 12,
+      "cursor": 1260.0,
+      "cursorSeatCount": 63,
       "cursorUsage": 979.59,
       "windsurf": 240.0,
       "windsurfSeatCount": 8,
-      "total": 8585.13
+      "total": 9611.12
     },
     {
       "monthKey": "2026-04",
@@ -47,12 +47,12 @@
       "apiKeys": 4006.4,
       "claudeSeats": 503.64,
       "claudeSeatCount": 25,
-      "cursor": 793.85,
-      "cursorSeatCount": 40,
+      "cursor": 1260.0,
+      "cursorSeatCount": 63,
       "cursorUsage": 417.31,
       "windsurf": 240.0,
       "windsurfSeatCount": 8,
-      "total": 5961.2
+      "total": 6427.35
     },
     {
       "monthKey": "2026-05",
@@ -63,12 +63,12 @@
       "apiKeys": 7463.87,
       "claudeSeats": 746.17,
       "claudeSeatCount": 37,
-      "cursor": 51.38,
-      "cursorSeatCount": 3,
+      "cursor": 1260.0,
+      "cursorSeatCount": 63,
       "cursorUsage": 0.0,
       "windsurf": 240.0,
       "windsurfSeatCount": 8,
-      "total": 14060.42
+      "total": 15269.04
     },
     {
       "monthKey": "2026-06",

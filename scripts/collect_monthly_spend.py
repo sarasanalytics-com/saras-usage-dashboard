@@ -73,13 +73,10 @@ SEAT_HISTORY = {
         "2026-04": ( 6043.69, 25),   # 25.2 → 25
         "2026-05": ( 8954.01, 37),   # $14,513.01 invoice − $5,559 model usage; 37.3 → 37
     },
-    "cursor": {
-        # seat portion = invoice − API usage
-        "2026-02": (18393.76, 77),   # $22,599.84 − $4,206.08;  76.6 → 77
-        "2026-03": ( 2808.18, 12),   # $14,563.24 − $11,755.06; 11.7 → 12
-        "2026-04": ( 9526.21, 40),   # $14,533.94 − $5,007.73;  39.7 → 40
-        "2026-05": (  616.57,  3),   # 2.6 → 3
-    },
+    # Cursor seat count has been a flat 63 throughout — show 63 × $20/mo every
+    # month (the current default). The varying Cursor invoice amounts were
+    # usage, captured separately in CURSOR_USAGE_HISTORY, not seat changes.
+    "cursor": {},
 }
 
 # Per-month Cursor metered API usage (USD), from Finance — the usage portion
