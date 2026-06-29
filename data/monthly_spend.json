@@ -10,61 +10,61 @@
       "monthKey": "2026-02",
       "label": "Feb 2026",
       "isCurrent": false,
-      "available": false,
+      "available": true,
       "claudeUsage": 0.0,
-      "apiKeys": 0.0,
+      "apiKeys": 348.61,
       "claudeSeats": 3820.0,
       "cursor": 1260.0,
       "windsurf": 240.0,
-      "total": 5320.0
+      "total": 5668.61
     },
     {
       "monthKey": "2026-03",
       "label": "Mar 2026",
       "isCurrent": false,
-      "available": false,
+      "available": true,
       "claudeUsage": 0.0,
-      "apiKeys": 0.0,
+      "apiKeys": 5262.64,
       "claudeSeats": 3820.0,
       "cursor": 1260.0,
       "windsurf": 240.0,
-      "total": 5320.0
+      "total": 10582.64
     },
     {
       "monthKey": "2026-04",
       "label": "Apr 2026",
       "isCurrent": false,
-      "available": false,
+      "available": true,
       "claudeUsage": 0.0,
-      "apiKeys": 0.0,
+      "apiKeys": 4006.4,
       "claudeSeats": 3820.0,
       "cursor": 1260.0,
       "windsurf": 240.0,
-      "total": 5320.0
+      "total": 9326.4
     },
     {
       "monthKey": "2026-05",
       "label": "May 2026",
       "isCurrent": false,
-      "available": false,
+      "available": true,
       "claudeUsage": 0.0,
-      "apiKeys": 0.0,
+      "apiKeys": 7463.87,
       "claudeSeats": 3820.0,
       "cursor": 1260.0,
       "windsurf": 240.0,
-      "total": 5320.0
+      "total": 12783.87
     },
     {
       "monthKey": "2026-06",
       "label": "Jun 2026",
       "isCurrent": true,
-      "available": false,
+      "available": true,
       "claudeUsage": 0.0,
-      "apiKeys": 0.0,
+      "apiKeys": 9501.81,
       "claudeSeats": 3820.0,
       "cursor": 1260.0,
       "windsurf": 240.0,
-      "total": 5320.0
+      "total": 14821.81
     }
   ]
 }
