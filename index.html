@@ -6482,6 +6482,14 @@ try { renderWeeklyTab(); } catch(e) { console.error('[boot] renderWeeklyTab:', e
 <!-- TRENDS TAB -->
 <div class="page" id="tab-trends">
 
+  <div class="section-divider"><span>Monthly Spend History <span class="timeframe-badge tbadge-mtd">$ / month</span></span></div>
+  <div class="card-full" style="margin-bottom:16px">
+    <div class="section-title">Spend by App &amp; API Keys — per Month</div>
+    <div class="section-sub" style="margin-bottom:16px">Per-month seat subscriptions + metered usage · from February · Source: Anthropic cost reports + Finance</div>
+    <div style="height:300px"><canvas id="tr-chartMonthlySpend"></canvas></div>
+  </div>
+  <div id="tr-monthly-spend"></div>
+
   <div class="section-divider"><span>Month-over-Month Snapshot <span class="timeframe-badge tbadge-mtd">MoM</span></span></div>
   <div class="kpi-grid" id="trends-mom-kpis"></div>
 
@@ -6532,14 +6540,6 @@ try { renderWeeklyTab(); } catch(e) { console.error('[boot] renderWeeklyTab:', e
       <div style="height:210px;margin-top:14px"><canvas id="tr-chartCursor"></canvas></div>
     </div>
   </div>
-
-  <div class="section-divider"><span>Monthly Spend History <span class="timeframe-badge tbadge-mtd">$ / month</span></span></div>
-  <div class="card-full" style="margin-bottom:16px">
-    <div class="section-title">Spend by App &amp; API Keys — per Month</div>
-    <div class="section-sub" style="margin-bottom:16px">Flat seat subscriptions + real metered Anthropic API-key usage · from February · Source: Anthropic cost reports</div>
-    <div style="height:300px"><canvas id="tr-chartMonthlySpend"></canvas></div>
-  </div>
-  <div id="tr-monthly-spend"></div>
 
   <div class="section-divider"><span>All Tools Combined <span class="timeframe-badge tbadge-mtd">MoM</span></span></div>
   <div class="card-full">
