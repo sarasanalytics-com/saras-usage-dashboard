@@ -75,11 +75,9 @@ SEAT_COUNT_HISTORY = {
     },
 }
 
-# Per-month Cursor metered API usage (USD), from Finance — the usage portion
-# carved out of each Cursor invoice above. Part of the yearly invoice, so shown
-# as a monthly run-rate (annual ÷ 12), surfaced in its own column and rolled
-# into the month total. (Claude.ai/Code usage is fetched live from the Anthropic
-# API as an actual monthly figure, so it is NOT divided.)
+# Per-month Cursor metered API usage (USD), from Finance — the actual usage
+# billed that month, shown in full (NOT divided) and rolled into the month
+# total, consistent with how Claude.ai/Code usage is shown.
 CURSOR_USAGE_HISTORY = {
     "2026-02":  4206.08,
     "2026-03": 11755.06,
@@ -205,9 +203,9 @@ def main():
         cursor_monthly,       cursor_seat_count   = resolve_seat("cursor",  month_key)
         windsurf_monthly,     windsurf_seat_count = resolve_seat("windsurf", month_key)
 
-        # Cursor metered usage (annual ÷ 12). Claude.ai/Code usage is already a
-        # live monthly figure from the API, so it is used as-is.
-        cursor_usage = round(CURSOR_USAGE_HISTORY.get(month_key, 0.0) / 12.0, 2)
+        # Cursor metered usage — actual amount billed that month, shown in full
+        # (consistent with Claude.ai/Code usage, which is also a full monthly figure).
+        cursor_usage = round(CURSOR_USAGE_HISTORY.get(month_key, 0.0), 2)
 
         # Real all-in monthly cash outflow: seat subscriptions + every metered
         # usage line (Cursor usage, Anthropic API keys, Claude.ai/Code usage).
