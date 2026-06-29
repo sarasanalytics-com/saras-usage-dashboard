@@ -82,6 +82,18 @@ SEAT_HISTORY = {
     },
 }
 
+# Per-month Cursor metered API usage (USD), from Finance — the usage portion
+# carved out of each Cursor invoice above. Part of the yearly invoice, so shown
+# as a monthly run-rate (annual ÷ 12), surfaced in its own column and rolled
+# into the month total. (Claude.ai/Code usage is fetched live from the Anthropic
+# API as an actual monthly figure, so it is NOT divided.)
+CURSOR_USAGE_HISTORY = {
+    "2026-02":  4206.08,
+    "2026-03": 11755.06,
+    "2026-04":  5007.73,
+    # 2026-05: no Cursor API usage
+}
+
 
 def resolve_seat(app, month_key):
     """Return (monthly_usd, seat_count) for an app in a given month, using the
@@ -203,20 +215,27 @@ def main():
         cursor_monthly,       cursor_seat_count   = resolve_seat("cursor",  month_key)
         windsurf_monthly,     windsurf_seat_count = resolve_seat("windsurf", month_key)
 
-        # Real monthly cash outflow: seat subscriptions + metered Anthropic API.
-        total = round(claude_seats_monthly + cursor_monthly + windsurf_monthly + api_keys, 2)
+        # Cursor metered usage (annual ÷ 12). Claude.ai/Code usage is already a
+        # live monthly figure from the API, so it is used as-is.
+        cursor_usage = round(CURSOR_USAGE_HISTORY.get(month_key, 0.0) / 12.0, 2)
+
+        # Real all-in monthly cash outflow: seat subscriptions + every metered
+        # usage line (Cursor usage, Anthropic API keys, Claude.ai/Code usage).
+        total = round(claude_seats_monthly + cursor_monthly + windsurf_monthly
+                      + cursor_usage + api_keys + claude_usage, 2)
 
         months.append({
             "monthKey":          month_key,
             "label":             label,
             "isCurrent":         is_current,
             "available":         available,
-            "claudeUsage":       claude_usage,          # metered Claude.ai/Code usage (info)
+            "claudeUsage":       claude_usage,          # metered Claude.ai/Code usage (live, monthly)
             "apiKeys":           api_keys,              # real metered pay-as-you-go API keys
             "claudeSeats":       claude_seats_monthly,  # monthly run-rate (annual ÷ 12)
             "claudeSeatCount":   claude_seat_count,
             "cursor":            cursor_monthly,
             "cursorSeatCount":   cursor_seat_count,
+            "cursorUsage":       cursor_usage,          # Cursor metered usage (annual ÷ 12)
             "windsurf":          windsurf_monthly,
             "windsurfSeatCount": windsurf_seat_count,
             "total":             total,
@@ -224,7 +243,8 @@ def main():
         log(f"  {label}: available={available} "
             f"claude={claude_seat_count}seats/${claude_seats_monthly:.0f} "
             f"cursor={cursor_seat_count}seats/${cursor_monthly:.0f} "
-            f"claudeUsage=${claude_usage:.2f} apiKeys=${api_keys:.2f} total=${total:.2f}")
+            f"cursorUsage=${cursor_usage:.2f} claudeUsage=${claude_usage:.2f} "
+            f"apiKeys=${api_keys:.2f} total=${total:.2f}")
         time.sleep(0.2)
 
     result = {

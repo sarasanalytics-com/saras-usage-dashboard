@@ -6362,9 +6362,10 @@ function renderMonthlySpend() {
       ${seatCell(m.claudeSeats, m.claudeSeatCount)}
       ${seatCell(m.cursor, m.cursorSeatCount)}
       ${seatCell(m.windsurf, m.windsurfSeatCount)}
-      <td class="num-cell" style="color:var(--accent2);font-weight:700">${money2(m.apiKeys)}</td>
+      <td class="num-cell" style="color:#26c6da" title="Cursor metered API usage (monthly run-rate)">${money2(m.cursorUsage || 0)}</td>
+      <td class="num-cell" style="color:var(--accent2);font-weight:700" title="Anthropic platform API-key usage (metered)">${money2(m.apiKeys)}</td>
+      <td class="num-cell" style="color:#a89cff" title="Claude.ai/Code model usage (metered, live)">${money2(m.claudeUsage)}</td>
       <td class="num-cell" style="font-weight:800;color:#fff">${money2(m.total)}</td>
-      <td class="num-cell" style="color:var(--muted)" title="Metered Claude.ai/Code model usage — shown for visibility, not added to total">${money2(m.claudeUsage)}</td>
     </tr>`;
   }).join('');
 
@@ -6376,17 +6377,17 @@ function renderMonthlySpend() {
           <th style="text-align:right">Claude <span style="font-weight:400;color:var(--muted)">seats $/mo</span></th>
           <th style="text-align:right">Cursor <span style="font-weight:400;color:var(--muted)">seats $/mo</span></th>
           <th style="text-align:right">Windsurf <span style="font-weight:400;color:var(--muted)">seats $/mo</span></th>
+          <th style="text-align:right">Cursor usage</th>
           <th style="text-align:right">API keys (metered)</th>
+          <th style="text-align:right">Claude.ai/Code usage</th>
           <th style="text-align:right">Total spend</th>
-          <th style="text-align:right">Claude.ai/Code usage <span style="font-weight:400;color:var(--muted)">(info)</span></th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>
       <div style="font-size:0.72rem;color:var(--muted);margin-top:10px;line-height:1.5">
-        <strong style="color:#8b92b8">Total spend</strong> = Claude seats + Cursor + Windsurf + metered Anthropic API-key usage (the real monthly cash outflow).
-        <strong style="color:#8b92b8">Claude &amp; Cursor seats</strong> use the actual per-month seat counts from Finance, shown as a monthly run-rate (annual seat contract ÷ 12 at $20/seat/mo, with each app's bundled API/model usage removed before deriving seats); Windsurf is the current flat rate.
-        <strong style="color:#8b92b8">API keys</strong> are real metered pay-as-you-go spend from the Anthropic cost reports.
-        <strong style="color:#8b92b8">Claude.ai/Code usage</strong> is metered model consumption — shown for visibility, not added to the total (Anthropic's analytics endpoint only retains ~2 months, so earlier months read $0).
+        <strong style="color:#8b92b8">Total spend</strong> = all-in monthly cash: Claude + Cursor + Windsurf seats + Cursor usage + Anthropic API keys + Claude.ai/Code usage.
+        <strong style="color:#8b92b8">Claude &amp; Cursor seats</strong> use the actual per-month seat counts from Finance, shown as a monthly run-rate (annual seat contract ÷ 12 at $20/seat/mo, with each app's bundled usage removed before deriving seats); Windsurf is the current flat rate.
+        <strong style="color:#8b92b8">Cursor usage</strong> is metered Cursor API usage (annual ÷ 12). <strong style="color:#8b92b8">API keys</strong> are pay-as-you-go Anthropic platform spend, and <strong style="color:#8b92b8">Claude.ai/Code usage</strong> is metered Claude model consumption — both pulled live from the Anthropic cost reports (the analytics endpoint retains ~2 months, so earlier Claude-usage months read $0).
       </div>
     </div>`;
 
@@ -6396,9 +6397,11 @@ function renderMonthlySpend() {
     const labels = months.map(m => m.label);
     new Chart(el, {type:'bar', data:{labels, datasets:[
       {label:'Claude seats', data:months.map(m=>m.claudeSeats), backgroundColor:'rgba(108,99,255,0.8)', borderRadius:4, stack:'s'},
-      {label:'Cursor',       data:months.map(m=>m.cursor),      backgroundColor:'rgba(38,198,218,0.8)', borderRadius:4, stack:'s'},
+      {label:'Cursor seats', data:months.map(m=>m.cursor),      backgroundColor:'rgba(38,198,218,0.8)', borderRadius:4, stack:'s'},
       {label:'Windsurf',     data:months.map(m=>m.windsurf),    backgroundColor:'rgba(255,167,38,0.8)', borderRadius:4, stack:'s'},
+      {label:'Cursor usage', data:months.map(m=>m.cursorUsage||0), backgroundColor:'rgba(38,198,218,0.45)', borderRadius:4, stack:'s'},
       {label:'API keys (metered)', data:months.map(m=>m.apiKeys), backgroundColor:'rgba(0,212,170,0.85)', borderRadius:4, stack:'s'},
+      {label:'Claude.ai/Code usage', data:months.map(m=>m.claudeUsage||0), backgroundColor:'rgba(168,156,255,0.6)', borderRadius:4, stack:'s'},
     ]}, options:{responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:true,labels:{color:'#8b92b8',font:{size:11}}},
         tooltip:{mode:'index',intersect:false,callbacks:{label:c=>c.dataset.label+': $'+(c.parsed.y||0).toLocaleString('en-US',{maximumFractionDigits:2})}}},
