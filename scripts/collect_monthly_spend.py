@@ -49,34 +49,30 @@ ORG_COST_URL       = "https://api.anthropic.com/v1/organizations/cost_report"
 # earlier months will simply come back empty and be marked unavailable.
 START_YEAR, START_MONTH = 2026, 2
 
-# Current recurring monthly seat subscriptions (flat). Keep in sync with the
-# `spendData` block in index.html. These are real committed spend, billed every
-# month regardless of usage.
+# Per-seat monthly rate by app. Seat cost shown = seat_count × rate.
+PER_SEAT = {"claude": 20.0, "cursor": 20.0, "windsurf": 30.0}
+
+# Current recurring monthly seat subscriptions (flat) — kept for the result
+# metadata. Equals default seat count × PER_SEAT.
 SUBSCRIPTIONS = {
-    "claudeSeats": 3820.0,   # Claude Enterprise seats (191 × $20) — current/default
-    "cursor":      1260.0,   # Cursor seats (63 × $20)
-    "windsurf":     240.0,   # Windsurf seats (8 × $30)
+    "claudeSeats": 3820.0,   # 191 × $20
+    "cursor":      1260.0,   # 63 × $20
+    "windsurf":     240.0,   # 8 × $30
 }
 # Current licensed seat counts (fallback for months without a Finance figure).
 SEATS_DEFAULT_COUNT = {"claude": 191, "cursor": 63, "windsurf": 8}
 
-# Per-month seat history from Finance, per app. Each entry is the ANNUAL
-# seat-contract value (USD, seat-only — any model/API usage bundled into the
-# invoice is removed first) and the seat count active that month, at $20/seat/mo
-# ($240/seat/yr). The monthly seat cost shown on the dashboard is annual ÷ 12
-# (run-rate). Months not listed fall back to the current flat rate above.
-SEAT_HISTORY = {
+# Per-month seat COUNTS from Finance, per app. The monthly seat cost shown is
+# simply count × PER_SEAT[app]. Months/apps not listed use the current flat
+# count above (Cursor has been a flat 63 throughout; its varying invoice
+# amounts were usage, tracked separately in CURSOR_USAGE_HISTORY).
+SEAT_COUNT_HISTORY = {
     "claude": {
-        # monthKey:  (annual_seat_contract_usd, seat_count)
-        "2026-02": (14160.00, 59),
-        "2026-03": (22207.50, 93),   # 92.5 → 93
-        "2026-04": ( 6043.69, 25),   # 25.2 → 25
-        "2026-05": ( 8954.01, 37),   # $14,513.01 invoice − $5,559 model usage; 37.3 → 37
+        "2026-02":  59,
+        "2026-03":  93,
+        "2026-04": 117,
+        "2026-05": 152,
     },
-    # Cursor seat count has been a flat 63 throughout — show 63 × $20/mo every
-    # month (the current default). The varying Cursor invoice amounts were
-    # usage, captured separately in CURSOR_USAGE_HISTORY, not seat changes.
-    "cursor": {},
 }
 
 # Per-month Cursor metered API usage (USD), from Finance — the usage portion
@@ -93,14 +89,11 @@ CURSOR_USAGE_HISTORY = {
 
 
 def resolve_seat(app, month_key):
-    """Return (monthly_usd, seat_count) for an app in a given month, using the
-    Finance seat history (annual ÷ 12) when present, else the current flat rate."""
-    hist = SEAT_HISTORY.get(app, {})
-    if month_key in hist:
-        annual_usd, seats = hist[month_key]
-        return round(annual_usd / 12.0, 2), seats
-    return SUBSCRIPTIONS[{"claude": "claudeSeats", "cursor": "cursor", "windsurf": "windsurf"}[app]], \
-        SEATS_DEFAULT_COUNT[app]
+    """Return (monthly_usd, seat_count) for an app in a given month. Seat cost is
+    simply seat_count × PER_SEAT[app]; the count comes from the Finance history
+    when present, else the current flat count."""
+    count = SEAT_COUNT_HISTORY.get(app, {}).get(month_key, SEATS_DEFAULT_COUNT[app])
+    return round(count * PER_SEAT[app], 2), count
 
 
 def log(msg):
