@@ -1583,9 +1583,9 @@ async function renderAccessPanel() {
       + `<td style="text-align:right;color:var(--muted)">${fmtT(u.last)}</td></tr>`
     ).join('');
     document.getElementById('access-panel-body').innerHTML = rows ||
-      '<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--muted)">No sign-ins recorded since the server last restarted.</td></tr>';
+      '<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--muted)">No sign-ins recorded yet.</td></tr>';
     document.getElementById('access-panel-sub').textContent =
-      `${(d.users || []).length} people · ${d.totalVisits || 0} visits · since server restart ${fmtT(d.since)}`;
+      `${(d.users || []).length} people · ${d.totalVisits || 0} visits · since ${fmtT(d.since)}`;
     panel.style.display = 'block';
   } catch (e) { /* silently leave hidden */ }
 }
