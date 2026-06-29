@@ -71,6 +71,16 @@ jobs:
           ANTHROPIC_ANALYTICS_KEY: ${{ secrets.ANTHROPIC_ANALYTICS_KEY }}
         run: python scripts/collect_monthly_spend.py
 
+      # ── 5c. Backfill past-month trend snapshots (one-time-ish) ────────────────
+      # Fills MONTHLY_SNAPSHOTS for past months still retained by the Analytics
+      # API so the trend-line charts show history. Skips months already recorded,
+      # so it's cheap after the first successful run. Must precede the HTML patch.
+      - name: Backfill monthly trend snapshots
+        timeout-minutes: 20
+        env:
+          ANTHROPIC_ANALYTICS_KEY: ${{ secrets.ANTHROPIC_ANALYTICS_KEY }}
+        run: python scripts/backfill_snapshots.py
+
       # ── 6. Patch dashboard HTML + adoption JSON ────────────────────────────────
       - name: Update dashboard HTML and adoption data
         run: python scripts/update_dashboard.py
