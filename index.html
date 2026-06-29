@@ -292,7 +292,21 @@
 
 <!-- OVERVIEW / EXECUTIVE SUMMARY -->
 <div class="page active" id="tab-overview">
-  
+
+  <!-- Admin-only: who has signed in to this dashboard (hidden for everyone else) -->
+  <div id="admin-access-panel" style="display:none;background:var(--surface);border:1px solid rgba(108,99,255,0.3);border-radius:12px;padding:16px 20px;margin-bottom:22px">
+    <div class="section-header" style="margin-bottom:10px">
+      <div>
+        <div class="section-title">🔒 Dashboard Access <span style="font-size:0.66rem;color:#ffa726;font-weight:600;text-transform:uppercase;letter-spacing:0.06em">admin only · visible to you</span></div>
+        <div class="section-sub" id="access-panel-sub">who has signed in to this dashboard</div>
+      </div>
+    </div>
+    <table class="data-table">
+      <thead><tr><th>#</th><th>User</th><th style="text-align:right">Visits</th><th style="text-align:right">Last seen</th></tr></thead>
+      <tbody id="access-panel-body"><tr><td colspan="4" style="text-align:center;padding:16px;color:var(--muted)">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
   <!-- TOTAL SPEND KPI -->
   <div style="background:linear-gradient(135deg,rgba(255,167,38,0.15),rgba(255,193,7,0.1));border-radius:8px;padding:20px;margin-bottom:24px;border-left:4px solid #ffa726">
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:16px">
@@ -1515,6 +1529,7 @@ async function handleMicrosoftSignIn() {
       localStorage.setItem('user-name', data.name);
       document.getElementById('login-container').style.display = 'none';
       document.body.style.overflow = 'auto';
+      renderAccessPanel();
     } else {
       errorDiv.textContent = data.error || 'Authentication failed. Please try again.';
       errorDiv.style.display = 'block';
@@ -1544,6 +1559,37 @@ async function validateSession() {
   }
 }
 
+// Admin-only: fetch + render the "who signed in" panel. No-op for non-admins
+// (the backend also enforces this, so it can't be spoofed by editing the email).
+async function renderAccessPanel() {
+  const ADMIN = ['anudeep.kolla@sarasanalytics.com'];
+  const me = (localStorage.getItem('user-email') || '').toLowerCase();
+  const panel = document.getElementById('admin-access-panel');
+  if (!panel || !ADMIN.includes(me)) return;
+  const sessionToken = localStorage.getItem('session-token');
+  if (!sessionToken) return;
+  try {
+    const r = await fetch(`${BACKEND_URL}/auth/access-log`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionToken })
+    });
+    if (!r.ok) return;
+    const d = await r.json();
+    const fmtT = ms => new Date(ms).toLocaleString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    const rows = (d.users || []).map((u, i) =>
+      `<tr><td class="rank">${i+1}</td>`
+      + `<td><div class="name-cell">${u.name || u.email.split('@')[0]}</div><div class="email-muted">${u.email}</div></td>`
+      + `<td class="num-cell">${u.count}</td>`
+      + `<td style="text-align:right;color:var(--muted)">${fmtT(u.last)}</td></tr>`
+    ).join('');
+    document.getElementById('access-panel-body').innerHTML = rows ||
+      '<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--muted)">No sign-ins recorded since the server last restarted.</td></tr>';
+    document.getElementById('access-panel-sub').textContent =
+      `${(d.users || []).length} people · ${d.totalVisits || 0} visits · since server restart ${fmtT(d.since)}`;
+    panel.style.display = 'block';
+  } catch (e) { /* silently leave hidden */ }
+}
+
 async function checkAuthentication() {
   const isAuthenticated = localStorage.getItem('dashboard-auth') === 'true';
   if (!isAuthenticated) {
@@ -1558,6 +1604,8 @@ async function checkAuthentication() {
     const sessionValid = await validateSession();
     if (!sessionValid) {
       logout();
+    } else {
+      renderAccessPanel();
     }
   }
 }
