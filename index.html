@@ -6362,11 +6362,6 @@ function renderMonthlySpend() {
       ${seatCell(m.claudeSeats, m.claudeSeatCount)}
       ${seatCell(m.cursor, m.cursorSeatCount)}
       ${seatCell(m.windsurf, m.windsurfSeatCount)}
-      ${seatCell(
-        (m.claudeSeats || 0) + (m.cursor || 0) + (m.windsurf || 0),
-        ((m.claudeSeatCount || 0) + (m.cursorSeatCount || 0) + (m.windsurfSeatCount || 0)) || null,
-        'font-weight:800;color:#fff;border-left:1px solid var(--border)'
-      )}
       <td class="num-cell" style="color:#26c6da" title="Cursor metered API usage (monthly run-rate)">${money2(m.cursorUsage || 0)}</td>
       <td class="num-cell" style="color:var(--accent2);font-weight:700" title="Anthropic platform API-key usage (metered)">${money2(m.apiKeys)}</td>
       <td class="num-cell" style="color:#a89cff" title="Claude.ai/Code model usage (metered, live)">${money2(m.claudeUsage)}</td>
@@ -6379,10 +6374,9 @@ function renderMonthlySpend() {
       <table class="data-table">
         <thead><tr>
           <th>Month</th>
-          <th style="text-align:right">Claude <span style="font-weight:400;color:var(--muted)">seats $/mo</span></th>
-          <th style="text-align:right">Cursor <span style="font-weight:400;color:var(--muted)">seats $/mo</span></th>
-          <th style="text-align:right">Windsurf <span style="font-weight:400;color:var(--muted)">seats $/mo</span></th>
-          <th style="text-align:right;border-left:1px solid var(--border)">Total seats <span style="font-weight:400;color:var(--muted)">$/mo</span></th>
+          <th style="text-align:right">Claude <span style="font-weight:400;color:var(--muted)">seats × $20/mo</span></th>
+          <th style="text-align:right">Cursor <span style="font-weight:400;color:var(--muted)">seats × $20/mo</span></th>
+          <th style="text-align:right">Windsurf <span style="font-weight:400;color:var(--muted)">seats × $30/mo</span></th>
           <th style="text-align:right">Cursor usage</th>
           <th style="text-align:right">API keys (metered)</th>
           <th style="text-align:right">Claude.ai/Code usage</th>
