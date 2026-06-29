@@ -1,12 +1,12 @@
 {
-  "updatedAt": 1782714049570,
+  "updatedAt": 1782742332747,
   "users": [
     {
       "email": "anudeep.kolla@sarasanalytics.com",
       "name": "Anudeep Kolla",
-      "count": 1,
+      "count": 2,
       "first": 1782714049570,
-      "last": 1782714049570
+      "last": 1782742332745
     }
   ]
 }
