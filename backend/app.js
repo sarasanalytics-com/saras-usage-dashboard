@@ -28,10 +28,65 @@ const ALLOWED_USERS = process.env.ALLOWED_USERS
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'anudeep.kolla@sarasanalytics.com')
   .split(',').map(e => e.trim().toLowerCase());
 
-// In-memory dashboard access log (per-user aggregate). Resets when the server
-// restarts; every sign-in is also console.logged so Render keeps full history.
+// Dashboard access log (per-user aggregate). Durably persisted to a committed
+// file in the repo (data/dashboard_access.json) via the GitHub API, and loaded
+// on startup — so the in-dashboard panel keeps FULL history across restarts.
+// Requires GITHUB_TOKEN (a token with contents:write on the repo) in the env;
+// without it, the log is in-memory only (still console.logged for Render logs).
 const serverStart = Date.now();
 const accessLog = new Map(); // email -> { email, name, count, first, last }
+
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
+const GITHUB_REPO  = process.env.GITHUB_REPO || 'sarasanalytics-com/saras-usage-dashboard';
+const ACCESS_FILE  = 'data/dashboard_access.json';
+const GH_HEADERS   = { Authorization: `Bearer ${GITHUB_TOKEN}`, Accept: 'application/vnd.github+json', 'User-Agent': 'saras-dashboard' };
+let accessFileSha  = null;
+let _saving = false, _pending = false;
+
+async function loadAccessLog() {
+  if (!GITHUB_TOKEN) { console.log('[access] no GITHUB_TOKEN — durable history disabled (in-memory only)'); return; }
+  try {
+    const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${ACCESS_FILE}`;
+    const r = await axios.get(url, { headers: GH_HEADERS });
+    accessFileSha = r.data.sha;
+    const content = JSON.parse(Buffer.from(r.data.content, 'base64').toString());
+    (content.users || []).forEach(u => { if (u.email) accessLog.set(u.email.toLowerCase(), u); });
+    console.log(`[access] loaded ${accessLog.size} users from ${ACCESS_FILE}`);
+  } catch (e) {
+    if (e.response && e.response.status === 404) console.log('[access] no access file yet — created on first sign-in');
+    else console.error('[access] load failed:', e.message);
+  }
+}
+
+async function saveAccessLog() {
+  if (!GITHUB_TOKEN) return;
+  if (_saving) { _pending = true; return; } // coalesce concurrent writes
+  _saving = true;
+  try {
+    const users = [...accessLog.values()].sort((a, b) => b.last - a.last);
+    const body = {
+      message: 'chore: dashboard access log update',
+      content: Buffer.from(JSON.stringify({ updatedAt: Date.now(), users }, null, 2)).toString('base64'),
+    };
+    if (accessFileSha) body.sha = accessFileSha;
+    const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${ACCESS_FILE}`;
+    const r = await axios.put(url, body, { headers: GH_HEADERS });
+    accessFileSha = r.data.content.sha;
+  } catch (e) {
+    if (e.response && e.response.status === 409) {        // stale sha → refresh and retry
+      try {
+        const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${ACCESS_FILE}`;
+        const g = await axios.get(url, { headers: GH_HEADERS });
+        accessFileSha = g.data.sha;
+        _pending = true;
+      } catch (_) {}
+    } else { console.error('[access] save failed:', e.message); }
+  } finally {
+    _saving = false;
+    if (_pending) { _pending = false; saveAccessLog(); }
+  }
+}
+
 function recordAccess(email, name) {
   const e = (email || '').toLowerCase();
   if (!e) return;
@@ -40,6 +95,7 @@ function recordAccess(email, name) {
   rec.count += 1; rec.last = now; if (name) rec.name = name;
   accessLog.set(e, rec);
   console.log(`[access] ${e} (${rec.name}) signed in — visits ${rec.count}`);
+  saveAccessLog(); // persist durably (fire-and-forget)
 }
 
 // JWKS client for Microsoft token verification
@@ -141,7 +197,8 @@ app.post('/auth/access-log', (req, res) => {
       return res.status(403).json({ error: 'forbidden' });
     }
     const users = [...accessLog.values()].sort((a, b) => b.last - a.last);
-    res.json({ since: serverStart, totalVisits: users.reduce((s, u) => s + u.count, 0), users });
+    const since = users.length ? Math.min(...users.map(u => u.first || serverStart)) : serverStart;
+    res.json({ since, totalVisits: users.reduce((s, u) => s + u.count, 0), users });
   } catch (err) {
     res.status(401).json({ error: 'invalid' });
   }
@@ -162,4 +219,5 @@ app.get('*', (req, res) => {
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  loadAccessLog(); // restore durable access history from the repo
 });
