@@ -1872,12 +1872,27 @@ function populateSpendsTab() {
                    : ((typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.spendComparison && API_AGENTS_DATA.spendComparison.previousMonthLabel) || 'last month');
     const _usd = v => '$' + Math.round(v).toLocaleString();
     const _setTxt = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
-    const lastMonthTotal = subsMonthly + lastClaude + lastPlatform;  // subscriptions are flat month-to-month
-    _setTxt('ov-lastmonth-total', _usd(lastMonthTotal));
-    _setTxt('ov-lastmonth-total-sub', _lastLbl + (lastClaude > 0 ? ' · all-in' : ' · Claude.ai pending'));
-    _setTxt('ov-lastmonth-subs', _usd(subsMonthly));
-    _setTxt('ov-lastmonth-claude', lastClaude > 0 ? _usd(lastClaude) : 'pending');
-    _setTxt('ov-lastmonth-platform', lastPlatform > 0 ? _usd(lastPlatform) : '—');
+    // Prefer the corrected per-month figures from MONTHLY_SPEND (actual seat
+    // counts for last month) so this card matches the Monthly Spend table.
+    // Fall back to flat subscriptions + DATA when the table isn't available.
+    let lmSubs = subsMonthly, lmClaude = lastClaude, lmPlatform = lastPlatform,
+        lmTotal = subsMonthly + lastClaude + lastPlatform, lmLbl = _lastLbl;
+    if (typeof MONTHLY_SPEND !== 'undefined' && MONTHLY_SPEND.months) {
+      const _past = MONTHLY_SPEND.months.filter(m => m.available && !m.isCurrent);
+      const _lm = _past[_past.length - 1];
+      if (_lm) {
+        lmSubs     = (_lm.claudeSeats || 0) + (_lm.cursor || 0) + (_lm.windsurf || 0) + (_lm.cursorUsage || 0);
+        lmClaude   = _lm.claudeUsage || 0;
+        lmPlatform = _lm.apiKeys || 0;
+        lmTotal    = (typeof _lm.total === 'number') ? _lm.total : (lmSubs + lmClaude + lmPlatform);
+        lmLbl      = _lm.label || _lastLbl;
+      }
+    }
+    _setTxt('ov-lastmonth-total', _usd(lmTotal));
+    _setTxt('ov-lastmonth-total-sub', lmLbl + (lmClaude > 0 ? ' · all-in' : ' · Claude.ai pending'));
+    _setTxt('ov-lastmonth-subs', _usd(lmSubs));
+    _setTxt('ov-lastmonth-claude', lmClaude > 0 ? _usd(lmClaude) : 'pending');
+    _setTxt('ov-lastmonth-platform', lmPlatform > 0 ? _usd(lmPlatform) : '—');
 
   // Populate model cost KPI elements — sum MTD by family
   const familyMtd = (key) => modelCosts
