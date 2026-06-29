@@ -52,14 +52,6 @@ jobs:
           ANTHROPIC_ANALYTICS_KEY: ${{ secrets.ANTHROPIC_ANALYTICS_KEY }}
         run: python scripts/collect_api_agents.py
 
-      # ── 4b. Collect per-month spend history (backfill from Feb) ───────────────
-      - name: Collect monthly spend history (Anthropic cost reports)
-        timeout-minutes: 10
-        env:
-          ANTHROPIC_ADMIN_KEY:     ${{ secrets.ANTHROPIC_ADMIN_KEY }}
-          ANTHROPIC_ANALYTICS_KEY: ${{ secrets.ANTHROPIC_ANALYTICS_KEY }}
-        run: python scripts/collect_monthly_spend.py
-
       # ── 5. Collect Cursor / Windsurf / ClickUp ────────────────────────────────
       - name: Collect Cursor / Windsurf / ClickUp data
         env:
@@ -68,6 +60,16 @@ jobs:
           WINDSURF_SERVICE_KEY:  ${{ secrets.WINDSURF_SERVICE_KEY }}
           CLICKUP_TEAM_ID:       '3369097'
         run: python scripts/collect_data.py
+
+      # ── 5b. Collect per-month spend history (backfill from Feb) ───────────────
+      # Runs AFTER the others so it reads their fresh output (claude_ai_stats +
+      # daily_collected) for the current month's live seat counts / Cursor usage.
+      - name: Collect monthly spend history (Anthropic cost reports)
+        timeout-minutes: 10
+        env:
+          ANTHROPIC_ADMIN_KEY:     ${{ secrets.ANTHROPIC_ADMIN_KEY }}
+          ANTHROPIC_ANALYTICS_KEY: ${{ secrets.ANTHROPIC_ANALYTICS_KEY }}
+        run: python scripts/collect_monthly_spend.py
 
       # ── 6. Patch dashboard HTML + adoption JSON ────────────────────────────────
       - name: Update dashboard HTML and adoption data
