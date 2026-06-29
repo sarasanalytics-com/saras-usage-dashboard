@@ -1,1 +1,12 @@
-{"updatedAt":0,"users":[]}
+{
+  "updatedAt": 1782714049570,
+  "users": [
+    {
+      "email": "anudeep.kolla@sarasanalytics.com",
+      "name": "Anudeep Kolla",
+      "count": 1,
+      "first": 1782714049570,
+      "last": 1782714049570
+    }
+  ]
+}
