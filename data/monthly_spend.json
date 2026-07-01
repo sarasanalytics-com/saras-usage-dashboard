@@ -91,7 +91,7 @@
       "label": "Jul 2026",
       "isCurrent": true,
       "available": true,
-      "claudeUsage": 0.75,
+      "claudeUsage": 3.85,
       "apiKeys": 0.0,
       "claudeSeats": 3820.0,
       "claudeSeatCount": 191,
@@ -100,7 +100,7 @@
       "cursorUsage": 0.0,
       "windsurf": 240.0,
       "windsurfSeatCount": 8,
-      "total": 5320.75
+      "total": 5323.85
     }
   ]
 }

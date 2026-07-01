@@ -2405,46 +2405,47 @@
     {
       "date": "2026-07-01",
       "cursor": {
+        "mushtaq.mohd@sarasanalytics.com": 11,
+        "anoop.joshi@sarasanalytics.com": 12,
+        "zenul.abedeen@sarasanalytics.com": 2,
+        "suraj.maurya@sarasanalytics.com": 2,
+        "jatin.sahu@sarasanalytics.com": 2,
         "manoj.p@sarasanalytics.com": 1,
         "joseph.ubbarapu@sarasanalytics.com": 3,
-        "suraj.maurya@sarasanalytics.com": 1,
-        "jatin.sahu@sarasanalytics.com": 1,
-        "zenul.abedeen@sarasanalytics.com": 1,
         "swayam.satapathy@sarasanalytics.com": 14,
-        "anoop.joshi@sarasanalytics.com": 9,
-        "saivarun.pathi@sarasanalytics.com": 11,
-        "mushtaq.mohd@sarasanalytics.com": 9
+        "saivarun.pathi@sarasanalytics.com": 11
       },
       "windsurf": {
         "jigar.trivedi@sarasanalytics.com": 1
       },
       "clickup": {
-        "santhosh.dowluri@sarasanalytics.com": 1,
-        "manas.pradhan@sarasanalytics.com": 1,
-        "saad@sarasanalytics.com": 1,
-        "bheem@sarasanalytics.com": 1,
         "ajay@sarasanalytics.com": 1,
-        "rudrasen.gouda@sarasanalytics.com": 1,
-        "divij.gawri@sarasanalytics.com": 1,
-        "harshit.kumar@sarasanalytics.com": 1,
-        "anjuman.p@sarasanalytics.com": 1,
-        "saivarun.pathi@sarasanalytics.com": 1,
-        "abhiram.d@sarasanalytics.com": 1,
-        "swayam.satapathy@sarasanalytics.com": 1,
-        "yashveer.gaur@sarasanalytics.com": 1,
         "anoop.joshi@sarasanalytics.com": 1,
-        "umesh.chaudhari@sarasanalytics.com": 1,
-        "uttam.swain@sarasanalytics.com": 1,
-        "gaurav.sharma@sarasanalytics.com": 1,
-        "jatin.sahu@sarasanalytics.com": 1,
-        "sumeet.bose@sarasanalytics.com": 1,
-        "karthik.r@sarasanalytics.com": 1,
         "kritik.kumar@sarasanalytics.com": 1,
+        "sumeet.bose@sarasanalytics.com": 1,
+        "divij.gawri@sarasanalytics.com": 1,
+        "swayam.satapathy@sarasanalytics.com": 1,
         "birhane@sarasanalytics.com": 1,
-        "saikiran.kallem@sarasanalytics.com": 1,
+        "umesh.chaudhari@sarasanalytics.com": 1,
         "anudeep.kolla@sarasanalytics.com": 1,
+        "karthik.r@sarasanalytics.com": 1,
+        "harshit.kumar@sarasanalytics.com": 1,
+        "bheem@sarasanalytics.com": 1,
+        "saivarun.pathi@sarasanalytics.com": 1,
         "sreeram.ravuri@sarasanalytics.com": 1,
-        "ashyam.zubair@sarasanalytics.com": 1
+        "yashveer.gaur@sarasanalytics.com": 1,
+        "rudrasen.gouda@sarasanalytics.com": 1,
+        "uttam.swain@sarasanalytics.com": 1,
+        "reeshab.nayak@sarasanalytics.com": 1,
+        "gaurav.sharma@sarasanalytics.com": 1,
+        "saad@sarasanalytics.com": 1,
+        "anjuman.p@sarasanalytics.com": 1,
+        "santhosh.dowluri@sarasanalytics.com": 1,
+        "abhiram.d@sarasanalytics.com": 1,
+        "saikiran.kallem@sarasanalytics.com": 1,
+        "ashyam.zubair@sarasanalytics.com": 1,
+        "jatin.sahu@sarasanalytics.com": 1,
+        "manas.pradhan@sarasanalytics.com": 1
       },
       "claudeCodeDaily": {}
     }
@@ -2633,5 +2634,5 @@
     "santhosh.dowluri@sarasanalytics.com": 0,
     "bharath.pagadakula@sarasanalytics.com": 0
   },
-  "lastUpdated": "2026-07-01T04:45:01.052779+00:00"
+  "lastUpdated": "2026-07-01T05:04:03.193366+00:00"
 }
