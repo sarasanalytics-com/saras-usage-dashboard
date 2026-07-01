@@ -53,7 +53,11 @@ jobs:
         run: python scripts/collect_api_agents.py
 
       # ── 5. Collect Cursor / Windsurf / ClickUp ────────────────────────────────
+      # Step-level backstop: the ClickUp fetch self-limits via a wall-clock
+      # budget in collect_data.py, but cap the step too so a misbehaving API can
+      # never eat the whole job budget again.
       - name: Collect Cursor / Windsurf / ClickUp data
+        timeout-minutes: 12
         env:
           CLICKUP_API_KEY:       ${{ secrets.CLICKUP_API_KEY }}
           CURSOR_BEARER_TOKEN:   ${{ secrets.CURSOR_BEARER_TOKEN }}

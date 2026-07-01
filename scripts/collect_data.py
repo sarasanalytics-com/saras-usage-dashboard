@@ -98,9 +98,21 @@ log(f"  Members: {len(user_id_to_email)}")
 
 
 # ── ClickUp: paginated task fetch ─────────────────────────────────────────────
-def fetch_clickup_tasks(extra_params, max_pages=100):
+def fetch_clickup_tasks(extra_params, max_pages=100, max_seconds=300):
+    """Paginate ClickUp tasks with a wall-clock budget. This workspace has
+    thousands of open tasks and the /task endpoint can take tens of seconds per
+    page, so an unbounded fetch blew the job timeout and cancelled the whole
+    daily run. Cap the time spent; on hitting the budget we stop and return what
+    we have (a floor) rather than hang. `truncated` flags a partial result."""
     tasks = []
+    truncated = False
+    t0 = time.monotonic()
     for page in range(max_pages):
+        if time.monotonic() - t0 > max_seconds:
+            truncated = True
+            log(f"    [budget] ClickUp fetch hit {max_seconds}s after {page} pages — "
+                f"stopping with {len(tasks)} tasks (partial)")
+            break
         params = {**extra_params, "page": str(page)}
         qs  = "&".join(f"{k}={urllib.request.quote(str(v))}" for k, v in params.items())
         url = f"https://api.clickup.com/api/v2/team/{WORKSPACE_ID}/task?{qs}"
@@ -125,6 +137,7 @@ def fetch_clickup_tasks(extra_params, max_pages=100):
         if len(batch) < 100:
             break
         time.sleep(0.3)
+    fetch_clickup_tasks.truncated = truncated
     return tasks
 
 
@@ -151,8 +164,9 @@ def emails_for_task(t):
 
 
 log("Fetching ClickUp open tasks...")
-open_tasks = fetch_clickup_tasks({"include_closed": "false"})
-log(f"  Open: {len(open_tasks)}")
+open_tasks = fetch_clickup_tasks({"include_closed": "false"}, max_seconds=300)
+open_truncated = fetch_clickup_tasks.truncated
+log(f"  Open: {len(open_tasks)}" + ("  (partial — hit time budget)" if open_truncated else ""))
 
 log("Fetching ClickUp MTD closed tasks...")
 month_start_ms = int(MONTH_START.timestamp() * 1000)
@@ -164,7 +178,7 @@ for st in ("complete", "closed", "done"):
         "date_done_gt": str(month_start_ms - 1),
         "date_done_lt": str(END_MS + 1),
         "statuses[]": st,
-    })
+    }, max_seconds=120)
     for t in batch:
         if t["id"] not in seen_ids:
             seen_ids.add(t["id"])
@@ -176,7 +190,7 @@ today_updated = fetch_clickup_tasks({
     "include_closed": "true",
     "date_updated_gt": str(START_MS - 1),
     "date_updated_lt": str(END_MS + 1),
-})
+}, max_seconds=120)
 log(f"  Updated today: {len(today_updated)}")
 
 
@@ -388,6 +402,7 @@ result = {
     "today": TODAY_STR,
     "clickup": {
         "open_count": len(open_tasks),
+        "open_count_partial": open_truncated,   # True if the fetch hit its time budget (open_count is a floor)
         "done_count": len(mtd_closed),
         "daily_active": {em: 1 for em in clickup_daily_active},
         "done_top": done_counts[:10],
