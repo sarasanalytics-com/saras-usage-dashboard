@@ -105,15 +105,14 @@ today_utc   = datetime.now(timezone.utc).date()
 data_until  = today_utc                              # portal shows today's costs
 month_start = today_utc.replace(day=1)
 
-# If it's early in the month (first 3 days), include last 7 days of previous month
-# to show more meaningful data while current month is still accumulating
+# MTD is always the TRUE current month. (Previously the first 3 days blended in
+# the last 7 days of the prior month "for context", which made API SPEND MTD
+# overstate a brand-new month — e.g. showing ~$2,078 on July 1 when the real
+# month-to-date was ~$16.) Projection falls back to last month's actual while
+# the current month is still too sparse to extrapolate (see below).
 days_elapsed = (data_until - month_start).days + 1
-if days_elapsed <= 3:
-    lookback_start = month_start - timedelta(days=7)
-    note = " (including last 7 days of previous month for context)"
-else:
-    lookback_start = month_start
-    note = ""
+lookback_start = month_start
+note = ""
 
 days_in_month = calendar.monthrange(today_utc.year, today_utc.month)[1]
 
@@ -392,6 +391,16 @@ except Exception as e:
     log(f"  [WARN] Could not fetch previous month cost: {e}")
     previous_month_total = 0
 
+# Early in the month, a 1-3 day run-rate wildly mis-projects the month (and the
+# year). Until there are a few days of data, use the previous month's actual as
+# the projection so the "projected month / year" cards stay sensible.
+projection_basis = "run-rate"
+if days_elapsed < 4 and previous_month_total > 0:
+    projected_monthly = round(previous_month_total, 2)
+    projected_yearly  = round(previous_month_total * 12, 2)
+    projection_basis  = "previous month (too early to extrapolate)"
+    log(f"  Projection: early month — using previous month ${previous_month_total:.2f}")
+
 # Calculate trend
 trend_amount = total_api_spend_mtd - previous_month_total
 trend_pct = (trend_amount / previous_month_total * 100) if previous_month_total > 0 else 0
@@ -432,6 +441,7 @@ result = {
     "dailyAvg":          round(daily_avg, 6),
     "projectedMonthly":  round(projected_monthly, 2),
     "projectedYearly":   round(projected_yearly, 2),
+    "projectionBasis":   projection_basis,   # "run-rate" or "previous month (too early…)"
     "daysElapsed":       days_elapsed,  # Actual MTD days in current month
     "daysInMonth":       days_in_month,
     "analyticsWorking":  analytics_working,

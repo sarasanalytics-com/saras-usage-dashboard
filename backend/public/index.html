@@ -4667,9 +4667,9 @@ function renderAgentsTab() {
                             : 'analytics access pending');
   set('ag-kpi-daily',     naCost(dailyAvg));
   set('ag-kpi-proj-mo',   naCost(projMo));
-  set('ag-kpi-proj-mo-sub', _usesLookback
-                            ? `${_spanDays}-day run-rate × ${D.daysInMonth||30} days`
-                            : `${D.daysElapsed||0}/${D.daysInMonth||30} days elapsed`);
+  set('ag-kpi-proj-mo-sub', (D.projectionBasis && D.projectionBasis.indexOf('previous') === 0)
+                            ? 'based on last month · too early to project'
+                            : `${D.daysElapsed||0}/${D.daysInMonth||30} days · run-rate`);
   set('ag-kpi-proj-yr',   naCost(projYr));
   set('ag-kpi-agents',    analyticsOn ? activeCount : agents.filter(a=>!a.isAggregate&&a.status==='active').length);
 
