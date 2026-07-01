@@ -349,6 +349,9 @@ log(f"  Chat users: {len(chat_users_mtd)}  |  Avg chats/day: {avg_chat_per_day}"
 log("\nFetching model-level costs from Analytics API (cost_report)...")
 model_usage = {}
 model_cost  = {}
+model_cost_daily = {}   # date_str → {model → cost_usd}; init before the try so a
+                        # failed fetch (e.g. 1st of month, 0-day range → HTTP 400)
+                        # doesn't leave it undefined for the output block below.
 
 # ── 4a. Cost by model (MTD) ──────────────────────────────────────────────────
 try:
@@ -359,9 +362,6 @@ try:
         "group_by":     ["model"],
     }
     cost_resp = get_json("cost_report", cost_params)
-
-    # Also collect per-day costs for trend chart: {date → {model → cost}}
-    model_cost_daily = {}   # date_str → {model → cost_usd}
 
     while True:
         for bucket in cost_resp.get("data", []):
