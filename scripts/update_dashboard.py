@@ -567,7 +567,11 @@ else:
 # real trend over time instead of relying on fabricated history. The current
 # month's entry is upserted on every run; prior months are preserved.
 try:
-    month_key = TODAY[:7]
+    # Key the snapshot to the month the Claude data actually represents (asOf),
+    # not the run date — so early in a new month (before the lagged data lands)
+    # we refresh the previous month instead of recording a bogus current month.
+    month_key = (cc_as_of or TODAY)[:7]
+    _snap_dt  = datetime.strptime((cc_as_of or TODAY), "%Y-%m-%d")
     cur_days = [d for d in adoption.get("days", []) if d.get("date", "")[:7] == month_key]
     cursor_events = 0
     cursor_daily_counts = []
@@ -580,8 +584,8 @@ try:
 
     snapshot = {
         "monthKey":        month_key,
-        "month":           MONTH_LABEL,
-        "monthShort":      datetime.strptime(TODAY, "%Y-%m-%d").strftime("%b %Y"),
+        "month":           _snap_dt.strftime("%B %Y"),
+        "monthShort":      _snap_dt.strftime("%b %Y"),
         "lines":           total_lines,
         "activeMembers":   active_members,
         "chatsPerDay":     cc.get("chatsPerDay", 0),
