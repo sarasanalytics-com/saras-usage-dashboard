@@ -572,5 +572,15 @@ result = {
 }
 
 OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-OUTPUT_PATH.write_text(json.dumps(result, indent=2), encoding="utf-8")
-log(f"\nWrote {OUTPUT_PATH}")
+# Early-month guard: in the first few days of a new month the current month has
+# no data yet (3-day API lag), so everything above comes back empty. Rather than
+# overwrite the dashboard with an all-zero month, keep the previous file so the
+# dashboard keeps showing the last complete month until the lagged data lands.
+_empty_month = (total_lines_out == 0 and active_members == 0
+                and not model_cost and sum(daily_chat_convos) == 0)
+if _empty_month and OUTPUT_PATH.exists():
+    log(f"\nCurrent month has no data yet (early month / API lag) — "
+        f"keeping previous {OUTPUT_PATH.name} unchanged.")
+else:
+    OUTPUT_PATH.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    log(f"\nWrote {OUTPUT_PATH}")
