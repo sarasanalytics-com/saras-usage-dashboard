@@ -1850,10 +1850,16 @@ function populateSpendsTab() {
   // and avoids wildly over-extrapolating early in the month.
   const _daysElapsed = (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.daysElapsed) ? API_AGENTS_DATA.daysElapsed : new Date().getDate();
   const _daysInMo    = (typeof API_AGENTS_DATA !== 'undefined' && API_AGENTS_DATA.daysInMonth) ? API_AGENTS_DATA.daysInMonth : daysThisMonth;
+  // Early in the month (1-3 days) the run-rate = MTD ÷ 1 day × 31 wildly
+  // over-extrapolates, so until there are ≥4 days of data we annualize last
+  // month's actual alone instead of blending in the exploding run-rate.
+  const _earlyMonth = _daysElapsed < 4;
   const claudeRunRate   = _daysElapsed > 0 ? (spendData.claude.monthly / _daysElapsed) * _daysInMo : spendData.claude.monthly;
   const platformRunRate = _daysElapsed > 0 ? (agApiMtd / _daysElapsed) * _daysInMo : agApiMtd;
-  const claudeBlend   = lastClaude   > 0 ? (lastClaude   + claudeRunRate)   / 2 : claudeRunRate;
-  const platformBlend = lastPlatform > 0 ? (lastPlatform + platformRunRate) / 2 : platformRunRate;
+  const claudeBlend   = (_earlyMonth && lastClaude   > 0) ? lastClaude
+                      : (lastClaude   > 0 ? (lastClaude   + claudeRunRate)   / 2 : claudeRunRate);
+  const platformBlend = (_earlyMonth && lastPlatform > 0) ? lastPlatform
+                      : (lastPlatform > 0 ? (lastPlatform + platformRunRate) / 2 : platformRunRate);
   const monthlyBlend  = subsMonthly + claudeBlend + platformBlend;
   const totalYearly   = monthlyBlend * 12;
 
@@ -1863,7 +1869,9 @@ function populateSpendsTab() {
     const elYearly = document.getElementById('total-spend-yearly');
     if (elYearly) elYearly.textContent = '$' + Math.round(totalYearly).toLocaleString();
     const elYearlySub = document.getElementById('total-spend-yearly-sub');
-    if (elYearlySub) elYearlySub.textContent = 'Blend: last month + current run-rate · ×12';
+    if (elYearlySub) elYearlySub.textContent = _earlyMonth
+      ? 'Last month annualized · ×12 (too early for run-rate)'
+      : 'Blend: last month + current run-rate · ×12';
     const elDaily = document.getElementById('total-spend-daily');
     if (elDaily) elDaily.textContent = '$' + totalDaily.toFixed(2);
 
