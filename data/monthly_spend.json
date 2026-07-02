@@ -1,5 +1,5 @@
 {
-  "asOf": "2026-07-01",
+  "asOf": "2026-07-02",
   "subscriptions": {
     "claudeSeats": 3820.0,
     "cursor": 1260.0,
@@ -91,8 +91,8 @@
       "label": "Jul 2026",
       "isCurrent": true,
       "available": true,
-      "claudeUsage": 3.85,
-      "apiKeys": 0.0,
+      "claudeUsage": 179.58,
+      "apiKeys": 479.37,
       "claudeSeats": 3820.0,
       "claudeSeatCount": 191,
       "cursor": 1260.0,
@@ -100,7 +100,7 @@
       "cursorUsage": 0.0,
       "windsurf": 240.0,
       "windsurfSeatCount": 8,
-      "total": 5323.85
+      "total": 5978.95
     }
   ]
 }
